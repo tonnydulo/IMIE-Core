@@ -1,8 +1,7 @@
 import logging
-from datetime import datetime
 
 from imie.config.settings import load_settings
-from imie.models import Analysis, MarketBar, Quote, Symbol
+from imie.providers import ProviderManager
 from imie.utils.logging_utils import configure_logging
 from imie.version import IMIE_NAME, IMIE_VERSION
 
@@ -14,28 +13,10 @@ def main() -> None:
     logger = logging.getLogger("imie")
     logger.info("Starting IMIE Core")
 
-    sample_symbol = Symbol(ticker="NVDA", name="NVIDIA Corporation", provider="schwab")
-    sample_quote = Quote(
-        symbol="NVDA",
-        timestamp=datetime.now(),
-        bid=100.00,
-        ask=100.05,
-        last=100.03,
-        provider="sample",
-    )
-    sample_bar = MarketBar(
-        symbol="NVDA",
-        timestamp=datetime.now(),
-        open=99.50,
-        high=100.25,
-        low=99.25,
-        close=100.03,
-        volume=1_000_000,
-        timeframe="15m",
-        provider="sample",
-    )
-    sample_analysis = Analysis(symbol="NVDA", timestamp=datetime.now())
-    sample_analysis.add_reason("Core domain models loaded successfully.")
+    provider_manager = ProviderManager("mock")
+    status = provider_manager.connect()
+    quote = provider_manager.get_quote("NVDA")
+    bars = provider_manager.get_bars("NVDA", "15m", limit=3)
 
     print("=" * 60)
     print(IMIE_NAME)
@@ -44,14 +25,14 @@ def main() -> None:
     print()
     print("OK Configuration Loaded")
     print("OK Logging Started")
-    print("OK Version Loaded")
-    print("OK Domain Models Loaded")
-    print("OK Provider Interface Ready")
+    print("OK Provider Framework Loaded")
+    print(f"OK Provider Connected: {status.provider_name}")
     print()
-    print(f"Sample Symbol : {sample_symbol.ticker}")
-    print(f"Sample Spread : {sample_quote.spread:.2f}")
-    print(f"Sample Range  : {sample_bar.range:.2f}")
-    print(f"Sample Reason : {sample_analysis.reasons[0]}")
+    print(f"Quote Symbol : {quote.symbol}")
+    print(f"Quote Last   : {quote.last:.2f}")
+    print(f"Quote Spread : {quote.spread:.2f}")
+    print(f"Bars Loaded  : {len(bars)}")
+    print(f"Bar Range    : {bars[0].range:.2f}")
     print()
     print("System Ready")
     print("=" * 60)
