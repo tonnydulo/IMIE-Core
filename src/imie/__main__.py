@@ -13,9 +13,15 @@ def main() -> None:
     logger = logging.getLogger("imie")
     logger.info("Starting IMIE Core")
 
+    symbol = "NVDA"
+    timeframe = "2m"
+
     market_data = MarketDataService(settings.default_provider)
     status = market_data.connect()
-    quote = market_data.get_quote("NVDA")
+    quote = market_data.get_quote(symbol)
+    bars = market_data.get_bars(symbol, timeframe, limit=500)
+
+    latest_bar = bars[-1]
 
     print("=" * 60)
     print(IMIE_NAME)
@@ -34,6 +40,12 @@ def main() -> None:
     print(f"Quote Ask    : {quote.ask:.2f}")
     print(f"Quote Last   : {quote.last:.2f}")
     print(f"Quote Spread : {quote.spread:.2f}")
+    print()
+    print(f"Bars Symbol  : {symbol}")
+    print(f"Bars TF      : {timeframe}")
+    print(f"Bars Loaded  : {len(bars)}")
+    print(f"Latest Close : {latest_bar.close:.2f}")
+    print(f"Latest Range : {latest_bar.range:.2f}")
     print()
     print("System Ready")
     print("=" * 60)
