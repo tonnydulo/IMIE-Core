@@ -1,7 +1,7 @@
 import logging
 
 from imie.config.settings import load_settings
-from imie.providers import ProviderManager
+from imie.services import MarketDataService
 from imie.utils.logging_utils import configure_logging
 from imie.version import IMIE_NAME, IMIE_VERSION
 
@@ -13,19 +13,21 @@ def main() -> None:
     logger = logging.getLogger("imie")
     logger.info("Starting IMIE Core")
 
-    provider_manager = ProviderManager("mock")
-    status = provider_manager.connect()
-    quote = provider_manager.get_quote("NVDA")
-    bars = provider_manager.get_bars("NVDA", "15m", limit=3)
+    market_data = MarketDataService(settings.default_provider)
+    status = market_data.connect()
+    quote = market_data.get_quote("NVDA")
+    bars = market_data.get_bars("NVDA", "15m", limit=3)
 
     print("=" * 60)
     print(IMIE_NAME)
-    print(f"Version : {IMIE_VERSION}")
-    print("Status  : Initializing")
+    print(f"Version     : {IMIE_VERSION}")
+    print(f"Environment : {settings.environment}")
+    print(f"Provider    : {settings.default_provider}")
+    print("Status      : Initializing")
     print()
     print("OK Configuration Loaded")
     print("OK Logging Started")
-    print("OK Provider Framework Loaded")
+    print("OK Market Data Service Loaded")
     print(f"OK Provider Connected: {status.provider_name}")
     print()
     print(f"Quote Symbol : {quote.symbol}")
