@@ -3,6 +3,7 @@ import logging
 from imie.config.settings import load_settings
 from imie.engines.execution import ExecutionEngine
 from imie.engines.facts import FactsEngine
+from imie.engines.trend import TrendAnalyst
 from imie.models import MarketSnapshot
 from imie.services import MarketDataService
 from imie.utils.logging_utils import configure_logging
@@ -35,6 +36,9 @@ def main() -> None:
     facts_engine = FactsEngine()
     enriched_snapshot = facts_engine.enrich_snapshot(snapshot)
 
+    trend_analyst = TrendAnalyst()
+    trend_result = trend_analyst.analyze(enriched_snapshot)
+
     execution_engine = ExecutionEngine(atr_tolerance=0.25)
     execution_state = execution_engine.analyze_pullback_to_core(enriched_snapshot)
 
@@ -47,6 +51,7 @@ def main() -> None:
     print("OK Market Data Service Loaded")
     print(f"OK Provider Connected: {status.provider_name}")
     print("OK Facts Engine Loaded")
+    print("OK TrendAnalyst Loaded")
     print("OK Execution Engine Loaded")
     print()
     print(f"Symbol       : {enriched_snapshot.symbol}")
@@ -56,6 +61,17 @@ def main() -> None:
     print(f"EMA9         : {enriched_snapshot.facts.ema9:.2f}")
     print(f"VWAP         : {enriched_snapshot.facts.vwap:.2f}")
     print(f"ATR14        : {enriched_snapshot.facts.atr14:.2f}")
+    print()
+    print("Trend Analyst")
+    print(f"Opinion      : {trend_result.opinion}")
+    print(f"Confidence   : {trend_result.confidence:.0f}")
+    print("Evidence     :")
+    for item in trend_result.evidence:
+        print(f" - {item}")
+    if trend_result.warnings:
+        print("Warnings     :")
+        for item in trend_result.warnings:
+            print(f" - {item}")
     print()
     print("Pullback-to-Core")
     print(f"Direction    : {execution_state.direction}")
