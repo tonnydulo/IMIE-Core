@@ -1,6 +1,8 @@
 import logging
 
 from imie.config.settings import load_settings
+from imie.engines.facts import FactsEngine
+from imie.models import MarketSnapshot
 from imie.services import MarketDataService
 from imie.utils.logging_utils import configure_logging
 from imie.version import IMIE_NAME, IMIE_VERSION
@@ -21,31 +23,34 @@ def main() -> None:
     quote = market_data.get_quote(symbol)
     bars = market_data.get_bars(symbol, timeframe, limit=500)
 
-    latest_bar = bars[-1]
+    snapshot = MarketSnapshot(
+        symbol=symbol,
+        timestamp=quote.timestamp,
+        quote=quote,
+        bars=bars,
+        timeframe=timeframe,
+    )
+
+    facts_engine = FactsEngine()
+    enriched_snapshot = facts_engine.enrich_snapshot(snapshot)
 
     print("=" * 60)
     print(IMIE_NAME)
     print(f"Version     : {IMIE_VERSION}")
     print(f"Environment : {settings.environment}")
     print(f"Provider    : {settings.default_provider}")
-    print("Status      : Initializing")
     print()
-    print("OK Configuration Loaded")
-    print("OK Logging Started")
     print("OK Market Data Service Loaded")
     print(f"OK Provider Connected: {status.provider_name}")
+    print("OK Market Snapshot Built")
+    print("OK Facts Engine Loaded")
     print()
-    print(f"Quote Symbol : {quote.symbol}")
-    print(f"Quote Bid    : {quote.bid:.2f}")
-    print(f"Quote Ask    : {quote.ask:.2f}")
-    print(f"Quote Last   : {quote.last:.2f}")
-    print(f"Quote Spread : {quote.spread:.2f}")
-    print()
-    print(f"Bars Symbol  : {symbol}")
-    print(f"Bars TF      : {timeframe}")
-    print(f"Bars Loaded  : {len(bars)}")
-    print(f"Latest Close : {latest_bar.close:.2f}")
-    print(f"Latest Range : {latest_bar.range:.2f}")
+    print(f"Symbol       : {enriched_snapshot.symbol}")
+    print(f"Timeframe    : {enriched_snapshot.timeframe}")
+    print(f"Bars Loaded  : {len(enriched_snapshot.bars)}")
+    print(f"Quote Last   : {enriched_snapshot.quote.last:.2f}")
+    print(f"EMA9         : {enriched_snapshot.facts.ema9:.2f}")
+    print(f"VWAP         : {enriched_snapshot.facts.vwap:.2f}")
     print()
     print("System Ready")
     print("=" * 60)

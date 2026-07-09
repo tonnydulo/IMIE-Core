@@ -1,5 +1,6 @@
 from imie.models.analysis import Analysis
 from imie.models.market_bar import MarketBar
+from imie.models.market_snapshot import MarketFacts, MarketSnapshot
 from imie.models.provider_config import ProviderConfig
 from imie.models.provider_status import ProviderStatus
 from imie.models.quote import Quote
@@ -9,6 +10,8 @@ from imie.models.symbol import Symbol
 __all__ = [
     "Analysis",
     "MarketBar",
+    "MarketFacts",
+    "MarketSnapshot",
     "ProviderConfig",
     "ProviderStatus",
     "Quote",
