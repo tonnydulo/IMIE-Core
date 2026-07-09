@@ -6,6 +6,7 @@ class FactsEngine:
         return MarketFacts(
             ema9=self.calculate_ema(bars, period=9),
             vwap=self.calculate_vwap(bars),
+            atr14=self.calculate_atr(bars, period=14),
         )
 
     def enrich_snapshot(self, snapshot: MarketSnapshot) -> MarketSnapshot:
@@ -26,7 +27,6 @@ class FactsEngine:
 
         closes = [bar.close for bar in bars]
         multiplier = 2 / (period + 1)
-
         ema = sum(closes[:period]) / period
 
         for close in closes[period:]:
@@ -47,3 +47,24 @@ class FactsEngine:
             return None
 
         return total_price_volume / total_volume
+
+    def calculate_atr(self, bars: list[MarketBar], period: int = 14) -> float | None:
+        if len(bars) < period + 1:
+            return None
+
+        true_ranges: list[float] = []
+
+        for i in range(1, len(bars)):
+            current = bars[i]
+            previous = bars[i - 1]
+
+            tr = max(
+                current.high - current.low,
+                abs(current.high - previous.close),
+                abs(current.low - previous.close),
+            )
+
+            true_ranges.append(tr)
+
+        recent_ranges = true_ranges[-period:]
+        return sum(recent_ranges) / period
