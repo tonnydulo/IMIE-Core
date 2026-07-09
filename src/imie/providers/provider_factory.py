@@ -1,3 +1,4 @@
+from imie.providers.alpaca_provider import AlpacaProvider
 from imie.providers.base_provider import MarketDataProvider
 from imie.providers.mock_provider import MockProvider
 
@@ -9,5 +10,8 @@ class ProviderFactory:
 
         if normalized_name == "mock":
             return MockProvider()
+
+        if normalized_name == "alpaca":
+            return AlpacaProvider()
 
         raise ValueError(f"Unsupported provider: {provider_name}")
