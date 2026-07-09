@@ -1,11 +1,10 @@
 import logging
 
 from imie.config.settings import load_settings
-from imie.engines.execution import ExecutionEngine
-from imie.engines.facts import FactsEngine
+from imie.engines.setup import SetupLifecycleEngine
 from imie.engines.trend import TrendAnalyst
 from imie.models import MarketSnapshot
-from imie.services import MarketDataService
+from imie.services import ContextBuilder, MarketDataService
 from imie.utils.logging_utils import configure_logging
 from imie.version import IMIE_NAME, IMIE_VERSION
 
@@ -33,14 +32,17 @@ def main() -> None:
         timeframe=timeframe,
     )
 
-    facts_engine = FactsEngine()
-    enriched_snapshot = facts_engine.enrich_snapshot(snapshot)
+    context_builder = ContextBuilder(atr_tolerance=0.25)
+    context = context_builder.build(snapshot)
 
     trend_analyst = TrendAnalyst()
-    trend_result = trend_analyst.analyze(enriched_snapshot)
+    trend_result = trend_analyst.analyze(context)
 
-    execution_engine = ExecutionEngine(atr_tolerance=0.25)
-    execution_state = execution_engine.analyze_pullback_to_core(enriched_snapshot)
+    lifecycle_engine = SetupLifecycleEngine()
+    lifecycle = lifecycle_engine.evaluate_pullback_to_core(context, trend_result)
+
+    measurements = context.measurements
+    observations = context.observations
 
     print("=" * 60)
     print(IMIE_NAME)
@@ -50,37 +52,38 @@ def main() -> None:
     print()
     print("OK Market Data Service Loaded")
     print(f"OK Provider Connected: {status.provider_name}")
-    print("OK Facts Engine Loaded")
+    print("OK TradingContext Built")
     print("OK TrendAnalyst Loaded")
-    print("OK Execution Engine Loaded")
+    print("OK Setup Lifecycle Engine Loaded")
     print()
-    print(f"Symbol       : {enriched_snapshot.symbol}")
-    print(f"Timeframe    : {enriched_snapshot.timeframe}")
-    print(f"Bars Loaded  : {len(enriched_snapshot.bars)}")
-    print(f"Quote Last   : {enriched_snapshot.quote.last:.2f}")
-    print(f"EMA9         : {enriched_snapshot.facts.ema9:.2f}")
-    print(f"VWAP         : {enriched_snapshot.facts.vwap:.2f}")
-    print(f"ATR14        : {enriched_snapshot.facts.atr14:.2f}")
+    print(f"Symbol       : {context.snapshot.symbol}")
+    print(f"Timeframe    : {context.snapshot.timeframe}")
+    print(f"Bars Loaded  : {len(context.snapshot.bars)}")
+    print(f"Quote Last   : {measurements.price:.2f}")
+    print(f"EMA9         : {measurements.ema9:.2f}" if measurements.ema9 else "EMA9         : n/a")
+    print(f"Prev EMA9    : {measurements.previous_ema9:.2f}" if measurements.previous_ema9 else "Prev EMA9    : n/a")
+    print(f"EMA9 Slope   : {measurements.ema9_slope:.4f}" if measurements.ema9_slope else "EMA9 Slope   : n/a")
+    print(f"VWAP         : {measurements.vwap:.2f}" if measurements.vwap else "VWAP         : n/a")
+    print(f"ATR14        : {measurements.atr14:.2f}" if measurements.atr14 else "ATR14        : n/a")
+    print()
+    print("Observations")
+    print(f"Above EMA9   : {observations.price_above_ema9}")
+    print(f"Above VWAP   : {observations.price_above_vwap}")
+    print(f"EMA9 Rising  : {observations.ema9_rising}")
+    print(f"At Core      : {observations.within_core_zone}")
+    print(f"Approaching  : {observations.approaching_core}")
     print()
     print("Trend Analyst")
     print(f"Opinion      : {trend_result.opinion}")
     print(f"Confidence   : {trend_result.confidence:.0f}")
-    print("Evidence     :")
-    for item in trend_result.evidence:
-        print(f" - {item}")
-    if trend_result.warnings:
-        print("Warnings     :")
-        for item in trend_result.warnings:
-            print(f" - {item}")
     print()
-    print("Pullback-to-Core")
-    print(f"Direction    : {execution_state.direction}")
-    print(f"State        : {execution_state.state}")
-    print(f"Core Type    : {execution_state.core_type}")
-    print(f"Core Price   : {execution_state.core_price:.2f}" if execution_state.core_price else "Core Price   : n/a")
-    print(f"Distance     : {execution_state.distance_to_core:.2f}" if execution_state.distance_to_core else "Distance     : n/a")
-    print(f"Tolerance    : {execution_state.tolerance:.2f}" if execution_state.tolerance else "Tolerance    : n/a")
-    print(f"Reason       : {execution_state.reason}")
+    print("Setup Lifecycle")
+    print(f"State        : {lifecycle.state}")
+    print(f"Direction    : {lifecycle.direction}")
+    print(f"Confidence   : {lifecycle.confidence:.0f}")
+    print(f"ATR Distance : {lifecycle.atr_distance:.2f}" if lifecycle.atr_distance is not None else "ATR Distance : n/a")
+    print(f"Action       : {lifecycle.action}")
+    print(f"Reason       : {lifecycle.reason}")
     print()
     print("System Ready")
     print("=" * 60)
