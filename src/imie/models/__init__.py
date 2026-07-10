@@ -12,6 +12,7 @@ from imie.models.quote import Quote
 from imie.models.scan_result import ScanResult
 from imie.models.setup_lifecycle import SetupLifecycle
 from imie.models.symbol import Symbol
+from imie.models.trade_plan import TradePlan
 from imie.models.trading_context import TradingContext
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "ScanResult",
     "SetupLifecycle",
     "Symbol",
+    "TradePlan",
     "TradingContext",
 ]

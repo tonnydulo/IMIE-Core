@@ -5,6 +5,7 @@ from imie.engines.acceptance import AcceptanceAnalyst
 from imie.engines.setup import SetupLifecycleEngine
 from imie.engines.trend import TrendAnalyst
 from imie.models import MarketSnapshot
+from imie.engines.risk import RiskAnalyst
 from imie.services import (
     ContextBuilder,
     DataFreshnessGuard,
@@ -62,6 +63,18 @@ def main() -> None:
             trend_result,
             acceptance_confirmed=True,
         )
+
+    trade_plan = RiskAnalyst(
+    minimum_rr=2.0,
+    target1_r=1.0,
+    target2_r=2.0,
+    ).analyze(
+    context=context,
+    freshness=freshness,
+    trend_result=trend_result,
+    lifecycle=lifecycle,
+    acceptance=acceptance,
+    )
 
     measurements = context.measurements
 
@@ -127,6 +140,43 @@ def main() -> None:
     else:
         print("Action       : DATA NOT ACTIONABLE")
         print(f"Reason       : {freshness.reason}")
+
+ # ============================================================
+    # RISK ANALYST / TRADE PLAN
+    # ============================================================
+    print()
+    print("Risk Analyst / Trade Plan")
+    print(f"Decision     : {trade_plan.decision}")
+    print(f"Valid        : {trade_plan.valid}")
+    print(f"Actionable   : {trade_plan.actionable}")
+    print(f"Quality      : {trade_plan.quality}")
+    print(f"Confidence   : {trade_plan.confidence:.0f}")
+
+    if trade_plan.entry is not None:
+        print(f"Entry        : {trade_plan.entry:.2f}")
+        print(f"Stop         : {trade_plan.stop:.2f}")
+        print(f"Target 1     : {trade_plan.target1:.2f}")
+        print(f"Target 2     : {trade_plan.target2:.2f}")
+        print(f"Risk/Share   : {trade_plan.risk_per_share:.2f}")
+        print(f"RR Target 1  : {trade_plan.rr1:.2f}")
+        print(f"RR Target 2  : {trade_plan.rr2:.2f}")
+    else:
+        print("Entry        : n/a")
+        print("Stop         : n/a")
+        print("Target 1     : n/a")
+        print("Target 2     : n/a")
+
+    print(f"Narrative    : {trade_plan.narrative}")
+
+    if trade_plan.reasons:
+        print("Reasons      :")
+        for item in trade_plan.reasons:
+            print(f" - {item}")
+
+    if trade_plan.warnings:
+        print("Warnings     :")
+        for item in trade_plan.warnings:
+            print(f" - {item}")
 
     print()
     print("System Ready")
