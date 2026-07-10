@@ -1,5 +1,7 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta, timezone
 
+from alpaca.common.enums import Sort
+from alpaca.data.enums import DataFeed
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest, StockLatestQuoteRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
@@ -21,7 +23,7 @@ class AlpacaProvider(MarketDataProvider):
             return ProviderStatus(
                 provider_name=self.provider_name,
                 connected=False,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(timezone.utc),
                 message="Missing Alpaca API credentials.",
             )
 
@@ -33,28 +35,28 @@ class AlpacaProvider(MarketDataProvider):
         return ProviderStatus(
             provider_name=self.provider_name,
             connected=True,
-            timestamp=datetime.now(),
-            message="Alpaca provider connected.",
+            timestamp=datetime.now(timezone.utc),
+            message="Alpaca provider connected using the IEX market-data feed.",
         )
 
     def disconnect(self) -> ProviderStatus:
         self.client = None
+
         return ProviderStatus(
             provider_name=self.provider_name,
             connected=False,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
             message="Alpaca provider disconnected.",
         )
 
     def get_quote(self, symbol: str) -> Quote:
-        if self.client is None:
-            self.connect()
+        client = self._require_client()
 
-        if self.client is None:
-            raise RuntimeError("Alpaca client is not connected.")
-
-        request = StockLatestQuoteRequest(symbol_or_symbols=symbol)
-        response = self.client.get_stock_latest_quote(request)
+        request = StockLatestQuoteRequest(
+            symbol_or_symbols=symbol,
+            feed=DataFeed.IEX,
+        )
+        response = client.get_stock_latest_quote(request)
         alpaca_quote = response[symbol]
 
         bid = float(alpaca_quote.bid_price)
@@ -65,29 +67,45 @@ class AlpacaProvider(MarketDataProvider):
             timestamp=alpaca_quote.timestamp,
             bid=bid,
             ask=ask,
-            last=(bid + ask) / 2,
+            last=(bid + ask) / 2.0,
             volume=0,
             provider=self.provider_name,
         )
 
-    def get_bars(self, symbol: str, timeframe: str, limit: int = 100) -> list[MarketBar]:
-        if self.client is None:
-            self.connect()
+    def get_bars(
+        self,
+        symbol: str,
+        timeframe: str,
+        limit: int = 100,
+    ) -> list[MarketBar]:
+        if limit <= 0:
+            raise ValueError("Bar limit must be greater than zero.")
 
-        if self.client is None:
-            raise RuntimeError("Alpaca client is not connected.")
-
+        client = self._require_client()
         alpaca_timeframe = self._convert_timeframe(timeframe)
+        now_utc = datetime.now(timezone.utc)
 
         request = StockBarsRequest(
             symbol_or_symbols=symbol,
             timeframe=alpaca_timeframe,
-            start=datetime.now() - timedelta(days=10),
+            start=now_utc - timedelta(days=30),
+            end=now_utc,
             limit=limit,
+            sort=Sort.DESC,
+            feed=DataFeed.IEX,
         )
 
-        response = self.client.get_stock_bars(request)
-        bars = response[symbol]
+        response = client.get_stock_bars(request)
+        alpaca_bars = list(response[symbol])
+
+        if not alpaca_bars:
+            raise RuntimeError(
+                f"Alpaca returned no {timeframe} IEX bars for {symbol}."
+            )
+
+        # The descending request returns newest bars first.
+        # IMIE indicators require chronological order.
+        alpaca_bars.reverse()
 
         return [
             MarketBar(
@@ -101,25 +119,30 @@ class AlpacaProvider(MarketDataProvider):
                 timeframe=timeframe,
                 provider=self.provider_name,
             )
-            for bar in bars
+            for bar in alpaca_bars
         ]
+
+    def _require_client(self) -> StockHistoricalDataClient:
+        if self.client is None:
+            status = self.connect()
+
+            if not status.connected or self.client is None:
+                raise RuntimeError(status.message)
+
+        return self.client
 
     def _convert_timeframe(self, timeframe: str) -> TimeFrame:
         normalized = timeframe.lower().strip()
 
-        if normalized == "1m":
-            return TimeFrame(1, TimeFrameUnit.Minute)
+        supported = {
+            "1m": TimeFrame(1, TimeFrameUnit.Minute),
+            "2m": TimeFrame(2, TimeFrameUnit.Minute),
+            "5m": TimeFrame(5, TimeFrameUnit.Minute),
+            "15m": TimeFrame(15, TimeFrameUnit.Minute),
+            "1d": TimeFrame(1, TimeFrameUnit.Day),
+        }
 
-        if normalized == "2m":
-            return TimeFrame(2, TimeFrameUnit.Minute)
+        if normalized not in supported:
+            raise ValueError(f"Unsupported timeframe: {timeframe}")
 
-        if normalized == "5m":
-            return TimeFrame(5, TimeFrameUnit.Minute)
-
-        if normalized == "15m":
-            return TimeFrame(15, TimeFrameUnit.Minute)
-
-        if normalized == "1d":
-            return TimeFrame(1, TimeFrameUnit.Day)
-
-        raise ValueError(f"Unsupported timeframe: {timeframe}")
+        return supported[normalized]

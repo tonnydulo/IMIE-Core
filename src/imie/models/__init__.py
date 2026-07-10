@@ -1,5 +1,6 @@
-from imie.models.analysis import Analysis
+﻿from imie.models.analysis import Analysis
 from imie.models.analyst_result import AnalystResult
+from imie.models.data_freshness import DataFreshness
 from imie.models.market_bar import MarketBar
 from imie.models.market_measurements import MarketMeasurements
 from imie.models.market_observations import MarketObservations
@@ -15,6 +16,7 @@ from imie.models.trading_context import TradingContext
 __all__ = [
     "Analysis",
     "AnalystResult",
+    "DataFreshness",
     "MarketBar",
     "MarketFacts",
     "MarketMeasurements",
