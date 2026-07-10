@@ -1,6 +1,7 @@
 ﻿import logging
 
 from imie.config.settings import load_settings
+from imie.engines.acceptance import AcceptanceAnalyst
 from imie.engines.setup import SetupLifecycleEngine
 from imie.engines.trend import TrendAnalyst
 from imie.models import MarketSnapshot
@@ -36,18 +37,13 @@ def main() -> None:
         timeframe=timeframe,
     )
 
-    freshness_guard = DataFreshnessGuard(
-        max_quote_age_seconds=60,
-        max_bar_age_seconds=300,
-        max_quote_bar_gap_seconds=300,
-    )
-    freshness = freshness_guard.evaluate(snapshot)
+    freshness = DataFreshnessGuard().evaluate(snapshot)
 
-    context_builder = ContextBuilder(atr_tolerance=0.25)
-    context = context_builder.build(snapshot)
+    context = ContextBuilder(
+        atr_tolerance=0.25,
+    ).build(snapshot)
 
-    trend_analyst = TrendAnalyst()
-    trend_result = trend_analyst.analyze(context)
+    trend_result = TrendAnalyst().analyze(context)
 
     lifecycle_engine = SetupLifecycleEngine()
     lifecycle = lifecycle_engine.evaluate_pullback_to_core(
@@ -55,8 +51,19 @@ def main() -> None:
         trend_result,
     )
 
+    acceptance = AcceptanceAnalyst().analyze(
+        context,
+        lifecycle,
+    )
+
+    if acceptance.accepted:
+        lifecycle = lifecycle_engine.evaluate_pullback_to_core(
+            context,
+            trend_result,
+            acceptance_confirmed=True,
+        )
+
     measurements = context.measurements
-    observations = context.observations
 
     print("=" * 60)
     print(IMIE_NAME)
@@ -70,35 +77,44 @@ def main() -> None:
     print("OK TradingContext Built")
     print("OK TrendAnalyst Loaded")
     print("OK Setup Lifecycle Engine Loaded")
+    print("OK AcceptanceAnalyst Loaded")
     print()
     print("Data Freshness")
-    print(f"Checked UTC  : {freshness.checked_at.isoformat()}")
-    print(f"Quote UTC    : {freshness.quote_timestamp.isoformat()}")
-    print(f"Latest Bar   : {freshness.latest_bar_timestamp.isoformat()}")
+    print(f"Status       : {freshness.status}")
+    print(f"Actionable   : {freshness.actionable}")
     print(f"Quote Age    : {freshness.quote_age_seconds:.1f} sec")
     print(f"Bar Age      : {freshness.bar_age_seconds:.1f} sec")
     print(f"Quote/Bar Gap: {freshness.quote_bar_gap_seconds:.1f} sec")
-    print(f"Status       : {freshness.status}")
-    print(f"Actionable   : {freshness.actionable}")
-    print(f"Reason       : {freshness.reason}")
     print()
     print(f"Symbol       : {context.snapshot.symbol}")
     print(f"Timeframe    : {context.snapshot.timeframe}")
-    print(f"Bars Loaded  : {len(context.snapshot.bars)}")
     print(f"Quote Last   : {measurements.price:.2f}")
     print(f"EMA9         : {measurements.ema9:.2f}" if measurements.ema9 is not None else "EMA9         : n/a")
     print(f"VWAP         : {measurements.vwap:.2f}" if measurements.vwap is not None else "VWAP         : n/a")
     print(f"ATR14        : {measurements.atr14:.2f}" if measurements.atr14 is not None else "ATR14        : n/a")
     print()
-    print("Observations")
-    print(f"Above EMA9   : {observations.price_above_ema9}")
-    print(f"Above VWAP   : {observations.price_above_vwap}")
-    print(f"EMA9 Rising  : {observations.ema9_rising}")
-    print(f"At Core      : {observations.within_core_zone}")
-    print()
     print("Trend Analyst")
     print(f"Opinion      : {trend_result.opinion}")
     print(f"Confidence   : {trend_result.confidence:.0f}")
+    print()
+    print("Acceptance Analyst")
+    print(f"Accepted     : {acceptance.accepted}")
+    print(f"Level        : {acceptance.level}")
+    print(f"Score        : {acceptance.score}")
+    print(f"Trigger Price: {acceptance.trigger_price:.2f}" if acceptance.trigger_price is not None else "Trigger Price: n/a")
+    print(f"Prior Level  : {acceptance.previous_level:.2f}" if acceptance.previous_level is not None else "Prior Level  : n/a")
+    print(f"Reason       : {acceptance.reason}")
+
+    if acceptance.evidence:
+        print("Evidence     :")
+        for item in acceptance.evidence:
+            print(f" - {item}")
+
+    if acceptance.warnings:
+        print("Warnings     :")
+        for item in acceptance.warnings:
+            print(f" - {item}")
+
     print()
     print("Setup Lifecycle")
     print(f"State        : {lifecycle.state}")
