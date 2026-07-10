@@ -1,15 +1,22 @@
 from imie.models import MarketBar
 
 
-def calculate_atr_wilder(bars: list[MarketBar], period: int = 14) -> float | None:
+def calculate_atr_wilder(
+    bars: list[MarketBar],
+    period: int = 14,
+) -> float | None:
+    """Calculate ATR using Wilder's recursive moving average."""
+    if period <= 0:
+        raise ValueError("ATR period must be greater than zero.")
+
     if len(bars) < period + 1:
         return None
 
     true_ranges: list[float] = []
 
-    for i in range(1, len(bars)):
-        current = bars[i]
-        previous = bars[i - 1]
+    for index in range(1, len(bars)):
+        current = bars[index]
+        previous = bars[index - 1]
 
         true_range = max(
             current.high - current.low,
@@ -18,10 +25,9 @@ def calculate_atr_wilder(bars: list[MarketBar], period: int = 14) -> float | Non
         )
         true_ranges.append(true_range)
 
-    first_atr = sum(true_ranges[:period]) / period
-    atr = first_atr
+    atr = sum(true_ranges[:period]) / period
 
     for true_range in true_ranges[period:]:
-        atr = ((atr * (period - 1)) + true_range) / period
+        atr = ((period - 1) * atr + true_range) / period
 
     return atr
