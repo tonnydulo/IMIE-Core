@@ -1,4 +1,9 @@
-﻿from imie.models import AcceptanceResult, SetupLifecycle, TradingContext
+﻿from imie.models import (
+    AcceptanceResult,
+    AnalystResult,
+    SetupLifecycle,
+    TradingContext,
+)
 from imie.utils.constants import (
     ACCEPTANCE_EXCEPTIONAL,
     ACCEPTANCE_GOOD,
@@ -11,11 +16,55 @@ from imie.utils.constants import (
 class AcceptanceAnalyst:
     analyst_name = "AcceptanceAnalyst"
 
+    def analyze_result(
+        self,
+        context: TradingContext,
+        lifecycle: SetupLifecycle,
+    ) -> AnalystResult:
+        """
+        Return the standardized analyst contract.
+
+        The detailed AcceptanceResult remains available in payload.
+        """
+
+        acceptance = self.analyze(
+            context=context,
+            lifecycle=lifecycle,
+        )
+
+        evidence = list(acceptance.evidence)
+
+        if acceptance.reason:
+            evidence.append(acceptance.reason)
+
+        warnings = list(acceptance.warnings)
+
+        if not acceptance.accepted and not warnings:
+            warnings.append(
+                "Completed-candle acceptance has not been confirmed."
+            )
+
+        return AnalystResult(
+            analyst=self.analyst_name,
+            opinion=acceptance.level,
+            confidence=float(acceptance.confidence),
+            evidence=evidence,
+            warnings=warnings,
+            payload=acceptance,
+        )
+
     def analyze(
         self,
         context: TradingContext,
         lifecycle: SetupLifecycle,
     ) -> AcceptanceResult:
+        """
+        Evaluate completed-candle acceptance at Core.
+
+        This original interface is preserved for compatibility with
+        existing services, tests, and the console pipeline.
+        """
+
         symbol = context.snapshot.symbol
         bars = context.snapshot.bars
 
@@ -31,7 +80,9 @@ class AcceptanceAnalyst:
                 previous_level=None,
                 pullback_low=None,
                 pullback_high=None,
-                reason="Acceptance is evaluated only when price is at Core.",
+                reason=(
+                    "Acceptance is evaluated only when price is at Core."
+                ),
             )
 
         if len(bars) < 2:
@@ -46,7 +97,9 @@ class AcceptanceAnalyst:
                 previous_level=None,
                 pullback_low=None,
                 pullback_high=None,
-                warnings=["At least two completed bars are required."],
+                warnings=[
+                    "At least two completed bars are required."
+                ],
                 reason="Insufficient completed candles.",
             )
 
@@ -106,7 +159,10 @@ class AcceptanceAnalyst:
                 previous_level=previous_level,
                 pullback_low=previous_bar.low,
                 pullback_high=previous_bar.high,
-                reason="Current completed candle did not close above the prior candle high.",
+                reason=(
+                    "Current completed candle did not close above "
+                    "the prior candle high."
+                ),
             )
 
         score, evidence, warnings = self._score_candle(
@@ -114,8 +170,13 @@ class AcceptanceAnalyst:
             atr14=atr14,
             bullish=True,
         )
+
         score += 50
-        evidence.insert(0, "Current candle closed above the prior candle high.")
+
+        evidence.insert(
+            0,
+            "Current candle closed above the prior candle high.",
+        )
 
         level = self._map_level(score)
 
@@ -157,7 +218,10 @@ class AcceptanceAnalyst:
                 previous_level=previous_level,
                 pullback_low=previous_bar.low,
                 pullback_high=previous_bar.high,
-                reason="Current completed candle did not close below the prior candle low.",
+                reason=(
+                    "Current completed candle did not close below "
+                    "the prior candle low."
+                ),
             )
 
         score, evidence, warnings = self._score_candle(
@@ -165,8 +229,13 @@ class AcceptanceAnalyst:
             atr14=atr14,
             bullish=False,
         )
+
         score += 50
-        evidence.insert(0, "Current candle closed below the prior candle low.")
+
+        evidence.insert(
+            0,
+            "Current candle closed below the prior candle low.",
+        )
 
         level = self._map_level(score)
 
@@ -198,18 +267,31 @@ class AcceptanceAnalyst:
         warnings: list[str] = []
 
         candle_range = current_bar.high - current_bar.low
-        body_size = abs(current_bar.close - current_bar.open)
+        body_size = abs(
+            current_bar.close - current_bar.open
+        )
 
         if candle_range <= 0:
-            return score, evidence, ["Acceptance candle has no measurable range."]
+            return (
+                score,
+                evidence,
+                [
+                    "Acceptance candle has no measurable range."
+                ],
+            )
 
         body_ratio = body_size / candle_range
 
         if body_ratio >= 0.60:
             score += 20
-            evidence.append("Candle body is at least 60% of its range.")
+            evidence.append(
+                "Candle body is at least 60% of its range."
+            )
         else:
-            warnings.append("Acceptance candle body is less than 60% of its range.")
+            warnings.append(
+                "Acceptance candle body is less than 60% "
+                "of its range."
+            )
 
         if bullish:
             close_location = (
@@ -218,9 +300,13 @@ class AcceptanceAnalyst:
 
             if close_location >= 0.75:
                 score += 20
-                evidence.append("Candle closed in the upper 25% of its range.")
+                evidence.append(
+                    "Candle closed in the upper 25% of its range."
+                )
             else:
-                warnings.append("Candle did not close near its high.")
+                warnings.append(
+                    "Candle did not close near its high."
+                )
         else:
             close_location = (
                 current_bar.high - current_bar.close
@@ -228,18 +314,28 @@ class AcceptanceAnalyst:
 
             if close_location >= 0.75:
                 score += 20
-                evidence.append("Candle closed in the lower 25% of its range.")
+                evidence.append(
+                    "Candle closed in the lower 25% of its range."
+                )
             else:
-                warnings.append("Candle did not close near its low.")
+                warnings.append(
+                    "Candle did not close near its low."
+                )
 
         if atr14 is not None and atr14 > 0:
             if candle_range >= atr14 * 0.80:
                 score += 10
-                evidence.append("Candle range is at least 0.8 ATR.")
+                evidence.append(
+                    "Candle range is at least 0.8 ATR."
+                )
             else:
-                warnings.append("Acceptance candle range is below 0.8 ATR.")
+                warnings.append(
+                    "Acceptance candle range is below 0.8 ATR."
+                )
         else:
-            warnings.append("ATR14 was unavailable for range scoring.")
+            warnings.append(
+                "ATR14 was unavailable for range scoring."
+            )
 
         return score, evidence, warnings
 

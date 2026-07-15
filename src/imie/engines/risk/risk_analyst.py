@@ -29,14 +29,62 @@ class RiskAnalyst:
             raise ValueError("Minimum RR must be greater than zero.")
 
         if target1_r <= 0 or target2_r <= 0:
-            raise ValueError("Target multiples must be greater than zero.")
+            raise ValueError(
+                "Target multiples must be greater than zero."
+            )
 
         if target2_r < target1_r:
-            raise ValueError("Target 2 must not be smaller than Target 1.")
+            raise ValueError(
+                "Target 2 must not be smaller than Target 1."
+            )
 
         self.minimum_rr = minimum_rr
         self.target1_r = target1_r
         self.target2_r = target2_r
+
+    def analyze_result(
+        self,
+        *,
+        context: TradingContext,
+        freshness: DataFreshness,
+        trend_result: AnalystResult,
+        lifecycle: SetupLifecycle,
+        acceptance: AcceptanceResult,
+    ) -> AnalystResult:
+        """
+        Return the standardized analyst contract.
+
+        The detailed TradePlan remains available in payload.
+        """
+
+        trade_plan = self.analyze(
+            context=context,
+            freshness=freshness,
+            trend_result=trend_result,
+            lifecycle=lifecycle,
+            acceptance=acceptance,
+        )
+
+        evidence = list(trade_plan.reasons)
+
+        if trade_plan.narrative:
+            evidence.append(trade_plan.narrative)
+
+        warnings = list(trade_plan.warnings)
+
+        if not trade_plan.actionable and not warnings:
+            warnings.append(
+                "The proposed TradePlan is not actionable."
+            )
+
+        return AnalystResult(
+            analyst=self.analyst_name,
+            opinion=trade_plan.decision,
+            confidence=float(trade_plan.confidence),
+            evidence=evidence,
+            warnings=warnings,
+            payload=trade_plan,
+        )
 
     def analyze(
         self,
@@ -47,6 +95,13 @@ class RiskAnalyst:
         lifecycle: SetupLifecycle,
         acceptance: AcceptanceResult,
     ) -> TradePlan:
+        """
+        Build and validate a Pullback-to-Core TradePlan.
+
+        This original interface remains available for compatibility
+        with existing tests, services, and the console pipeline.
+        """
+
         reasons: list[str] = []
         warnings: list[str] = []
 
@@ -59,13 +114,15 @@ class RiskAnalyst:
                 decision=DECISION_PASS,
                 warnings=warnings,
                 narrative=(
-                    "No trade plan was authorized because the market data "
-                    "was stale or misaligned."
+                    "No trade plan was authorized because the market "
+                    "data was stale or misaligned."
                 ),
             )
 
         if not acceptance.accepted:
-            warnings.append("Candle-close acceptance has not been confirmed.")
+            warnings.append(
+                "Candle-close acceptance has not been confirmed."
+            )
 
             return self._empty_plan(
                 symbol=context.snapshot.symbol,
@@ -73,70 +130,99 @@ class RiskAnalyst:
                 decision=DECISION_WAIT,
                 warnings=warnings,
                 narrative=(
-                    "The trend and setup may still be developing, but the "
-                    "required candle-close acceptance trigger is missing."
+                    "The trend and setup may still be developing, but "
+                    "the required candle-close acceptance trigger is "
+                    "missing."
                 ),
             )
 
         if lifecycle.state != LIFECYCLE_READY:
-            warnings.append("Setup lifecycle has not advanced to READY.")
+            warnings.append(
+                "Setup lifecycle has not advanced to READY."
+            )
 
             return self._empty_plan(
                 symbol=context.snapshot.symbol,
                 direction=lifecycle.direction,
                 decision=DECISION_WAIT,
                 warnings=warnings,
-                narrative="The setup is not yet ready for risk evaluation.",
+                narrative=(
+                    "The setup is not yet ready for risk evaluation."
+                ),
             )
 
         entry = acceptance.trigger_price
 
         if entry is None:
-            warnings.append("Acceptance trigger price is unavailable.")
+            warnings.append(
+                "Acceptance trigger price is unavailable."
+            )
 
             return self._empty_plan(
                 symbol=context.snapshot.symbol,
                 direction=lifecycle.direction,
                 decision=DECISION_PASS,
                 warnings=warnings,
-                narrative="A valid entry price could not be determined.",
+                narrative=(
+                    "A valid entry price could not be determined."
+                ),
             )
 
         if lifecycle.direction == "long":
             stop = acceptance.pullback_low
 
             if stop is None or stop >= entry:
-                warnings.append("Long stop must be below the entry price.")
+                warnings.append(
+                    "Long stop must be below the entry price."
+                )
 
                 return self._empty_plan(
                     symbol=context.snapshot.symbol,
                     direction=lifecycle.direction,
                     decision=DECISION_PASS,
                     warnings=warnings,
-                    narrative="The proposed long stop is structurally invalid.",
+                    narrative=(
+                        "The proposed long stop is structurally invalid."
+                    ),
                 )
 
             risk_per_share = entry - stop
-            target1 = entry + risk_per_share * self.target1_r
-            target2 = entry + risk_per_share * self.target2_r
+            target1 = (
+                entry
+                + risk_per_share * self.target1_r
+            )
+            target2 = (
+                entry
+                + risk_per_share * self.target2_r
+            )
 
         elif lifecycle.direction == "short":
             stop = acceptance.pullback_high
 
             if stop is None or stop <= entry:
-                warnings.append("Short stop must be above the entry price.")
+                warnings.append(
+                    "Short stop must be above the entry price."
+                )
 
                 return self._empty_plan(
                     symbol=context.snapshot.symbol,
                     direction=lifecycle.direction,
                     decision=DECISION_PASS,
                     warnings=warnings,
-                    narrative="The proposed short stop is structurally invalid.",
+                    narrative=(
+                        "The proposed short stop is structurally invalid."
+                    ),
                 )
 
             risk_per_share = stop - entry
-            target1 = entry - risk_per_share * self.target1_r
-            target2 = entry - risk_per_share * self.target2_r
+            target1 = (
+                entry
+                - risk_per_share * self.target1_r
+            )
+            target2 = (
+                entry
+                - risk_per_share * self.target2_r
+            )
 
         else:
             warnings.append("Trade direction is neutral.")
@@ -146,11 +232,15 @@ class RiskAnalyst:
                 direction=lifecycle.direction,
                 decision=DECISION_PASS,
                 warnings=warnings,
-                narrative="No directional trade plan can be created.",
+                narrative=(
+                    "No directional trade plan can be created."
+                ),
             )
 
         if risk_per_share <= 0:
-            warnings.append("Risk per share must be greater than zero.")
+            warnings.append(
+                "Risk per share must be greater than zero."
+            )
 
             return self._empty_plan(
                 symbol=context.snapshot.symbol,
@@ -162,17 +252,36 @@ class RiskAnalyst:
 
         reward1 = risk_per_share * self.target1_r
         reward2 = risk_per_share * self.target2_r
+
         rr1 = reward1 / risk_per_share
         rr2 = reward2 / risk_per_share
 
         reasons.extend(
             [
-                f"Data freshness status is {freshness.status}.",
-                f"Trend opinion is {trend_result.opinion}.",
-                f"Acceptance level is {acceptance.level}.",
-                "Entry uses the completed acceptance candle close.",
-                "Stop uses the pullback candle invalidation level.",
-                f"Projected Target 2 provides {rr2:.2f}R.",
+                (
+                    f"Data freshness status is "
+                    f"{freshness.status}."
+                ),
+                (
+                    f"Trend opinion is "
+                    f"{trend_result.opinion}."
+                ),
+                (
+                    f"Acceptance level is "
+                    f"{acceptance.level}."
+                ),
+                (
+                    "Entry uses the completed acceptance "
+                    "candle close."
+                ),
+                (
+                    "Stop uses the pullback candle "
+                    "invalidation level."
+                ),
+                (
+                    f"Projected Target 2 provides "
+                    f"{rr2:.2f}R."
+                ),
             ]
         )
 
@@ -185,7 +294,12 @@ class RiskAnalyst:
         confidence = (
             trend_result.confidence * 0.40
             + acceptance.confidence * 0.40
-            + min(rr2 / self.minimum_rr, 1.0) * 100.0 * 0.20
+            + min(
+                rr2 / self.minimum_rr,
+                1.0,
+            )
+            * 100.0
+            * 0.20
         )
 
         valid = rr2 >= self.minimum_rr
@@ -197,7 +311,11 @@ class RiskAnalyst:
                 f"{self.minimum_rr:.2f} minimum."
             )
 
-        decision = DECISION_READY if actionable else DECISION_PASS
+        decision = (
+            DECISION_READY
+            if actionable
+            else DECISION_PASS
+        )
 
         narrative = self._build_narrative(
             direction=lifecycle.direction,
@@ -242,7 +360,10 @@ class RiskAnalyst:
     ) -> int:
         trend_component = trend_confidence * 0.40
         acceptance_component = acceptance_score * 0.40
-        risk_component = min(rr2 / self.minimum_rr, 1.0) * 20.0
+        risk_component = min(
+            rr2 / self.minimum_rr,
+            1.0,
+        ) * 20.0
 
         return round(
             min(
@@ -265,12 +386,17 @@ class RiskAnalyst:
         rr2: float,
         actionable: bool,
     ) -> str:
-        status = "actionable" if actionable else "not actionable"
+        status = (
+            "actionable"
+            if actionable
+            else "not actionable"
+        )
 
         return (
             f"A {direction} Pullback-to-Core setup is {status}. "
             f"The trend analyst reported {trend_opinion}, and "
-            f"candle-close acceptance was rated {acceptance_level}. "
+            f"candle-close acceptance was rated "
+            f"{acceptance_level}. "
             f"The projected entry is {entry:.2f}, invalidation is "
             f"{stop:.2f}, and the 2R target is {target2:.2f}. "
             f"Projected reward-to-risk is {rr2:.2f}."

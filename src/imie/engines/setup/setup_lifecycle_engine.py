@@ -18,12 +18,69 @@ from imie.utils.constants import (
 
 
 class SetupLifecycleEngine:
+    analyst_name = "SetupLifecycleAnalyst"
+
+    def analyze(
+        self,
+        context: TradingContext,
+        trend_result: AnalystResult,
+        acceptance_confirmed: bool = False,
+    ) -> AnalystResult:
+        """
+        Return the standardized analyst result.
+
+        The detailed SetupLifecycle object is retained in payload.
+        """
+
+        lifecycle = self.evaluate_pullback_to_core(
+            context=context,
+            trend_result=trend_result,
+            acceptance_confirmed=acceptance_confirmed,
+        )
+
+        evidence = [
+            f"Setup lifecycle is {lifecycle.state}.",
+            lifecycle.reason,
+        ]
+
+        warnings: list[str] = []
+
+        if lifecycle.state == LIFECYCLE_DISCOVERY:
+            warnings.append("The setup has not developed into a tradable state.")
+
+        elif lifecycle.state == LIFECYCLE_EXTENDED:
+            warnings.append("Price is extended from Core. Do not chase the move.")
+
+        elif lifecycle.state == LIFECYCLE_TRENDING:
+            warnings.append("Price is not yet close enough to Core.")
+
+        elif lifecycle.state == LIFECYCLE_RETURNING_TO_CORE:
+            warnings.append("Acceptance cannot be evaluated until price reaches Core.")
+
+        elif lifecycle.state == LIFECYCLE_AT_CORE:
+            warnings.append("Completed-candle acceptance is still required.")
+
+        return AnalystResult(
+            analyst=self.analyst_name,
+            opinion=lifecycle.state,
+            confidence=float(lifecycle.confidence),
+            evidence=evidence,
+            warnings=warnings,
+            payload=lifecycle,
+        )
+
     def evaluate_pullback_to_core(
         self,
         context: TradingContext,
         trend_result: AnalystResult,
         acceptance_confirmed: bool = False,
     ) -> SetupLifecycle:
+        """
+        Build the detailed Pullback-to-Core lifecycle result.
+
+        This method remains available so existing code continues to work.
+        """
+
         symbol = context.snapshot.symbol
         atr_distance = context.measurements.atr_distance_to_core
 
@@ -38,7 +95,11 @@ class SetupLifecycleEngine:
                 reason="No tradable trend confirmed yet.",
             )
 
-        direction = "long" if trend_result.opinion == TREND_BULLISH else "short"
+        direction = (
+            "long"
+            if trend_result.opinion == TREND_BULLISH
+            else "short"
+        )
 
         if atr_distance is None:
             return SetupLifecycle(
@@ -51,7 +112,10 @@ class SetupLifecycleEngine:
                 reason="ATR distance to Core is unavailable.",
             )
 
-        if acceptance_confirmed and context.observations.within_core_zone:
+        if (
+            acceptance_confirmed
+            and context.observations.within_core_zone
+        ):
             return SetupLifecycle(
                 symbol=symbol,
                 state=LIFECYCLE_READY,
@@ -70,7 +134,10 @@ class SetupLifecycleEngine:
                 confidence=min(95, trend_result.confidence),
                 atr_distance=atr_distance,
                 action=ACTION_PREPARE,
-                reason="Price is inside the Core zone. Watch for prior candle reclaim.",
+                reason=(
+                    "Price is inside the Core zone. "
+                    "Watch for prior candle reclaim."
+                ),
             )
 
         if atr_distance <= 2:
