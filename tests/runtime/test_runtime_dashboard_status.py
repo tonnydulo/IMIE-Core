@@ -91,6 +91,14 @@ def make_status(
     market_phase_conflict_count: int | None = None,
     market_phase_supporting_domains: tuple[str, ...] = (),
     market_phase_opposing_domains: tuple[str, ...] = (),
+
+    setup_lifecycle_state: str | None = None,
+    setup_lifecycle_direction: str | None = None,
+    setup_lifecycle_confidence: float | None = None,
+    setup_lifecycle_atr_distance: float | None = None,
+    setup_lifecycle_action: str | None = None,
+    setup_lifecycle_reason: str | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -217,6 +225,25 @@ def make_status(
         ),
         institutional_bias_opposing_domains=(
             institutional_bias_opposing_domains
+        ),
+
+        setup_lifecycle_state=(
+            setup_lifecycle_state
+        ),
+        setup_lifecycle_direction=(
+            setup_lifecycle_direction
+        ),
+        setup_lifecycle_confidence=(
+            setup_lifecycle_confidence
+        ),
+        setup_lifecycle_atr_distance=(
+            setup_lifecycle_atr_distance
+        ),
+        setup_lifecycle_action=(
+            setup_lifecycle_action
+        ),
+        setup_lifecycle_reason=(
+            setup_lifecycle_reason
         ),
     )
 
@@ -824,4 +851,131 @@ def test_confluence_support_flags_must_be_bool_or_none() -> None:
                 1  # type: ignore[arg-type]
             )
         )
-        
+
+def test_status_accepts_setup_lifecycle_detail() -> None:
+    status = make_status(
+        setup_lifecycle_state="READY",
+        setup_lifecycle_direction="long",
+        setup_lifecycle_confidence=90.0,
+        setup_lifecycle_atr_distance=0.10,
+        setup_lifecycle_action="EVALUATE_ENTRY",
+        setup_lifecycle_reason=(
+            "Setup lifecycle is ready."
+        ),
+    )
+
+    assert status.setup_lifecycle_state == "READY"
+    assert status.setup_lifecycle_direction == "long"
+    assert status.setup_lifecycle_confidence == 90.0
+    assert status.setup_lifecycle_atr_distance == 0.10
+    assert (
+        status.setup_lifecycle_action
+        == "EVALUATE_ENTRY"
+    )
+    assert (
+        status.setup_lifecycle_reason
+        == "Setup lifecycle is ready."
+    )
+
+def test_status_serializes_setup_lifecycle_detail() -> None:
+    status = make_status(
+        setup_lifecycle_state="AT_CORE",
+        setup_lifecycle_direction="short",
+        setup_lifecycle_confidence=82.0,
+        setup_lifecycle_atr_distance=0.25,
+        setup_lifecycle_action="PREPARE",
+        setup_lifecycle_reason=(
+            "Price has returned to core."
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["setup_lifecycle_state"] == "AT_CORE"
+    assert (
+        payload["setup_lifecycle_direction"]
+        == "short"
+    )
+    assert (
+        payload["setup_lifecycle_confidence"]
+        == 82.0
+    )
+    assert (
+        payload["setup_lifecycle_atr_distance"]
+        == 0.25
+    )
+    assert (
+        payload["setup_lifecycle_action"]
+        == "PREPARE"
+    )
+    assert (
+        payload["setup_lifecycle_reason"]
+        == "Price has returned to core."
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "90",
+        object(),
+    ],
+)
+
+def test_status_rejects_invalid_setup_lifecycle_confidence(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="setup_lifecycle_confidence",
+    ):
+        make_status(
+            setup_lifecycle_confidence=value,
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.1,
+        100.1,
+    ],
+)
+def test_status_rejects_out_of_range_setup_lifecycle_confidence(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="setup_lifecycle_confidence",
+    ):
+        make_status(
+            setup_lifecycle_confidence=value,
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "0.10",
+        object(),
+    ],
+)
+def test_status_rejects_invalid_setup_lifecycle_atr_distance(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="setup_lifecycle_atr_distance",
+    ):
+        make_status(
+            setup_lifecycle_atr_distance=value,
+        )
+
+def test_status_rejects_negative_setup_lifecycle_atr_distance() -> None:
+    with pytest.raises(
+        ValueError,
+        match="setup_lifecycle_atr_distance",
+    ):
+        make_status(
+            setup_lifecycle_atr_distance=-0.01,
+        )
+

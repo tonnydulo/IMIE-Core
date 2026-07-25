@@ -86,6 +86,13 @@ class RuntimeDashboardStatus:
     market_phase_supporting_domains: tuple[str, ...] = ()
     market_phase_opposing_domains: tuple[str, ...] = ()
 
+    setup_lifecycle_state: str | None = None
+    setup_lifecycle_direction: str | None = None
+    setup_lifecycle_confidence: float | None = None
+    setup_lifecycle_atr_distance: float | None = None
+    setup_lifecycle_action: str | None = None
+    setup_lifecycle_reason: str | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -445,6 +452,10 @@ class RuntimeDashboardStatus:
             "institutional_bias",
             "market_phase",
             "confluence_direction",
+            "setup_lifecycle_state",
+            "setup_lifecycle_direction",
+            "setup_lifecycle_action",
+            "setup_lifecycle_reason",
             "latest_error_type",
         ):
             value = getattr(
@@ -512,6 +523,65 @@ class RuntimeDashboardStatus:
                     field_name=field_name,
                     value=value,
                 )
+
+        if (
+            self.setup_lifecycle_confidence is not None
+            and (
+                isinstance(
+                    self.setup_lifecycle_confidence,
+                    bool,
+                )
+                or not isinstance(
+                    self.setup_lifecycle_confidence,
+                    int | float,
+                )
+            )
+        ):
+            raise TypeError(
+                "setup_lifecycle_confidence must be a "
+                "number or None."
+            )
+
+        if (
+            self.setup_lifecycle_confidence is not None
+            and not 0.0
+            <= float(
+                self.setup_lifecycle_confidence
+            )
+            <= 100.0
+        ):
+            raise ValueError(
+                "setup_lifecycle_confidence must be "
+                "between 0 and 100."
+            )
+
+        if (
+            self.setup_lifecycle_atr_distance is not None
+            and (
+                isinstance(
+                    self.setup_lifecycle_atr_distance,
+                    bool,
+                )
+                or not isinstance(
+                    self.setup_lifecycle_atr_distance,
+                    int | float,
+                )
+            )
+        ):
+            raise TypeError(
+                "setup_lifecycle_atr_distance must be "
+                "a number or None."
+            )
+
+        if (
+            self.setup_lifecycle_atr_distance is not None
+            and self.setup_lifecycle_atr_distance < 0
+        ):
+            raise ValueError(
+                "setup_lifecycle_atr_distance cannot "
+                "be negative."
+            )
+        
 
         if (
             self.latest_cycle_started_at
@@ -731,6 +801,24 @@ class RuntimeDashboardStatus:
                 ),
                 "market_phase_opposing_domains": list(
                     self.market_phase_opposing_domains
+                ),
+                "setup_lifecycle_state": (
+                    self.setup_lifecycle_state
+                ),
+                "setup_lifecycle_direction": (
+                    self.setup_lifecycle_direction
+                ),
+                "setup_lifecycle_confidence": (
+                    self.setup_lifecycle_confidence
+                ),
+                "setup_lifecycle_atr_distance": (
+                    self.setup_lifecycle_atr_distance
+                ),
+                "setup_lifecycle_action": (
+                    self.setup_lifecycle_action
+                ),
+                "setup_lifecycle_reason": (
+                    self.setup_lifecycle_reason
                 ),
                 "latest_error_type": (
                     self.latest_error_type

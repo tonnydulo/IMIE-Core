@@ -294,15 +294,9 @@ class DashboardStatusFilePublisher:
             else None
         )
 
-        decision_result = (
-            cycle.decision
-            if cycle is not None
-            else None
-        )
-
-        trade_plan = (
-            decision_result.trade_plan
-            if decision_result is not None
+        setup_lifecycle = (
+            institutional_context.setup_lifecycle
+            if institutional_context is not None
             else None
         )
 
@@ -600,6 +594,37 @@ class DashboardStatusFilePublisher:
                 )
                 if market_phase is not None
                 else ()
+            ),
+
+            setup_lifecycle_state=(
+                setup_lifecycle.state
+                if setup_lifecycle is not None
+                else None
+            ),
+            setup_lifecycle_direction=(
+                setup_lifecycle.direction
+                if setup_lifecycle is not None
+                else None
+            ),
+            setup_lifecycle_confidence=(
+                setup_lifecycle.confidence
+                if setup_lifecycle is not None
+                else None
+            ),
+            setup_lifecycle_atr_distance=(
+                setup_lifecycle.atr_distance
+                if setup_lifecycle is not None
+                else None
+            ),
+            setup_lifecycle_action=(
+                setup_lifecycle.action
+                if setup_lifecycle is not None
+                else None
+            ),
+            setup_lifecycle_reason=(
+                setup_lifecycle.reason
+                if setup_lifecycle is not None
+                else None
             ),
 
             latest_error_type=(

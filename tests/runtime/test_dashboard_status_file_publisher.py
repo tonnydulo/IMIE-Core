@@ -950,6 +950,32 @@ def test_publish_result_populates_trade_plan_details(
             "VALUE",
         ]
     )
+    assert payload["setup_lifecycle_state"] == "READY"
+
+    assert (
+        payload["setup_lifecycle_direction"]
+        == "long"
+    )
+
+    assert (
+        payload["setup_lifecycle_confidence"]
+        == 90.0
+    )
+
+    assert (
+        payload["setup_lifecycle_atr_distance"]
+        == 0.10
+    )
+
+    assert (
+        payload["setup_lifecycle_action"]
+        == "EVALUATE_ENTRY"
+    )
+
+    assert (
+        payload["setup_lifecycle_reason"]
+        == "Setup lifecycle is ready."
+    )
     assert (
         payload["confluence_confidence_adjustment"]
         == 8.0
@@ -1153,3 +1179,30 @@ def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
     assert payload["confluence_neutral_count"] is None
     assert payload["confluence_unknown_count"] is None
     assert payload["confluence_domain_count"] is None
+
+    assert payload["setup_lifecycle_state"] is None
+
+    assert (
+        payload["setup_lifecycle_direction"]
+        is None
+    )
+
+    assert (
+        payload["setup_lifecycle_confidence"]
+        is None
+    )
+
+    assert (
+        payload["setup_lifecycle_atr_distance"]
+        is None
+    )
+
+    assert (
+        payload["setup_lifecycle_action"]
+        is None
+    )
+
+    assert (
+        payload["setup_lifecycle_reason"]
+        is None
+    )

@@ -805,4 +805,86 @@ def test_dashboard_confluence_detail_uses_correct_renderers() -> None:
             f"                    payload.{payload_field}"
             in html
         )
-        
+
+def test_dashboard_contains_setup_lifecycle_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "setupLifecycleState",
+        "setupLifecycleDirection",
+        "setupLifecycleConfidence",
+        "setupLifecycleAtrDistance",
+        "setupLifecycleAction",
+        "setupLifecycleReason",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_setup_lifecycle_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.setup_lifecycle_state",
+        "payload.setup_lifecycle_direction",
+        "payload.setup_lifecycle_confidence",
+        "payload.setup_lifecycle_atr_distance",
+        "payload.setup_lifecycle_action",
+        "payload.setup_lifecycle_reason",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_setup_lifecycle_atr_formatter() -> None:
+    html = build_dashboard_html()
+
+    assert "function formatAtrDistance(" in html
+    assert "Number(value).toFixed(2)" in html
+    assert '" ATR"' in html
+
+
+def test_dashboard_setup_lifecycle_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleState",\n'
+        "                    payload.setup_lifecycle_state"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleDirection",\n'
+        "                    payload.setup_lifecycle_direction"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "setupLifecycleConfidence",\n'
+        "                    payload.setup_lifecycle_confidence"
+        in html
+    )
+
+    assert (
+        'formatAtrDistance(\n'
+        "                        "
+        "payload.setup_lifecycle_atr_distance"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleAction",\n'
+        "                    payload.setup_lifecycle_action"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleReason",\n'
+        "                    payload.setup_lifecycle_reason"
+        in html
+    )

@@ -1093,6 +1093,84 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
+                    Lifecycle State
+                </div>
+
+                <div
+                    id="setupLifecycleState"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Lifecycle Direction
+                </div>
+
+                <div
+                    id="setupLifecycleDirection"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Lifecycle Confidence
+                </div>
+
+                <div
+                    id="setupLifecycleConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    ATR Distance
+                </div>
+
+                <div
+                    id="setupLifecycleAtrDistance"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Lifecycle Action
+                </div>
+
+                <div
+                    id="setupLifecycleAction"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Lifecycle Reason
+                </div>
+
+                <div
+                    id="setupLifecycleReason"
+                    class="value recommendation"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
                     Current State
                 </div>
 
@@ -1608,6 +1686,25 @@ def build_dashboard_html(
             );
         }}
 
+        function formatAtrDistance(
+            value
+        ) {{
+            if (
+                value === null
+                || value === undefined
+                || Number.isNaN(
+                    Number(value)
+                )
+            ) {{
+                return "—";
+            }}
+
+            return (
+                Number(value).toFixed(2)
+                + " ATR"
+            );
+        }}
+
         function updateTradePlanValid(
             valid
         ) {{
@@ -1994,63 +2091,7 @@ def build_dashboard_html(
                 "metric-low"
             );
         }}
-
-        function updateInstitutionalCount(
-            id,
-            value,
-            conflict = false
-        ) {{
-            const element = document.getElementById(
-                id
-            );
-
-            element.className = "value";
-
-            if (
-                value === null
-                || value === undefined
-                || Number.isNaN(
-                    Number(value)
-                )
-            ) {{
-                element.textContent = "—";
-
-                return;
-            }}
-
-            const normalized = Number(value);
-
-            element.textContent = (
-                normalized.toFixed(0)
-            );
-
-            if (conflict) {{
-                element.classList.add(
-                    normalized === 0
-                        ? "conflict-clear"
-                        : "conflict-present"
-                );
-
-                return;
-            }}
-
-            if (normalized >= 5) {{
-                element.classList.add(
-                    "metric-good"
-                );
-            }} else if (
-                normalized >= 3
-            ) {{
-                element.classList.add(
-                    "metric-medium"
-                );
-            }} else {{
-                element.classList.add(
-                    "metric-low"
-                );
-            }}
-        }}
-
+        
         async function loadHealth() {{
             const message = document.getElementById(
                 "statusMessage"
@@ -2360,6 +2401,50 @@ def build_dashboard_html(
                     payload.market_phase_opposing_domains,
                     "No opposing phase domains."
                 );
+
+                 //====================================================
+                // SETUP LIFECYCLE DETAIL
+                //====================================================
+
+                setText(
+                    "setupLifecycleState",
+                    payload.setup_lifecycle_state
+                        ?? "—"
+                );
+
+                setText(
+                    "setupLifecycleDirection",
+                    payload.setup_lifecycle_direction
+                        ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "setupLifecycleConfidence",
+                    payload.setup_lifecycle_confidence
+                );
+
+                setText(
+                    "setupLifecycleAtrDistance",
+                    formatAtrDistance(
+                        payload.setup_lifecycle_atr_distance
+                    )
+                );
+
+                setText(
+                    "setupLifecycleAction",
+                    payload.setup_lifecycle_action
+                        ?? "—"
+                );
+
+                setText(
+                    "setupLifecycleReason",
+                    payload.setup_lifecycle_reason
+                        ?? "—"
+                );
+
+                //====================================================
+                // RUNTIME DETAIL
+                //====================================================
 
                 setText(
                     "state",
