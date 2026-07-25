@@ -7,6 +7,9 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Mapping
 
 if TYPE_CHECKING:
+    from imie.models.institutional_decision_context import (
+        InstitutionalDecisionContext,
+    )
     from imie.models.trade_plan import TradePlan
 
 
@@ -46,6 +49,8 @@ class DecisionResult:
     warnings: tuple[str, ...] = field(default_factory=tuple)
 
     trade_plan: TradePlan | None = None
+
+    institutional_context: InstitutionalDecisionContext | None = None
 
     analyst_summary: Mapping[str, Mapping[str, Any]] = field(
         default_factory=dict
@@ -201,3 +206,5 @@ class DecisionResult:
             )
 
         return MappingProxyType(frozen_summary)
+    
+    

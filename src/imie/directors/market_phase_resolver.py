@@ -27,10 +27,16 @@ class MarketPhaseResolver:
 
         payload = result.payload
 
-        if not isinstance(payload, dict):
-            return MarketPhaseType.UNKNOWN
-
-        phase = payload.get("market_phase")
+        if isinstance(payload, dict):
+            phase = payload.get(
+                "market_phase"
+            )
+        else:
+            phase = getattr(
+                payload,
+                "market_phase",
+                None,
+            )
 
         if isinstance(
             phase,

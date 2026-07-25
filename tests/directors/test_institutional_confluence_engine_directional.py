@@ -33,6 +33,23 @@ def make_result(
     )
 
 
+def extended_result(
+    *,
+    analyst: str,
+    opinion: str,
+    confidence: float = 90.0,
+    enabled: bool = True,
+) -> AnalystResult:
+    return AnalystResult(
+        analyst=analyst,
+        opinion=opinion,
+        confidence=confidence,
+        evidence=[],
+        warnings=[],
+        enabled=enabled,
+    )
+
+
 def make_structure(
     opinion: str,
     *,
@@ -783,3 +800,308 @@ def test_engine_is_frozen() -> None:
         AttributeError
     ):
         engine.structure_weight = 50.0  # type: ignore[misc]
+
+def test_expanded_confluence_resolves_bullish() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=extended_result(
+            analyst="StructureAnalyst",
+            opinion="BULLISH",
+        ),
+        liquidity=extended_result(
+            analyst="LiquidityAnalyst",
+            opinion="BULLISH",
+        ),
+        order_block=extended_result(
+            analyst="OrderBlockAnalyst",
+            opinion="BULLISH",
+        ),
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BULLISH",
+        ),
+        pressure=extended_result(
+            analyst="PressureAnalyst",
+            opinion="BULLISH",
+        ),
+        participation=extended_result(
+            analyst="ParticipationAnalyst",
+            opinion="BULLISH",
+        ),
+        value=extended_result(
+            analyst="ValueAnalyst",
+            opinion="BEARISH",
+        ),
+    )
+
+    assert result.domain_count == 7
+    assert (
+        result.dominant_direction
+        is InstitutionalDirection.BULLISH
+    )
+
+    assert result.bullish_count == 6
+    assert result.bearish_count == 1
+    assert result.neutral_count == 0
+    assert result.unknown_count == 0
+
+    assert result.agreement_count == 6
+    assert result.conflict_count == 1
+    assert result.score == 92.0
+    assert result.confidence_adjustment == 7.0
+
+    assert result.structure_support
+    assert result.liquidity_support
+    assert result.order_block_support
+    assert result.auction_support
+    assert result.pressure_support
+    assert result.participation_support
+    assert not result.value_support
+
+def test_expanded_confluence_resolves_bearish() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=extended_result(
+            analyst="StructureAnalyst",
+            opinion="BEARISH",
+        ),
+        liquidity=extended_result(
+            analyst="LiquidityAnalyst",
+            opinion="BEARISH",
+        ),
+        order_block=extended_result(
+            analyst="OrderBlockAnalyst",
+            opinion="BEARISH",
+        ),
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BEARISH",
+        ),
+        pressure=extended_result(
+            analyst="PressureAnalyst",
+            opinion="BEARISH",
+        ),
+        participation=extended_result(
+            analyst="ParticipationAnalyst",
+            opinion="BEARISH",
+        ),
+        value=extended_result(
+            analyst="ValueAnalyst",
+            opinion="BULLISH",
+        ),
+    )
+
+    assert result.domain_count == 7
+    assert (
+        result.dominant_direction
+        is InstitutionalDirection.BEARISH
+    )
+
+    assert result.bullish_count == 1
+    assert result.bearish_count == 6
+    assert result.agreement_count == 6
+    assert result.conflict_count == 1
+    assert result.score == 92.0
+    assert result.confidence_adjustment == 7.0
+
+def test_expanded_confluence_can_resolve_neutral() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    neutral = extended_result(
+        analyst="NeutralAnalyst",
+        opinion="NEUTRAL",
+    )
+
+    result = engine.evaluate(
+        structure=neutral,
+        liquidity=neutral,
+        order_block=neutral,
+        auction=neutral,
+        pressure=neutral,
+        participation=neutral,
+        value=neutral,
+    )
+
+    assert result.domain_count == 7
+    assert (
+        result.dominant_direction
+        is InstitutionalDirection.NEUTRAL
+    )
+
+    assert result.bullish_count == 0
+    assert result.bearish_count == 0
+    assert result.neutral_count == 7
+    assert result.unknown_count == 0
+    assert result.agreement_count == 0
+    assert result.conflict_count == 0
+    assert result.score == 0.0
+
+def test_expanded_confluence_tie_resolves_unknown() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=extended_result(
+            analyst="StructureAnalyst",
+            opinion="BULLISH",
+        ),
+        liquidity=extended_result(
+            analyst="LiquidityAnalyst",
+            opinion="BULLISH",
+        ),
+        order_block=extended_result(
+            analyst="OrderBlockAnalyst",
+            opinion="BULLISH",
+        ),
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BEARISH",
+        ),
+        pressure=extended_result(
+            analyst="PressureAnalyst",
+            opinion="BEARISH",
+        ),
+        participation=extended_result(
+            analyst="ParticipationAnalyst",
+            opinion="BEARISH",
+        ),
+        value=extended_result(
+            analyst="ValueAnalyst",
+            opinion="NEUTRAL",
+        ),
+    )
+
+    assert result.domain_count == 7
+    assert (
+        result.dominant_direction
+        is InstitutionalDirection.UNKNOWN
+    )
+
+    assert result.bullish_count == 3
+    assert result.bearish_count == 3
+    assert result.neutral_count == 1
+    assert result.unknown_count == 0
+
+    assert result.agreement_count == 0
+    assert result.conflict_count == 6
+    assert result.score == 0.0
+    assert result.confidence_adjustment == 0.0
+
+def test_disabled_extended_result_activates_seven_domain_mode() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=None,
+        liquidity=None,
+        order_block=None,
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BULLISH",
+            enabled=False,
+        ),
+    )
+
+    assert result.domain_count == 7
+    assert (
+        result.dominant_direction
+        is InstitutionalDirection.UNKNOWN
+    )
+
+    assert result.unknown_count == 7
+    assert result.directional_count == 7
+    assert result.agreement_count == 0
+    assert result.conflict_count == 0
+    assert result.score == 0.0
+
+def test_expanded_evidence_includes_all_extended_domains() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=extended_result(
+            analyst="StructureAnalyst",
+            opinion="BULLISH",
+        ),
+        liquidity=extended_result(
+            analyst="LiquidityAnalyst",
+            opinion="BULLISH",
+        ),
+        order_block=extended_result(
+            analyst="OrderBlockAnalyst",
+            opinion="BULLISH",
+        ),
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BULLISH",
+        ),
+        pressure=extended_result(
+            analyst="PressureAnalyst",
+            opinion="BULLISH",
+        ),
+        participation=extended_result(
+            analyst="ParticipationAnalyst",
+            opinion="NEUTRAL",
+        ),
+        value=extended_result(
+            analyst="ValueAnalyst",
+            opinion="BEARISH",
+        ),
+    )
+
+    assert "Auction resolves bullish." in result.evidence
+    assert "Pressure resolves bullish." in result.evidence
+    assert "Participation is neutral." in result.evidence
+    assert "Value resolves bearish." in result.evidence
+
+    assert (
+        "Auction control supports institutional continuation."
+        in result.evidence
+    )
+
+    assert (
+        "Directional pressure supports institutional continuation."
+        in result.evidence
+    )
+
+    assert (
+        "Value opposes bullish continuation."
+        in result.evidence
+    )
+
+
+def test_expanded_warnings_report_unresolved_and_neutral_domains() -> None:
+    engine = InstitutionalConfluenceEngine()
+
+    result = engine.evaluate(
+        structure=None,
+        liquidity=None,
+        order_block=None,
+        auction=extended_result(
+            analyst="AuctionAnalyst",
+            opinion="BULLISH",
+        ),
+        pressure=extended_result(
+            analyst="PressureAnalyst",
+            opinion="NEUTRAL",
+        ),
+        participation=None,
+        value=extended_result(
+            analyst="ValueAnalyst",
+            opinion="BEARISH",
+        ),
+    )
+
+    assert (
+        "Institutional disagreement detected."
+        in result.warnings
+    )
+
+    assert (
+        "4 institutional domains remain unresolved."
+        in result.warnings
+    )
+
+    assert (
+        "1 institutional domain is neutral."
+        in result.warnings
+    )

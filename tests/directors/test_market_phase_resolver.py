@@ -9,6 +9,7 @@ from imie.models import (
     AnalystResult,
     MarketPhaseType,
 )
+from dataclasses import dataclass
 
 
 @pytest.fixture
@@ -216,3 +217,29 @@ def test_all_valid_phase_strings_resolve(
     )
 
     assert result is expected
+
+@dataclass(frozen=True, slots=True)
+class TypedPhasePayload:
+    market_phase: MarketPhaseType
+
+
+def test_resolves_market_phase_from_typed_payload() -> None:
+    resolver = MarketPhaseResolver()
+
+    result = AnalystResult(
+        analyst="AuctionAnalyst",
+        analyst_id="AUCTION",
+        opinion="Buyers control the auction.",
+        confidence=85.0,
+        evidence=[],
+        warnings=[],
+        payload=TypedPhasePayload(
+            market_phase=MarketPhaseType.MARKUP,
+        ),
+        enabled=True,
+    )
+
+    assert (
+        resolver.resolve(result)
+        is MarketPhaseType.MARKUP
+    )

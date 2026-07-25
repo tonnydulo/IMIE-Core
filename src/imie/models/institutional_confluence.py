@@ -50,6 +50,13 @@ class InstitutionalConfluence:
     agreement_count: int
     confidence_adjustment: float
 
+    auction_support: bool = False
+    pressure_support: bool = False
+    participation_support: bool = False
+    value_support: bool = False
+
+    domain_count: int = 3
+
     dominant_direction: InstitutionalDirection = (
         InstitutionalDirection.UNKNOWN
     )
@@ -76,16 +83,20 @@ class InstitutionalConfluence:
             self.score
         )
 
+        domain_count = self._normalize_domain_count(
+            self.domain_count
+        )
+
         agreement_count = self._normalize_count(
             value=self.agreement_count,
             name="agreement_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         conflict_count = self._normalize_count(
             value=self.conflict_count,
             name="conflict_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         confidence_adjustment = (
@@ -103,25 +114,25 @@ class InstitutionalConfluence:
         bullish_count = self._normalize_count(
             value=self.bullish_count,
             name="bullish_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         bearish_count = self._normalize_count(
             value=self.bearish_count,
             name="bearish_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         neutral_count = self._normalize_count(
             value=self.neutral_count,
             name="neutral_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         unknown_count = self._normalize_count(
             value=self.unknown_count,
             name="unknown_count",
-            maximum=3,
+            maximum=domain_count,
         )
 
         object.__setattr__(
@@ -196,6 +207,12 @@ class InstitutionalConfluence:
             ),
         )
 
+        object.__setattr__(
+            self,
+            "domain_count",
+            domain_count,
+        )
+
         self._validate_legacy_support_contract()
         self._validate_adjustment_contract()
 
@@ -215,6 +232,22 @@ class InstitutionalConfluence:
             (
                 "order_block_support",
                 self.order_block_support,
+            ),
+            (
+                "auction_support",
+                self.auction_support,
+            ),
+            (
+                "pressure_support",
+                self.pressure_support,
+            ),
+            (
+                "participation_support",
+                self.participation_support,
+            ),
+            (
+                "value_support",
+                self.value_support,
             ),
         )
 
@@ -241,6 +274,45 @@ class InstitutionalConfluence:
             )
 
         return score
+    
+    @staticmethod
+    def _normalize_domain_count(
+        value: object,
+    ) -> int:
+        if isinstance(
+            value,
+            bool,
+        ):
+            raise TypeError(
+                "domain_count must be an int."
+            )
+
+        try:
+            domain_count = int(
+                value
+            )
+        except (
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise TypeError(
+                "domain_count must be an int."
+            ) from exc
+
+        if domain_count != value:
+            raise TypeError(
+                "domain_count must be an int."
+            )
+
+        if domain_count not in (
+            3,
+            7,
+        ):
+            raise ValueError(
+                "domain_count must be either 3 or 7."
+            )
+
+        return domain_count
 
     @staticmethod
     def _normalize_confidence_adjustment(
@@ -343,6 +415,10 @@ class InstitutionalConfluence:
                 self.structure_support,
                 self.liquidity_support,
                 self.order_block_support,
+                self.auction_support,
+                self.pressure_support,
+                self.participation_support,
+                self.value_support,
             )
         )
 
@@ -352,30 +428,45 @@ class InstitutionalConfluence:
                 "supporting institutional domains."
             )
 
-        expected_score = self._expected_score(
-            structure_support=(
-                self.structure_support
-            ),
-            liquidity_support=(
-                self.liquidity_support
-            ),
-            order_block_support=(
-                self.order_block_support
-            ),
-        )
+        if self.domain_count == 3:
+            if any(
+                (
+                    self.auction_support,
+                    self.pressure_support,
+                    self.participation_support,
+                    self.value_support,
+                )
+            ):
+                raise ValueError(
+                    "Extended support flags require "
+                    "domain_count=7."
+                )
 
-        if self.score != expected_score:
-            raise ValueError(
-                "score must match the configured institutional "
-                "support weights."
+            expected_score = self._expected_score(
+                structure_support=(
+                    self.structure_support
+                ),
+                liquidity_support=(
+                    self.liquidity_support
+                ),
+                order_block_support=(
+                    self.order_block_support
+                ),
             )
+
+            if self.score != expected_score:
+                raise ValueError(
+                    "score must match the configured "
+                    "institutional support weights."
+                )
 
     def _validate_adjustment_contract(
         self,
     ) -> None:
         expected_adjustment = (
             self._expected_adjustment(
-                self.agreement_count
+                agreement_count=self.agreement_count,
+                domain_count=self.domain_count,
             )
         )
 
@@ -393,10 +484,10 @@ class InstitutionalConfluence:
     ) -> None:
         total = self.directional_count
 
-        if total != 3:
+        if total != self.domain_count:
             raise ValueError(
-                "Directional counts must total 3 institutional "
-                "domains."
+                "Directional counts must total "
+                f"{self.domain_count} institutional domains."
             )
 
         directional_count = (
@@ -486,13 +577,31 @@ class InstitutionalConfluence:
 
     @staticmethod
     def _expected_adjustment(
+        *,
         agreement_count: int,
+        domain_count: int,
     ) -> float:
+        if domain_count == 3:
+            adjustments = {
+                0: 0.0,
+                1: 2.0,
+                2: 5.0,
+                3: 8.0,
+            }
+
+            return adjustments[
+                agreement_count
+            ]
+
         adjustments = {
             0: 0.0,
-            1: 2.0,
-            2: 5.0,
-            3: 8.0,
+            1: 1.0,
+            2: 2.0,
+            3: 4.0,
+            4: 5.0,
+            5: 6.0,
+            6: 7.0,
+            7: 8.0,
         }
 
         return adjustments[
@@ -578,16 +687,18 @@ class InstitutionalConfluence:
     @property
     def has_full_agreement(self) -> bool:
         return (
-            self.agreement_count == 3
+            self.agreement_count
+            == self.domain_count
             and self.conflict_count == 0
         )
 
     @property
     def has_partial_agreement(self) -> bool:
-        return self.agreement_count in {
-            1,
-            2,
-        }
+        return (
+            0
+            < self.agreement_count
+            < self.domain_count
+        )
 
     @property
     def has_no_agreement(self) -> bool:
@@ -599,7 +710,10 @@ class InstitutionalConfluence:
 
     @property
     def has_full_conflict(self) -> bool:
-        return self.conflict_count == 3
+        return (
+            self.conflict_count
+            == self.domain_count
+        )
 
     @property
     def is_mixed(self) -> bool:
@@ -684,6 +798,26 @@ class InstitutionalConfluence:
                 "ORDER_BLOCK"
             )
 
+        if self.auction_support:
+            domains.append(
+                "AUCTION"
+            )
+
+        if self.pressure_support:
+            domains.append(
+                "PRESSURE"
+            )
+
+        if self.participation_support:
+            domains.append(
+                "PARTICIPATION"
+            )
+
+        if self.value_support:
+            domains.append(
+                "VALUE"
+            )
+
         return tuple(
             domains
         )
@@ -695,12 +829,13 @@ class InstitutionalConfluence:
         evidence: tuple[str, ...] = (),
         warnings: tuple[str, ...] = (),
         directional: bool = False,
+        domain_count: int = 3,
     ) -> InstitutionalConfluence:
         """
         Build a zero-agreement confluence result.
 
-        When directional is True, all three institutional domains
-        are represented as UNKNOWN.
+        When directional is True, every configured institutional
+        domain is represented as UNKNOWN.
         """
         return cls(
             score=0.0,
@@ -709,6 +844,11 @@ class InstitutionalConfluence:
             order_block_support=False,
             agreement_count=0,
             confidence_adjustment=0.0,
+            auction_support=False,
+            pressure_support=False,
+            participation_support=False,
+            value_support=False,
+            domain_count=domain_count,
             dominant_direction=(
                 InstitutionalDirection.UNKNOWN
             ),
@@ -716,7 +856,7 @@ class InstitutionalConfluence:
             bearish_count=0,
             neutral_count=0,
             unknown_count=(
-                3
+                domain_count
                 if directional
                 else 0
             ),

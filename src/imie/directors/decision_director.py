@@ -5,14 +5,24 @@ from dataclasses import dataclass
 from imie.directors.institutional_confluence_engine import (
     InstitutionalConfluenceEngine,
 )
+from imie.directors.institutional_bias_engine import (
+    InstitutionalBiasEngine,
+)
+from imie.directors.market_phase_engine import (
+    MarketPhaseEngine,
+)
+
 from imie.models import (
+    AcceptanceResult,
     AnalystRegistry,
     AnalystResult,
     DataFreshness,
     DecisionResult,
     DirectorDecision,
     InstitutionalConfluence,
+    InstitutionalDecisionContext,
     InstitutionalDirection,
+    SetupLifecycle,
     TradePlan,
     TradingContext,
 )
@@ -25,6 +35,10 @@ from imie.utils.analyst_ids import (
     ANALYST_STRUCTURE,
     ANALYST_TREND,
     CORE_ANALYST_IDS,
+    ANALYST_AUCTION,
+    ANALYST_PARTICIPATION,
+    ANALYST_PRESSURE,
+    ANALYST_VALUE,
 )
 from imie.utils.constants import (
     LIFECYCLE_AT_CORE,
@@ -46,12 +60,91 @@ class DecisionDirectorConfig:
     """
 
     minimum_ready_confidence: float = 60.0
+    institutional_bias_policy: str = "PREPARE"
+    confluence_policy: str = "ADVISORY"
+    market_phase_policy: str = "ADVISORY"
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.minimum_ready_confidence <= 100.0:
             raise ValueError(
                 "minimum_ready_confidence must be between 0 and 100."
             )
+
+        normalized_bias_policy = (
+            self.institutional_bias_policy
+            .strip()
+            .upper()
+        )
+
+        allowed_bias_policies = {
+            "READY",
+            "PREPARE",
+            "PASS",
+        }
+
+        if normalized_bias_policy not in allowed_bias_policies:
+            raise ValueError(
+                "institutional_bias_policy must be "
+                "READY, PREPARE, or PASS."
+            )
+
+        normalized_phase_policy = (
+            self.market_phase_policy
+            .strip()
+            .upper()
+        )
+
+        allowed_phase_policies = {
+            "ADVISORY",
+            "PREPARE",
+            "PASS",
+        }
+
+        normalized_confluence_policy = (
+            self.confluence_policy
+            .strip()
+            .upper()
+        )
+
+        allowed_confluence_policies = {
+            "ADVISORY",
+            "READY",
+            "PREPARE",
+            "PASS",
+        }
+
+        if (
+            normalized_confluence_policy
+            not in allowed_confluence_policies
+        ):
+            raise ValueError(
+                "confluence_policy must be "
+                "ADVISORY, READY, PREPARE, or PASS."
+            )
+
+        if normalized_phase_policy not in allowed_phase_policies:
+            raise ValueError(
+                "market_phase_policy must be "
+                "ADVISORY, PREPARE, or PASS."
+            )
+
+        object.__setattr__(
+            self,
+            "institutional_bias_policy",
+            normalized_bias_policy,
+        )
+
+        object.__setattr__(
+            self,
+            "confluence_policy",
+            normalized_confluence_policy,
+        )
+
+        object.__setattr__(
+            self,
+            "market_phase_policy",
+            normalized_phase_policy,
+        )
 
 
 class DecisionDirector:
@@ -85,18 +178,25 @@ class DecisionDirector:
     def __init__(
         self,
         config: DecisionDirectorConfig | None = None,
-        confluence_engine: (
-            InstitutionalConfluenceEngine | None
-        ) = None,
+        confluence_engine: InstitutionalConfluenceEngine | None = None,
+        bias_engine: InstitutionalBiasEngine | None = None,
+        market_phase_engine: MarketPhaseEngine | None = None,
     ) -> None:
-        self.config = (
-            config
-            or DecisionDirectorConfig()
-        )
+        self.config = config or DecisionDirectorConfig()
 
         self.confluence_engine = (
             confluence_engine
             or InstitutionalConfluenceEngine()
+        )
+
+        self.bias_engine = (
+            bias_engine
+            or InstitutionalBiasEngine()
+        )
+
+        self.market_phase_engine = (
+            market_phase_engine
+            or MarketPhaseEngine()
         )
 
         if not isinstance(
@@ -108,6 +208,24 @@ class DecisionDirector:
                 "InstitutionalConfluenceEngine."
             )
 
+        if not isinstance(
+            self.bias_engine,
+            InstitutionalBiasEngine,
+        ):
+            raise TypeError(
+                "bias_engine must be an "
+                "InstitutionalBiasEngine."
+            )
+
+        if not isinstance(
+            self.market_phase_engine,
+            MarketPhaseEngine,
+        ):
+            raise TypeError(
+                "market_phase_engine must be a "
+                "MarketPhaseEngine."
+            )
+    
     def evaluate(
         self,
         *,
@@ -237,6 +355,44 @@ class DecisionDirector:
             ANALYST_ORDER_BLOCK
         )
 
+        auction_result = registry.get(
+            ANALYST_AUCTION
+        )
+
+        pressure_result = registry.get(
+            ANALYST_PRESSURE
+        )
+
+        participation_result = registry.get(
+            ANALYST_PARTICIPATION
+        )
+
+        value_result = registry.get(
+            ANALYST_VALUE
+        )
+
+        bias = self.bias_engine.evaluate(
+            trend=trend_result,
+            structure=structure_result,
+            liquidity=liquidity_result,
+            order_block=order_block_result,
+            auction=auction_result,
+            pressure=pressure_result,
+            participation=participation_result,
+            value=value_result,
+        )
+
+        market_phase = self.market_phase_engine.evaluate(
+            trend=trend_result,
+            structure=structure_result,
+            liquidity=liquidity_result,
+            order_block=order_block_result,
+            auction=auction_result,
+            pressure=pressure_result,
+            participation=participation_result,
+            value=value_result,
+        )
+        
         order_block_evidence, order_block_warnings = (
             self._order_block_support(
                 order_block_result
@@ -253,7 +409,30 @@ class DecisionDirector:
             structure=structure_result,
             liquidity=liquidity_result,
             order_block=order_block_result,
+            auction=auction_result,
+            pressure=pressure_result,
+            participation=participation_result,
+            value=value_result,
         )
+
+        available_trade_plan = self._extract_trade_plan(
+            risk_result
+        )
+
+        institutional_context = None
+
+        if available_trade_plan is not None:
+            institutional_context = (
+                self._build_institutional_context(
+                    bias=bias,
+                    confluence=confluence,
+                    market_phase=market_phase,
+                    trend_result=trend_result,
+                    setup_result=setup_result,
+                    acceptance_result=acceptance_result,
+                    trade_plan=available_trade_plan,
+                )
+            )
 
         reasons = self._merge_items(
             (
@@ -261,6 +440,36 @@ class DecisionDirector:
                 *order_block_evidence,
                 *liquidity_evidence,
                 *confluence.evidence,
+                *bias.evidence,
+                *market_phase.evidence,
+                (
+                    "Institutional bias is "
+                    f"{bias.direction.value}."
+                ),
+                (
+                    "Institutional bias confidence is "
+                    f"{bias.confidence:.0f}%."
+                ),
+                (
+                    "Market phase is "
+                    f"{market_phase.phase.value}."
+                ),
+                (
+                    "Market phase confidence is "
+                    f"{market_phase.confidence:.0f}%."
+                ),
+                (
+                    "Market phase strength is "
+                    f"{market_phase.strength:.0f}."
+                ),
+                (
+                    "Market phase agreement count is "
+                    f"{market_phase.agreement_count}."
+                ),
+                (
+                    "Market phase conflict count is "
+                    f"{market_phase.conflict_count}."
+                ),
             )
         )
 
@@ -270,6 +479,8 @@ class DecisionDirector:
                 *order_block_warnings,
                 *liquidity_warnings,
                 *confluence.warnings,
+                *bias.warnings,
+                *market_phase.warnings,
             )
         )
 
@@ -426,9 +637,8 @@ class DecisionDirector:
                 ),
                 warnings=warnings,
                 analyst_summary=summary,
-                trade_plan=self._extract_trade_plan(
-                    risk_result
-                ),
+                trade_plan=available_trade_plan,
+                institutional_context=institutional_context,
             )
 
         acceptance_confirmed = (
@@ -464,10 +674,10 @@ class DecisionDirector:
                 ),
                 warnings=warnings,
                 analyst_summary=summary,
-                trade_plan=self._extract_trade_plan(
-                    risk_result
-                ),
-            )
+                trade_plan=available_trade_plan,
+                institutional_context=institutional_context,
+                )
+            
 
         if setup_opinion not in {
             self._normalize(
@@ -495,9 +705,8 @@ class DecisionDirector:
                 ),
                 warnings=warnings,
                 analyst_summary=summary,
-                trade_plan=self._extract_trade_plan(
-                    risk_result
-                ),
+                trade_plan=available_trade_plan,
+                institutional_context=institutional_context,
             )
 
         if not acceptance_confirmed:
@@ -517,9 +726,8 @@ class DecisionDirector:
                 ),
                 warnings=warnings,
                 analyst_summary=summary,
-                trade_plan=self._extract_trade_plan(
-                    risk_result
-                ),
+                trade_plan=available_trade_plan,
+                institutional_context=institutional_context,
             )
 
         trade_plan = self._extract_trade_plan(
@@ -579,6 +787,7 @@ class DecisionDirector:
                 ),
                 analyst_summary=summary,
                 trade_plan=trade_plan,
+                institutional_context=institutional_context,
             )
 
         if not trade_plan.actionable:
@@ -608,8 +817,10 @@ class DecisionDirector:
                 ),
                 analyst_summary=summary,
                 trade_plan=trade_plan,
+                institutional_context=institutional_context,
             )
 
+       
         plan_direction = self._trade_plan_direction(
             trade_plan
         )
@@ -618,6 +829,22 @@ class DecisionDirector:
             plan_direction
             if plan_direction.is_directional
             else trade_direction
+        )
+
+        (
+            phase_aligned,
+            phase_reasons,
+            phase_warnings,
+        ) = self._market_phase_alignment(
+            phase=market_phase.phase,
+            trade_direction=intended_direction,
+        )
+
+        bias_aligned, bias_reasons, bias_warnings = (
+            self._bias_alignment(
+                bias_direction=bias.direction,
+                trade_direction=intended_direction,
+            )
         )
 
         applied_adjustment = (
@@ -661,6 +888,22 @@ class DecisionDirector:
             )
         )
 
+        reasons = self._merge_items(
+            (
+                *reasons,
+                *bias_reasons,
+                *phase_reasons,
+            )
+        )
+
+        warnings = self._merge_items(
+            (
+                *warnings,
+                *bias_warnings,
+                *phase_warnings,
+            )
+        )
+
         if (
             confidence
             < self.config.minimum_ready_confidence
@@ -699,6 +942,336 @@ class DecisionDirector:
                 ),
                 analyst_summary=summary,
                 trade_plan=trade_plan,
+                institutional_context=institutional_context,
+            )
+
+        if (
+            not bias_aligned
+            and self.config.institutional_bias_policy
+            != "READY"
+        ):
+            downgrade_reason = (
+                "Trade authorization was reduced because "
+                "institutional bias opposes the intended "
+                f"{intended_direction.value.lower()} direction."
+            )
+
+            if (
+                self.config.institutional_bias_policy
+                == "PASS"
+            ):
+                return DecisionResult(
+                    decision=DirectorDecision.PASS,
+                    actionable=False,
+                    confidence=confidence,
+                    recommendation=(
+                        "Pass because the intended trade direction "
+                        "opposes the dominant institutional bias."
+                    ),
+                    reasons=self._merge_items(
+                        (
+                            downgrade_reason,
+                            (
+                                "Institutional bias is "
+                                f"{bias.direction.value}."
+                            ),
+                            (
+                                "Intended trade direction is "
+                                f"{intended_direction.value}."
+                            ),
+                            *trade_plan.reasons,
+                            *reasons,
+                        )
+                    ),
+                    warnings=self._merge_items(
+                        (
+                            *warnings,
+                            *trade_plan.warnings,
+                        )
+                    ),
+                    analyst_summary=summary,
+                    trade_plan=trade_plan,
+                    institutional_context=institutional_context,
+                )
+
+            return DecisionResult(
+                decision=DirectorDecision.PREPARE,
+                actionable=False,
+                confidence=confidence,
+                recommendation=(
+                    "The setup is technically complete, but wait "
+                    "because institutional bias opposes the intended "
+                    "trade direction."
+                ),
+                reasons=self._merge_items(
+                    (
+                        downgrade_reason,
+                        "Institutional bias policy is PREPARE.",
+                        (
+                            "Institutional bias is "
+                            f"{bias.direction.value}."
+                        ),
+                        (
+                            "Intended trade direction is "
+                            f"{intended_direction.value}."
+                        ),
+                        *trade_plan.reasons,
+                        *reasons,
+                    )
+                ),
+                warnings=self._merge_items(
+                    (
+                        *warnings,
+                        *trade_plan.warnings,
+                    )
+                ),
+                analyst_summary=summary,
+                trade_plan=trade_plan,
+                institutional_context=institutional_context,
+            )
+
+        confluence_aligned = self._confluence_alignment(
+            confluence=confluence,
+            trade_direction=intended_direction,
+        )
+
+        if (
+            confluence_aligned is False
+            and self.config.confluence_policy
+            not in {
+                "ADVISORY",
+                "READY",
+            }
+        ):
+            confluence_reason = (
+                "Trade authorization was reduced because "
+                "institutional confluence opposes the intended "
+                f"{intended_direction.value.lower()} direction."
+            )
+
+            if (
+                self.config.confluence_policy == "PASS"
+                and self._strong_confluence_opposition(
+                    confluence
+                )
+            ):
+                return DecisionResult(
+                    decision=DirectorDecision.PASS,
+                    actionable=False,
+                    confidence=confidence,
+                    recommendation=(
+                        "Pass because strong institutional "
+                        "confluence opposes the intended trade "
+                        "direction."
+                    ),
+                    reasons=self._merge_items(
+                        (
+                            confluence_reason,
+                            "Confluence policy is PASS.",
+                            (
+                                "Institutional confluence score is "
+                                f"{confluence.score:.0f}/100."
+                            ),
+                            (
+                                "Institutional agreement count is "
+                                f"{confluence.agreement_count}."
+                            ),
+                            (
+                                "Institutional conflict count is "
+                                f"{confluence.conflict_count}."
+                            ),
+                            *trade_plan.reasons,
+                            *reasons,
+                        )
+                    ),
+                    warnings=self._merge_items(
+                        (
+                            *warnings,
+                            *trade_plan.warnings,
+                        )
+                    ),
+                    analyst_summary=summary,
+                    trade_plan=trade_plan,
+                    institutional_context=institutional_context,
+                )
+
+            return DecisionResult(
+                decision=DirectorDecision.PREPARE,
+                actionable=False,
+                confidence=confidence,
+                recommendation=(
+                    "The setup is technically complete, but wait "
+                    "because institutional confluence opposes the "
+                    "intended trade direction."
+                ),
+                reasons=self._merge_items(
+                    (
+                        confluence_reason,
+                        (
+                            "Confluence policy is "
+                            f"{self.config.confluence_policy}."
+                        ),
+                        (
+                            "Institutional confluence score is "
+                            f"{confluence.score:.0f}/100."
+                        ),
+                        (
+                            "Institutional agreement count is "
+                            f"{confluence.agreement_count}."
+                        ),
+                        *trade_plan.reasons,
+                        *reasons,
+                    )
+                ),
+                warnings=self._merge_items(
+                    (
+                        *warnings,
+                        *trade_plan.warnings,
+                    )
+                ),
+                analyst_summary=summary,
+                trade_plan=trade_plan,
+                institutional_context=institutional_context,
+            )
+
+
+        if (
+            phase_aligned is not True
+            and self.config.market_phase_policy
+            != "ADVISORY"
+        ):
+            phase_value = market_phase.phase.value
+
+            if phase_aligned is None:
+                return DecisionResult(
+                    decision=DirectorDecision.PREPARE,
+                    actionable=False,
+                    confidence=confidence,
+                    recommendation=(
+                        "The setup is technically complete, but wait "
+                        "for the market phase to become sufficiently "
+                        "resolved before execution."
+                    ),
+                    reasons=self._merge_items(
+                        (
+                            (
+                                "Trade authorization was reduced "
+                                "because market phase compatibility "
+                                "is unresolved."
+                            ),
+                            (
+                                "Market phase is "
+                                f"{phase_value}."
+                            ),
+                            (
+                                "Market phase policy is "
+                                f"{self.config.market_phase_policy}."
+                            ),
+                            *trade_plan.reasons,
+                            *reasons,
+                        )
+                    ),
+                    warnings=self._merge_items(
+                        (
+                            *warnings,
+                            (
+                                "An unresolved or transitional market "
+                                "phase cannot authorize immediate "
+                                "execution."
+                            ),
+                            *trade_plan.warnings,
+                        )
+                    ),
+                    analyst_summary=summary,
+                    trade_plan=trade_plan,
+                    institutional_context=institutional_context,
+                )
+
+            if (
+                self.config.market_phase_policy
+                == "PASS"
+            ):
+                return DecisionResult(
+                    decision=DirectorDecision.PASS,
+                    actionable=False,
+                    confidence=confidence,
+                    recommendation=(
+                        "Pass because the current market phase "
+                        "opposes the intended trade direction."
+                    ),
+                    reasons=self._merge_items(
+                        (
+                            (
+                                "Trade authorization was rejected "
+                                "because the market phase opposes "
+                                "the intended direction."
+                            ),
+                            (
+                                "Market phase is "
+                                f"{phase_value}."
+                            ),
+                            (
+                                "Intended trade direction is "
+                                f"{intended_direction.value}."
+                            ),
+                            (
+                                "Market phase policy is PASS."
+                            ),
+                            *trade_plan.reasons,
+                            *reasons,
+                        )
+                    ),
+                    warnings=self._merge_items(
+                        (
+                            *warnings,
+                            *trade_plan.warnings,
+                        )
+                    ),
+                    analyst_summary=summary,
+                    trade_plan=trade_plan,
+                    institutional_context=institutional_context,
+                )
+
+            return DecisionResult(
+                decision=DirectorDecision.PREPARE,
+                actionable=False,
+                confidence=confidence,
+                recommendation=(
+                    "The setup is technically complete, but wait "
+                    "because the current market phase opposes the "
+                    "intended trade direction."
+                ),
+                reasons=self._merge_items(
+                    (
+                        (
+                            "Trade authorization was reduced "
+                            "because the market phase opposes "
+                            "the intended direction."
+                        ),
+                        (
+                            "Market phase is "
+                            f"{phase_value}."
+                        ),
+                        (
+                            "Intended trade direction is "
+                            f"{intended_direction.value}."
+                        ),
+                        (
+                            "Market phase policy is PREPARE."
+                        ),
+                        *trade_plan.reasons,
+                        *reasons,
+                    )
+                ),
+                warnings=self._merge_items(
+                    (
+                        *warnings,
+                        *trade_plan.warnings,
+                    )
+                ),
+                analyst_summary=summary,
+                trade_plan=trade_plan,
+                institutional_context=institutional_context,
             )
 
         return DecisionResult(
@@ -754,6 +1327,10 @@ class DecisionDirector:
                         "Applied institutional confidence "
                         f"adjustment is +{applied_adjustment:.0f}."
                     ),
+                    (
+                        "Institutional bias alignment is "
+                        f"{'aligned' if bias_aligned else 'opposed'}."
+                    ),
                     *trade_plan.reasons,
                     *reasons,
                 )
@@ -766,8 +1343,9 @@ class DecisionDirector:
             ),
             analyst_summary=summary,
             trade_plan=trade_plan,
+            institutional_context=institutional_context,
         )
-
+    
     def _missing_required_analysts(
         self,
         registry: AnalystRegistry,
@@ -833,6 +1411,42 @@ class DecisionDirector:
             return payload
 
         return None
+    
+    @staticmethod
+    def _build_institutional_context(
+        *,
+        bias,
+        confluence: InstitutionalConfluence,
+        market_phase,
+        trend_result: AnalystResult,
+        setup_result: AnalystResult,
+        acceptance_result: AnalystResult,
+        trade_plan: TradePlan,
+    ) -> InstitutionalDecisionContext | None:
+        setup_payload = setup_result.payload
+        acceptance_payload = acceptance_result.payload
+
+        if not isinstance(
+            setup_payload,
+            SetupLifecycle,
+        ):
+            return None
+
+        if not isinstance(
+            acceptance_payload,
+            AcceptanceResult,
+        ):
+            return None
+
+        return InstitutionalDecisionContext(
+            institutional_bias=bias,
+            institutional_confluence=confluence,
+            market_phase=market_phase,
+            trend=trend_result,
+            setup_lifecycle=setup_payload,
+            acceptance=acceptance_payload,
+            risk=trade_plan,
+        )
 
     def _acceptance_confirmed(
         self,
@@ -927,6 +1541,161 @@ class DecisionDirector:
             direction
         )
 
+
+    def _bias_alignment(
+        self,
+        *,
+        bias_direction: InstitutionalDirection,
+        trade_direction: InstitutionalDirection,
+    ) -> tuple[
+        bool,
+        tuple[str, ...],
+        tuple[str, ...],
+    ]:
+        """
+        Evaluate institutional bias alignment with the
+        intended trade direction.
+        """
+
+        if not trade_direction.is_directional:
+            return (
+                True,
+                (),
+                (),
+            )
+
+        if not bias_direction.is_directional:
+            return (
+                True,
+                (),
+                (
+                    "Institutional bias is unresolved.",
+                ),
+            )
+
+        if bias_direction.aligns_with(
+            trade_direction,
+        ):
+            return (
+                True,
+                (
+                    (
+                        "Institutional bias aligns with the "
+                        f"intended {trade_direction.value.lower()} trade."
+                    ),
+                ),
+                (),
+            )
+
+        return (
+            False,
+            (),
+            (
+                (
+                    "Institutional bias opposes the "
+                    f"intended {trade_direction.value.lower()} trade."
+                ),
+            ),
+        )
+    
+    def _market_phase_alignment(
+        self,
+        *,
+        phase,
+        trade_direction: InstitutionalDirection,
+    ) -> tuple[
+        bool | None,
+        tuple[str, ...],
+        tuple[str, ...],
+    ]:
+        """
+        Evaluate whether the market phase supports the intended trade.
+
+        Returns:
+            True  -> aligned
+            False -> opposed
+            None  -> unresolved/advisory
+        """
+
+        if not trade_direction.is_directional:
+            return None, (), ()
+
+        phase_value = self._normalize(
+            phase
+        )
+
+        if phase_value in {
+            "UNKNOWN",
+            "TRANSITION",
+        }:
+            return (
+                None,
+                (),
+                (
+                    "Market phase is unresolved for trade authorization.",
+                ),
+            )
+
+        if trade_direction is InstitutionalDirection.BULLISH:
+            aligned_phases = {
+                "MARKUP",
+                "PULLBACK",
+                "ACCUMULATION",
+            }
+
+            opposed_phases = {
+                "MARKDOWN",
+                "DISTRIBUTION",
+            }
+
+        else:
+            aligned_phases = {
+                "MARKDOWN",
+                "PULLBACK",
+                "DISTRIBUTION",
+            }
+
+            opposed_phases = {
+                "MARKUP",
+                "ACCUMULATION",
+            }
+
+        if phase_value in aligned_phases:
+            return (
+                True,
+                (
+                    (
+                        "Market phase aligns with the intended "
+                        f"{trade_direction.value.lower()} trade."
+                    ),
+                ),
+                (),
+            )
+
+        if phase_value in opposed_phases:
+            return (
+                False,
+                (),
+                (
+                    (
+                        "Market phase opposes the intended "
+                        f"{trade_direction.value.lower()} trade."
+                    ),
+                ),
+            )
+
+        return (
+            None,
+            (),
+            (
+                (
+                    "Market phase compatibility is unresolved for "
+                    f"{phase_value}."
+                ),
+            ),
+        )
+
+
     @staticmethod
     def _effective_confluence_adjustment(
         *,
@@ -945,6 +1714,42 @@ class DecisionDirector:
             return 0.0
 
         return confluence.confidence_adjustment
+
+    @staticmethod
+    def _confluence_alignment(
+        *,
+        confluence: InstitutionalConfluence,
+        trade_direction: InstitutionalDirection,
+    ) -> bool | None:
+        if not trade_direction.is_directional:
+            return None
+
+        if not confluence.dominant_direction.is_directional:
+            return None
+
+        return confluence.dominant_direction.aligns_with(
+            trade_direction
+        )
+
+    @staticmethod
+    def _strong_confluence_opposition(
+        confluence: InstitutionalConfluence,
+    ) -> bool:
+        if not confluence.dominant_direction.is_directional:
+            return False
+
+        if confluence.domain_count == 3:
+            return (
+                confluence.conflict_count == 0
+                and confluence.agreement_count >= 2
+                and confluence.score >= 60.0
+            )
+
+        return (
+            confluence.conflict_count <= 1
+            and confluence.agreement_count >= 4
+            and confluence.score >= 55.0
+        )
 
     @staticmethod
     def _directional_confluence_context(

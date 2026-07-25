@@ -717,3 +717,61 @@ def test_legacy_empty_factory() -> None:
 
     assert result.directional_count == 0
     assert result.has_directional_counts is False
+
+def test_supports_expanded_seven_domain_contract() -> None:
+    result = InstitutionalConfluence(
+        score=77.0,
+        structure_support=True,
+        liquidity_support=True,
+        order_block_support=False,
+        auction_support=True,
+        pressure_support=True,
+        participation_support=True,
+        value_support=False,
+        domain_count=7,
+        agreement_count=5,
+        confidence_adjustment=6.0,
+        dominant_direction=InstitutionalDirection.BULLISH,
+        bullish_count=5,
+        bearish_count=1,
+        neutral_count=1,
+        unknown_count=0,
+        conflict_count=1,
+        evidence=(),
+        warnings=(),
+    )
+
+    assert result.domain_count == 7
+    assert result.agreement_count == 5
+    assert result.conflict_count == 1
+    assert result.has_partial_agreement
+    assert not result.has_full_agreement
+
+    assert result.supporting_domains == (
+        "STRUCTURE",
+        "LIQUIDITY",
+        "AUCTION",
+        "PRESSURE",
+        "PARTICIPATION",
+    )
+
+
+def test_expanded_empty_confluence_tracks_seven_unknowns() -> None:
+    result = InstitutionalConfluence.empty(
+        directional=True,
+        domain_count=7,
+    )
+
+    assert result.domain_count == 7
+    assert result.unknown_count == 7
+    assert result.directional_count == 7
+    assert result.is_unknown
+
+
+def test_legacy_contract_still_defaults_to_three_domains() -> None:
+    result = InstitutionalConfluence.empty(
+        directional=True,
+    )
+
+    assert result.domain_count == 3
+    assert result.unknown_count == 3

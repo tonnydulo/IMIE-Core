@@ -10,14 +10,20 @@ from imie.engines.trend import TrendAnalyst
 from imie.models import (
     AcceptanceResult,
     AnalystRegistry,
+    AuctionAnalysis,
     MarketSnapshot,
+    PressureAnalysis,
     SetupLifecycle,
     TradePlan,
+    StructureResult,
+    ParticipationAnalysis,
+    ValueAnalysis,
 )
 from imie.services import (
     ContextBuilder,
     DataFreshnessGuard,
     MarketDataService,
+    build_institutional_results,
 )
 from imie.utils.analyst_ids import (
     ANALYST_ACCEPTANCE,
@@ -27,6 +33,7 @@ from imie.utils.analyst_ids import (
 )
 from imie.utils.logging_utils import configure_logging
 from imie.version import IMIE_NAME, IMIE_VERSION
+
 
 
 def main() -> None:
@@ -81,6 +88,33 @@ def main() -> None:
         trend_result,
         analyst_id=ANALYST_TREND,
     )
+
+     # ============================================================
+    # INSTITUTIONAL PIPELINE
+    # ============================================================
+    (
+        structure_result,
+        liquidity_analyst_result,
+        order_block_result,
+        auction_result,
+        pressure_result,
+        participation_result,
+        value_result,
+    ) = build_institutional_results(
+        context,
+        trend_result,
+    )
+
+    structure = structure_result.payload
+
+    if not isinstance(
+        structure,
+        StructureResult,
+    ):
+        raise TypeError(
+            "Institutional pipeline did not produce a "
+            "StructureResult payload."
+        )
 
     # ============================================================
     # SETUP LIFECYCLE — INITIAL EVALUATION
@@ -170,6 +204,13 @@ def main() -> None:
     registry = AnalystRegistry()
 
     registry.register(trend_result)
+    registry.register(structure_result)
+    registry.register(liquidity_analyst_result)
+    registry.register(order_block_result)
+    registry.register(auction_result)
+    registry.register(pressure_result)
+    registry.register(participation_result)
+    registry.register(value_result)
     registry.register(setup_result)
     registry.register(acceptance_result)
     registry.register(risk_result)
@@ -200,6 +241,13 @@ def main() -> None:
     print("OK Data Freshness Guard Loaded")
     print("OK TradingContext Built")
     print("OK TrendAnalyst Loaded")
+    print("OK StructureAnalyst Loaded")
+    print("OK LiquidityAnalyst Loaded")
+    print("OK OrderBlockAnalyst Loaded")
+    print("OK AuctionAnalyst Loaded")
+    print("OK PressureAnalyst Loaded")
+    print("OK ParticipationAnalyst Loaded")
+    print("OK ValueAnalyst Loaded")
     print("OK Setup Lifecycle Engine Loaded")
     print("OK AcceptanceAnalyst Loaded")
     print("OK RiskAnalyst Loaded")
@@ -263,38 +311,344 @@ def main() -> None:
         for item in trend_result.warnings:
             print(f" - {item}")
 
-    # ============================================================
-    # ACCEPTANCE ANALYST OUTPUT
+
+     # ============================================================
+    # STRUCTURE ANALYST OUTPUT
     # ============================================================
     print()
-    print("Acceptance Analyst")
-    print(f"Accepted     : {acceptance.accepted}")
-    print(f"Level        : {acceptance.level}")
-    print(f"Score        : {acceptance.score}")
+    print("Structure Analyst")
+    print(f"Opinion      : {structure_result.opinion}")
+    print(f"Confidence   : {structure_result.confidence:.0f}")
 
-    if acceptance.trigger_price is not None:
-        print(f"Trigger Price: {acceptance.trigger_price:.2f}")
-    else:
-        print("Trigger Price: n/a")
-
-    if acceptance.previous_level is not None:
-        print(f"Prior Level  : {acceptance.previous_level:.2f}")
-    else:
-        print("Prior Level  : n/a")
-
-    print(f"Reason       : {acceptance.reason}")
-
-    if acceptance.evidence:
+    if structure_result.evidence:
         print("Evidence     :")
 
-        for item in acceptance.evidence:
+        for item in structure_result.evidence:
             print(f" - {item}")
 
-    if acceptance.warnings:
+    if structure_result.warnings:
         print("Warnings     :")
 
-        for item in acceptance.warnings:
+        for item in structure_result.warnings:
             print(f" - {item}")
+
+    # ============================================================
+    # LIQUIDITY ANALYST OUTPUT
+    # ============================================================
+    print()
+    print("Liquidity Analyst")
+    print(
+        f"Opinion      : "
+        f"{liquidity_analyst_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{liquidity_analyst_result.confidence:.0f}"
+    )
+    liquidity_analysis = liquidity_analyst_result.payload
+
+    print(
+        f"Active Pools : "
+        f"{liquidity_analysis.active_pool_count}"
+    )
+
+    if liquidity_analyst_result.evidence:
+        print("Evidence     :")
+
+        for item in liquidity_analyst_result.evidence:
+            print(f" - {item}")
+
+    if liquidity_analyst_result.warnings:
+        print("Warnings     :")
+
+        for item in liquidity_analyst_result.warnings:
+            print(f" - {item}")
+
+    # ============================================================
+    # ORDER BLOCK ANALYST OUTPUT
+    # ============================================================
+    print()
+    print("Order Block Analyst")
+    print(
+        f"Opinion      : "
+        f"{order_block_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{order_block_result.confidence:.0f}"
+    )
+    order_block_analysis = order_block_result.payload
+
+    tracked_order_blocks = (
+        len(order_block_analysis.active_blocks)
+        + len(order_block_analysis.tested_blocks)
+        + len(order_block_analysis.mitigated_blocks)
+        + len(order_block_analysis.invalidated_blocks)
+    )
+
+    print(
+        f"Tracked      : "
+        f"{tracked_order_blocks}"
+    )
+
+    if order_block_result.evidence:
+        print("Evidence     :")
+
+        for item in order_block_result.evidence:
+            print(f" - {item}")
+
+    if order_block_result.warnings:
+        print("Warnings     :")
+
+        for item in order_block_result.warnings:
+            print(f" - {item}")
+
+
+    print()
+    print("Auction Analyst")
+    print(
+        f"Opinion      : "
+        f"{auction_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{auction_result.confidence:.0f}"
+    )
+
+    auction_analysis = auction_result.payload
+
+    if isinstance(
+        auction_analysis,
+        AuctionAnalysis,
+    ):
+        print(
+            f"Direction    : "
+            f"{auction_analysis.direction.value}"
+        )
+        print(
+            f"Control      : "
+            f"{auction_analysis.control}"
+        )
+        print(
+            f"Market Phase : "
+            f"{auction_analysis.market_phase.value}"
+        )
+        print(
+            f"VWAP Distance: "
+            f"{auction_analysis.distance_to_vwap:.2f}"
+            if auction_analysis.distance_to_vwap is not None
+            else "VWAP Distance: n/a"
+        )
+
+    if auction_result.evidence:
+        print("Evidence     :")
+        for item in auction_result.evidence:
+            print(f" - {item}")
+
+    if auction_result.warnings:
+        print("Warnings     :")
+        for item in auction_result.warnings:
+            print(f" - {item}")
+
+    print()
+    print("Pressure Analyst")
+    print(
+        f"Opinion      : "
+        f"{pressure_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{pressure_result.confidence:.0f}"
+    )
+
+    pressure_analysis = pressure_result.payload
+
+    if isinstance(
+        pressure_analysis,
+        PressureAnalysis,
+    ):
+        print(
+            f"Direction    : "
+            f"{pressure_analysis.direction.value}"
+        )
+        print(
+            f"Pressure     : "
+            f"{pressure_analysis.pressure}"
+        )
+        print(
+            f"Market Phase : "
+            f"{pressure_analysis.market_phase.value}"
+        )
+        print(
+            f"Bull Score   : "
+            f"{pressure_analysis.bullish_score:.1f}"
+        )
+        print(
+            f"Bear Score   : "
+            f"{pressure_analysis.bearish_score:.1f}"
+        )
+        print(
+            f"Bars Evaluated: "
+            f"{pressure_analysis.evaluated_bar_count}"
+        )
+
+    if pressure_result.evidence:
+        print("Evidence     :")
+        for item in pressure_result.evidence:
+            print(f" - {item}")
+
+    if pressure_result.warnings:
+        print("Warnings     :")
+        for item in pressure_result.warnings:
+            print(f" - {item}")
+
+
+    print()
+    print("Participation Analyst")
+    print(
+        f"Opinion      : "
+        f"{participation_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{participation_result.confidence:.0f}"
+    )
+
+    participation_analysis = (
+        participation_result.payload
+    )
+
+    if isinstance(
+        participation_analysis,
+        ParticipationAnalysis,
+    ):
+        print(
+            f"Direction    : "
+            f"{participation_analysis.direction.value}"
+        )
+        print(
+            f"Participation: "
+            f"{participation_analysis.participation}"
+        )
+        print(
+            f"Market Phase : "
+            f"{participation_analysis.market_phase.value}"
+        )
+        print(
+            f"Volume Ratio : "
+            f"{participation_analysis.volume_ratio:.2f}"
+        )
+        print(
+            f"Recent Avg   : "
+            f"{participation_analysis.recent_average_volume:.0f}"
+        )
+        print(
+            f"Baseline Avg : "
+            f"{participation_analysis.average_volume:.0f}"
+        )
+
+    if participation_result.evidence:
+        print("Evidence     :")
+        for item in participation_result.evidence:
+            print(f" - {item}")
+
+    if participation_result.warnings:
+        print("Warnings     :")
+        for item in participation_result.warnings:
+            print(f" - {item}")
+
+        # ============================================================
+        # ACCEPTANCE ANALYST OUTPUT
+        # ============================================================
+        print()
+        print("Acceptance Analyst")
+        print(f"Accepted     : {acceptance.accepted}")
+        print(f"Level        : {acceptance.level}")
+        print(f"Score        : {acceptance.score}")
+
+        if acceptance.trigger_price is not None:
+            print(f"Trigger Price: {acceptance.trigger_price:.2f}")
+        else:
+            print("Trigger Price: n/a")
+
+        if acceptance.previous_level is not None:
+            print(f"Prior Level  : {acceptance.previous_level:.2f}")
+        else:
+            print("Prior Level  : n/a")
+
+        print(f"Reason       : {acceptance.reason}")
+
+        if acceptance.evidence:
+            print("Evidence     :")
+
+            for item in acceptance.evidence:
+                print(f" - {item}")
+
+        if acceptance.warnings:
+            print("Warnings     :")
+
+            for item in acceptance.warnings:
+                print(f" - {item}")
+
+
+    print()
+    print("Value Analyst")
+    print(
+        f"Opinion      : "
+        f"{value_result.opinion}"
+    )
+    print(
+        f"Confidence   : "
+        f"{value_result.confidence:.0f}"
+    )
+
+    value_analysis = value_result.payload
+
+    if isinstance(
+        value_analysis,
+        ValueAnalysis,
+    ):
+        print(
+            f"Direction    : "
+            f"{value_analysis.direction.value}"
+        )
+        print(
+            f"Value State  : "
+            f"{value_analysis.value_state}"
+        )
+        print(
+            f"Market Phase : "
+            f"{value_analysis.market_phase.value}"
+        )
+        print(
+            f"Fair Value   : "
+            f"{value_analysis.fair_value:.2f}"
+            if value_analysis.fair_value is not None
+            else "Fair Value   : n/a"
+        )
+        print(
+            f"Value Distance: "
+            f"{value_analysis.distance_to_value:.2f}"
+            if value_analysis.distance_to_value is not None
+            else "Value Distance: n/a"
+        )
+        print(
+            f"ATR Distance : "
+            f"{value_analysis.atr_distance_to_value:.2f}"
+            if value_analysis.atr_distance_to_value is not None
+            else "ATR Distance : n/a"
+        )
+
+    if value_result.evidence:
+        print("Evidence     :")
+        for item in value_result.evidence:
+            print(f" - {item}")
+
+    if value_result.warnings:
+        print("Warnings     :")
+        for item in value_result.warnings:
+            print(f" - {item}")
+
 
     # ============================================================
     # SETUP LIFECYCLE OUTPUT
@@ -390,6 +744,85 @@ def main() -> None:
         f"Recommendation: "
         f"{decision_result.recommendation}"
     )
+
+     # ============================================================
+    # INSTITUTIONAL DECISION CONTEXT OUTPUT
+    # ============================================================
+    print()
+    print("Institutional Decision Context")
+
+    institutional_context = (
+        decision_result.institutional_context
+    )
+
+    if institutional_context is None:
+        print("Status       : Unavailable")
+
+    else:
+        bias = institutional_context.institutional_bias
+        confluence = (
+            institutional_context.institutional_confluence
+        )
+        market_phase = institutional_context.market_phase
+
+        print(
+            f"Bias         : "
+            f"{bias.direction.value}"
+        )
+        print(
+            f"Bias Strength: "
+            f"{bias.strength:.0f}"
+        )
+        print(
+            f"Bias Conf.   : "
+            f"{bias.confidence:.0f}%"
+        )
+        print(
+            f"Bull Score   : "
+            f"{bias.bullish_score:.1f}"
+        )
+        print(
+            f"Bear Score   : "
+            f"{bias.bearish_score:.1f}"
+        )
+
+        print(
+            f"Confluence   : "
+            f"{confluence.dominant_direction.value}"
+        )
+        print(
+            f"Confl. Score : "
+            f"{confluence.score:.0f}/100"
+        )
+        print(
+            f"Agreement    : "
+            f"{confluence.agreement_count}"
+        )
+        print(
+            f"Conflict     : "
+            f"{confluence.conflict_count}"
+        )
+
+        print(
+            f"Phase        : "
+            f"{market_phase.phase.value}"
+        )
+        print(
+            f"Phase Conf.  : "
+            f"{market_phase.confidence:.0f}%"
+        )
+        print(
+            f"Phase Strength: "
+            f"{market_phase.strength:.0f}"
+        )
+        print(
+            f"Phase Agree. : "
+            f"{market_phase.agreement_count}"
+        )
+        print(
+            f"Phase Conflict: "
+            f"{market_phase.conflict_count}"
+        )
 
     print()
     print("Analyst Summary")

@@ -191,6 +191,7 @@ class StructureEngine:
             projected_rr=None,
             swing_high_count=len(highs),
             swing_low_count=len(lows),
+            swings=swings,
             bullish_break=bos.bullish_break,
             bearish_break=bos.bearish_break,
             bullish_break_level=bos.bullish_break_level,

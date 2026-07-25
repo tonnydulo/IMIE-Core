@@ -11,6 +11,9 @@ from imie.directors.order_block_direction_resolver import (
 from imie.directors.structure_direction_resolver import (
     StructureDirectionResolver,
 )
+from imie.directors.extended_bias_direction_resolver import (
+    ExtendedBiasDirectionResolver,
+)
 from imie.models import (
     AnalystResult,
     InstitutionalConfluence,
@@ -64,6 +67,13 @@ class InstitutionalConfluenceEngine:
     structure_weight: float = 40.0
     liquidity_weight: float = 30.0
     order_block_weight: float = 30.0
+    expanded_structure_weight: float = 25.0
+    expanded_liquidity_weight: float = 15.0
+    expanded_order_block_weight: float = 15.0
+    auction_weight: float = 15.0
+    pressure_weight: float = 12.0
+    participation_weight: float = 10.0
+    value_weight: float = 8.0
 
     structure_resolver: StructureDirectionResolver = field(
         default_factory=StructureDirectionResolver,
@@ -76,6 +86,9 @@ class InstitutionalConfluenceEngine:
     order_block_resolver: OrderBlockDirectionResolver = field(
         default_factory=OrderBlockDirectionResolver,
     )
+    extended_resolver: ExtendedBiasDirectionResolver = field(
+        default_factory=ExtendedBiasDirectionResolver,
+    )
 
     def __post_init__(self) -> None:
         self._validate_weights()
@@ -87,6 +100,10 @@ class InstitutionalConfluenceEngine:
         structure: AnalystResult | None,
         liquidity: AnalystResult | None,
         order_block: AnalystResult | None,
+        auction: AnalystResult | None = None,
+        pressure: AnalystResult | None = None,
+        participation: AnalystResult | None = None,
+        value: AnalystResult | None = None,
     ) -> InstitutionalConfluence:
         """
         Evaluate directional institutional confluence.
@@ -109,6 +126,42 @@ class InstitutionalConfluenceEngine:
             name="order_block",
         )
 
+        self._validate_optional_result(
+            result=auction,
+            name="auction",
+        )
+
+        self._validate_optional_result(
+            result=pressure,
+            name="pressure",
+        )
+
+        self._validate_optional_result(
+            result=participation,
+            name="participation",
+        )
+
+        self._validate_optional_result(
+            result=value,
+            name="value",
+        )
+
+        expanded_mode = any(
+            result is not None
+            for result in (
+                auction,
+                pressure,
+                participation,
+                value,
+            )
+        )
+
+        domain_count = (
+            7
+            if expanded_mode
+            else 3
+        )
+
         structure_direction = (
             self.structure_resolver.resolve(
                 structure
@@ -127,10 +180,58 @@ class InstitutionalConfluenceEngine:
             )
         )
 
+        auction_direction = (
+            self.extended_resolver.resolve(
+                domain="AUCTION",
+                result=auction,
+            )
+            if expanded_mode
+            else InstitutionalDirection.UNKNOWN
+        )
+
+        pressure_direction = (
+            self.extended_resolver.resolve(
+                domain="PRESSURE",
+                result=pressure,
+            )
+            if expanded_mode
+            else InstitutionalDirection.UNKNOWN
+        )
+
+        participation_direction = (
+            self.extended_resolver.resolve(
+                domain="PARTICIPATION",
+                result=participation,
+            )
+            if expanded_mode
+            else InstitutionalDirection.UNKNOWN
+        )
+
+        value_direction = (
+            self.extended_resolver.resolve(
+                domain="VALUE",
+                result=value,
+            )
+            if expanded_mode
+            else InstitutionalDirection.UNKNOWN
+        )
+
         directions = (
-            structure_direction,
-            liquidity_direction,
-            order_block_direction,
+            (
+                structure_direction,
+                liquidity_direction,
+                order_block_direction,
+                auction_direction,
+                pressure_direction,
+                participation_direction,
+                value_direction,
+            )
+            if expanded_mode
+            else (
+                structure_direction,
+                liquidity_direction,
+                order_block_direction,
+            )
         )
 
         bullish_count = directions.count(
@@ -173,11 +274,47 @@ class InstitutionalConfluenceEngine:
             dominant_direction=dominant_direction,
         )
 
+        auction_support = (
+            expanded_mode
+            and self._aligns(
+                direction=auction_direction,
+                dominant_direction=dominant_direction,
+            )
+        )
+
+        pressure_support = (
+            expanded_mode
+            and self._aligns(
+                direction=pressure_direction,
+                dominant_direction=dominant_direction,
+            )
+        )
+
+        participation_support = (
+            expanded_mode
+            and self._aligns(
+                direction=participation_direction,
+                dominant_direction=dominant_direction,
+            )
+        )
+
+        value_support = (
+            expanded_mode
+            and self._aligns(
+                direction=value_direction,
+                dominant_direction=dominant_direction,
+            )
+        )
+
         agreement_count = sum(
             (
                 structure_support,
                 liquidity_support,
                 order_block_support,
+                auction_support,
+                pressure_support,
+                participation_support,
+                value_support,
             )
         )
 
@@ -188,33 +325,51 @@ class InstitutionalConfluenceEngine:
         )
 
         score = self._calculate_score(
+            expanded_mode=expanded_mode,
             structure_support=structure_support,
             liquidity_support=liquidity_support,
             order_block_support=order_block_support,
+            auction_support=auction_support,
+            pressure_support=pressure_support,
+            participation_support=participation_support,
+            value_support=value_support,
         )
 
         confidence_adjustment = (
             self._confidence_adjustment(
-                agreement_count
+                agreement_count=agreement_count,
+                domain_count=domain_count,
             )
         )
 
         evidence = self._build_evidence(
+            expanded_mode=expanded_mode,
             structure_direction=structure_direction,
             liquidity_direction=liquidity_direction,
             order_block_direction=order_block_direction,
+            auction_direction=auction_direction,
+            pressure_direction=pressure_direction,
+            participation_direction=participation_direction,
+            value_direction=value_direction,
             dominant_direction=dominant_direction,
             structure_support=structure_support,
             liquidity_support=liquidity_support,
             order_block_support=order_block_support,
+            auction_support=auction_support,
+            pressure_support=pressure_support,
+            participation_support=participation_support,
+            value_support=value_support,
             agreement_count=agreement_count,
             conflict_count=conflict_count,
         )
 
         warnings = self._build_warnings(
+            expanded_mode=expanded_mode,
             dominant_direction=dominant_direction,
             bullish_count=bullish_count,
             bearish_count=bearish_count,
+            neutral_count=neutral_count,
+            unknown_count=unknown_count,
             agreement_count=agreement_count,
             conflict_count=conflict_count,
         )
@@ -226,6 +381,11 @@ class InstitutionalConfluenceEngine:
             order_block_support=order_block_support,
             agreement_count=agreement_count,
             confidence_adjustment=confidence_adjustment,
+            auction_support=auction_support,
+            pressure_support=pressure_support,
+            participation_support=participation_support,
+            value_support=value_support,
+            domain_count=domain_count,
             dominant_direction=dominant_direction,
             bullish_count=bullish_count,
             bearish_count=bearish_count,
@@ -237,7 +397,7 @@ class InstitutionalConfluenceEngine:
         )
 
     def _validate_weights(self) -> None:
-        weights = (
+        legacy_weights = (
             (
                 "structure_weight",
                 self.structure_weight,
@@ -252,7 +412,41 @@ class InstitutionalConfluenceEngine:
             ),
         )
 
-        for name, value in weights:
+        expanded_weights = (
+            (
+                "expanded_structure_weight",
+                self.expanded_structure_weight,
+            ),
+            (
+                "expanded_liquidity_weight",
+                self.expanded_liquidity_weight,
+            ),
+            (
+                "expanded_order_block_weight",
+                self.expanded_order_block_weight,
+            ),
+            (
+                "auction_weight",
+                self.auction_weight,
+            ),
+            (
+                "pressure_weight",
+                self.pressure_weight,
+            ),
+            (
+                "participation_weight",
+                self.participation_weight,
+            ),
+            (
+                "value_weight",
+                self.value_weight,
+            ),
+        )
+
+        for name, value in (
+            *legacy_weights,
+            *expanded_weights,
+        ):
             if not isinstance(
                 value,
                 (
@@ -269,14 +463,25 @@ class InstitutionalConfluenceEngine:
                     f"{name} cannot be negative."
                 )
 
-        total_weight = sum(
+        legacy_total = sum(
             float(value)
-            for _, value in weights
+            for _, value in legacy_weights
         )
 
-        if total_weight != 100.0:
+        if legacy_total != 100.0:
             raise ValueError(
                 "Institutional confluence weights must total 100."
+            )
+
+        expanded_total = sum(
+            float(value)
+            for _, value in expanded_weights
+        )
+
+        if expanded_total != 100.0:
+            raise ValueError(
+                "Expanded institutional confluence weights "
+                "must total 100."
             )
 
     def _validate_resolvers(self) -> None:
@@ -306,6 +511,14 @@ class InstitutionalConfluenceEngine:
                 "order_block_resolver must be an "
                 "OrderBlockDirectionResolver."
             )
+        if not isinstance(
+            self.extended_resolver,
+            ExtendedBiasDirectionResolver,
+        ):
+            raise TypeError(
+                "extended_resolver must be an "
+                "ExtendedBiasDirectionResolver."
+            )
 
     @staticmethod
     def _validate_optional_result(
@@ -323,7 +536,7 @@ class InstitutionalConfluenceEngine:
             raise TypeError(
                 f"{name} must be an AnalystResult or None."
             )
-
+    
     @staticmethod
     def _resolve_dominant_direction(
         *,
@@ -393,20 +606,48 @@ class InstitutionalConfluenceEngine:
     def _calculate_score(
         self,
         *,
+        expanded_mode: bool,
         structure_support: bool,
         liquidity_support: bool,
         order_block_support: bool,
+        auction_support: bool,
+        pressure_support: bool,
+        participation_support: bool,
+        value_support: bool,
     ) -> float:
         score = 0.0
 
-        if structure_support:
-            score += self.structure_weight
+        if expanded_mode:
+            if structure_support:
+                score += self.expanded_structure_weight
 
-        if liquidity_support:
-            score += self.liquidity_weight
+            if liquidity_support:
+                score += self.expanded_liquidity_weight
 
-        if order_block_support:
-            score += self.order_block_weight
+            if order_block_support:
+                score += self.expanded_order_block_weight
+
+            if auction_support:
+                score += self.auction_weight
+
+            if pressure_support:
+                score += self.pressure_weight
+
+            if participation_support:
+                score += self.participation_weight
+
+            if value_support:
+                score += self.value_weight
+
+        else:
+            if structure_support:
+                score += self.structure_weight
+
+            if liquidity_support:
+                score += self.liquidity_weight
+
+            if order_block_support:
+                score += self.order_block_weight
 
         return round(
             float(score),
@@ -415,13 +656,31 @@ class InstitutionalConfluenceEngine:
 
     @staticmethod
     def _confidence_adjustment(
+        *,
         agreement_count: int,
+        domain_count: int,
     ) -> float:
+        if domain_count == 3:
+            adjustments = {
+                0: 0.0,
+                1: 2.0,
+                2: 5.0,
+                3: 8.0,
+            }
+
+            return adjustments[
+                agreement_count
+            ]
+
         adjustments = {
             0: 0.0,
-            1: 2.0,
-            2: 5.0,
-            3: 8.0,
+            1: 1.0,
+            2: 2.0,
+            3: 4.0,
+            4: 5.0,
+            5: 6.0,
+            6: 7.0,
+            7: 8.0,
         }
 
         return adjustments[
@@ -432,44 +691,80 @@ class InstitutionalConfluenceEngine:
     def _build_evidence(
         cls,
         *,
+        expanded_mode: bool,
         structure_direction: InstitutionalDirection,
         liquidity_direction: InstitutionalDirection,
         order_block_direction: InstitutionalDirection,
+        auction_direction: InstitutionalDirection,
+        pressure_direction: InstitutionalDirection,
+        participation_direction: InstitutionalDirection,
+        value_direction: InstitutionalDirection,
         dominant_direction: InstitutionalDirection,
         structure_support: bool,
         liquidity_support: bool,
         order_block_support: bool,
+        auction_support: bool,
+        pressure_support: bool,
+        participation_support: bool,
+        value_support: bool,
         agreement_count: int,
         conflict_count: int,
     ) -> tuple[str, ...]:
         evidence: list[str] = []
 
-        evidence.extend(
-            cls._domain_evidence(
-                domain="Structure",
-                direction=structure_direction,
-                dominant_direction=dominant_direction,
-                supports=structure_support,
-            )
-        )
+        domains = [
+            (
+                "Structure",
+                structure_direction,
+                structure_support,
+            ),
+            (
+                "Liquidity",
+                liquidity_direction,
+                liquidity_support,
+            ),
+            (
+                "Order Blocks",
+                order_block_direction,
+                order_block_support,
+            ),
+        ]
 
-        evidence.extend(
-            cls._domain_evidence(
-                domain="Liquidity",
-                direction=liquidity_direction,
-                dominant_direction=dominant_direction,
-                supports=liquidity_support,
+        if expanded_mode:
+            domains.extend(
+                (
+                    (
+                        "Auction",
+                        auction_direction,
+                        auction_support,
+                    ),
+                    (
+                        "Pressure",
+                        pressure_direction,
+                        pressure_support,
+                    ),
+                    (
+                        "Participation",
+                        participation_direction,
+                        participation_support,
+                    ),
+                    (
+                        "Value",
+                        value_direction,
+                        value_support,
+                    ),
+                )
             )
-        )
 
-        evidence.extend(
-            cls._domain_evidence(
-                domain="Order Blocks",
-                direction=order_block_direction,
-                dominant_direction=dominant_direction,
-                supports=order_block_support,
+        for domain, direction, supports in domains:
+            evidence.extend(
+                cls._domain_evidence(
+                    domain=domain,
+                    direction=direction,
+                    dominant_direction=dominant_direction,
+                    supports=supports,
+                )
             )
-        )
 
         if (
             dominant_direction
@@ -495,24 +790,42 @@ class InstitutionalConfluenceEngine:
                 "Institutional direction is neutral."
             )
 
-        agreement_text = {
-            1: (
-                "One institutional domain supports the setup."
-            ),
-            2: (
-                "Two institutional domains support the setup."
-            ),
-            3: (
-                "Three institutional domains support the setup."
-            ),
-        }
-
-        if agreement_count in agreement_text:
+        else:
             evidence.append(
-                agreement_text[
-                    agreement_count
-                ]
+                "Institutional direction is unresolved."
             )
+
+        if not expanded_mode:
+            legacy_agreement_text = {
+                1: (
+                    "One institutional domain supports the setup."
+                ),
+                2: (
+                    "Two institutional domains support the setup."
+                ),
+                3: (
+                    "Three institutional domains support the setup."
+                ),
+            }
+
+            if agreement_count in legacy_agreement_text:
+                evidence.append(
+                    legacy_agreement_text[
+                        agreement_count
+                    ]
+                )
+
+        else:
+            if agreement_count == 1:
+                evidence.append(
+                    "One institutional domain supports the setup."
+                )
+
+            elif agreement_count > 1:
+                evidence.append(
+                    f"{agreement_count} institutional domains "
+                    "support the setup."
+                )
 
         if conflict_count == 1:
             evidence.append(
@@ -570,19 +883,41 @@ class InstitutionalConfluenceEngine:
             )
 
         if supports:
-            if domain == "Structure":
-                evidence.append(
+            support_messages = {
+                "Structure": (
                     "Structure confirms institutional continuation."
-                )
-
-            elif domain == "Liquidity":
-                evidence.append(
+                ),
+                "Liquidity": (
                     "Liquidity supports institutional continuation."
-                )
-
-            elif domain == "Order Blocks":
-                evidence.append(
+                ),
+                "Order Blocks": (
                     "Order Blocks support institutional continuation."
+                ),
+                "Auction": (
+                    "Auction control supports institutional "
+                    "continuation."
+                ),
+                "Pressure": (
+                    "Directional pressure supports institutional "
+                    "continuation."
+                ),
+                "Participation": (
+                    "Participation confirms directional "
+                    "institutional activity."
+                ),
+                "Value": (
+                    "Value location supports the dominant "
+                    "institutional direction."
+                ),
+            }
+
+            message = support_messages.get(
+                domain
+            )
+
+            if message is not None:
+                evidence.append(
+                    message
                 )
 
             if (
@@ -616,9 +951,12 @@ class InstitutionalConfluenceEngine:
     def _build_warnings(
         cls,
         *,
+        expanded_mode: bool,
         dominant_direction: InstitutionalDirection,
         bullish_count: int,
         bearish_count: int,
+        neutral_count: int,
+        unknown_count: int,
         agreement_count: int,
         conflict_count: int,
     ) -> tuple[str, ...]:
@@ -632,6 +970,14 @@ class InstitutionalConfluenceEngine:
         elif agreement_count == 1:
             warnings.append(
                 "Only one institutional domain supports the setup."
+            )
+
+        elif (
+            expanded_mode
+            and agreement_count < 3
+        ):
+            warnings.append(
+                "Institutional agreement remains limited."
             )
 
         if conflict_count > 0:
@@ -648,6 +994,24 @@ class InstitutionalConfluenceEngine:
             warnings.append(
                 "Bullish and bearish institutional votes are tied."
             )
+
+        if expanded_mode:
+            if unknown_count > 0:
+                warnings.append(
+                    f"{unknown_count} institutional domains remain "
+                    "unresolved."
+                )
+
+            if neutral_count == 1:
+                warnings.append(
+                    "1 institutional domain is neutral."
+                )
+
+            elif neutral_count > 1:
+                warnings.append(
+                    f"{neutral_count} institutional domains are "
+                    "neutral."
+                )
 
         return cls._clean_items(
             warnings

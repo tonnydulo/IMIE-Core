@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from imie.models.swing import Swing
 
 @dataclass(frozen=True, slots=True)
 class StructureResult:
@@ -29,6 +30,8 @@ class StructureResult:
 
     swing_high_count: int
     swing_low_count: int
+
+    swings: tuple[Swing, ...] = field(default_factory=tuple)
 
     bullish_break: bool = False
     bearish_break: bool = False
@@ -99,6 +102,16 @@ class StructureResult:
             int(self.swing_low_count),
         )
 
+        for swing in self.swings:
+            if not isinstance(
+                swing,
+                Swing,
+            ):
+                raise TypeError(
+                    "StructureResult swings must contain "
+                    "Swing objects."
+                )
+
         object.__setattr__(
             self,
             "symbol",
@@ -163,6 +176,12 @@ class StructureResult:
             self,
             "reason",
             reason,
+        )
+
+        object.__setattr__(
+            self,
+            "swings",
+            tuple(self.swings),
         )
 
         if self.bullish_break and self.bearish_break:
