@@ -306,6 +306,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        trend = (
+            institutional_context.trend
+            if institutional_context is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -694,6 +700,41 @@ class DashboardStatusFilePublisher:
                     acceptance.warnings
                 )
                 if acceptance is not None
+                else ()
+            ),
+
+            trend_analyst=(
+                trend.analyst
+                if trend is not None
+                else None
+            ),
+            trend_opinion=(
+                trend.opinion
+                if trend is not None
+                else None
+            ),
+            trend_confidence=(
+                trend.confidence
+                if trend is not None
+                else None
+            ),
+            trend_enabled=(
+                trend.enabled
+                if trend is not None
+                else None
+            ),
+            trend_evidence=(
+                tuple(
+                    trend.evidence
+                )
+                if trend is not None
+                else ()
+            ),
+            trend_warnings=(
+                tuple(
+                    trend.warnings
+                )
+                if trend is not None
                 else ()
             ),
 

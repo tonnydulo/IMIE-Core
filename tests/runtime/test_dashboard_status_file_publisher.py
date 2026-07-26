@@ -1062,6 +1062,17 @@ def test_publish_result_populates_trade_plan_details(
 
     assert payload["acceptance_warnings"] == []
 
+    assert payload["trend_analyst"] == "TrendAnalyst"
+    assert payload["trend_opinion"] == "BULLISH"
+    assert payload["trend_confidence"] == 90.0
+    assert payload["trend_enabled"] is True
+
+    assert payload["trend_evidence"] == [
+        "Price is above EMA9 and VWAP.",
+    ]
+
+    assert payload["trend_warnings"] == []
+
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
     tmp_path: Path,
@@ -1270,3 +1281,10 @@ def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
     assert payload["acceptance_reason"] is None
     assert payload["acceptance_evidence"] == []
     assert payload["acceptance_warnings"] == []
+
+    assert payload["trend_analyst"] is None
+    assert payload["trend_opinion"] is None
+    assert payload["trend_confidence"] is None
+    assert payload["trend_enabled"] is None
+    assert payload["trend_evidence"] == []
+    assert payload["trend_warnings"] == []

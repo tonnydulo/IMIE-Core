@@ -99,6 +99,13 @@ def make_status(
     setup_lifecycle_action: str | None = None,
     setup_lifecycle_reason: str | None = None,
 
+    trend_analyst: str | None = None,
+    trend_opinion: str | None = None,
+    trend_confidence: float | None = None,
+    trend_enabled: bool | None = None,
+    trend_evidence: tuple[str, ...] = (),
+    trend_warnings: tuple[str, ...] = (),
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -245,6 +252,12 @@ def make_status(
         setup_lifecycle_reason=(
             setup_lifecycle_reason
         ),
+        trend_analyst=trend_analyst,
+        trend_opinion=trend_opinion,
+        trend_confidence=trend_confidence,
+        trend_enabled=trend_enabled,
+        trend_evidence=trend_evidence,
+        trend_warnings=trend_warnings,
     )
 
 
@@ -977,5 +990,143 @@ def test_status_rejects_negative_setup_lifecycle_atr_distance() -> None:
     ):
         make_status(
             setup_lifecycle_atr_distance=-0.01,
+        )
+
+def test_status_accepts_trend_detail() -> None:
+    status = make_status(
+        trend_analyst="TrendAnalyst",
+        trend_opinion="BULLISH",
+        trend_confidence=90.0,
+        trend_enabled=True,
+        trend_evidence=(
+            "Price is above EMA9 and VWAP.",
+        ),
+        trend_warnings=(),
+    )
+
+    assert status.trend_analyst == "TrendAnalyst"
+    assert status.trend_opinion == "BULLISH"
+    assert status.trend_confidence == 90.0
+    assert status.trend_enabled is True
+
+    assert status.trend_evidence == (
+        "Price is above EMA9 and VWAP.",
+    )
+
+    assert status.trend_warnings == ()
+
+def test_status_serializes_trend_detail() -> None:
+    status = make_status(
+        trend_analyst="TrendAnalyst",
+        trend_opinion="BEARISH",
+        trend_confidence=82.0,
+        trend_enabled=True,
+        trend_evidence=(
+            "Price is below EMA9.",
+            "Price is below VWAP.",
+        ),
+        trend_warnings=(
+            "Trend separation is limited.",
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["trend_analyst"] == "TrendAnalyst"
+    assert payload["trend_opinion"] == "BEARISH"
+    assert payload["trend_confidence"] == 82.0
+    assert payload["trend_enabled"] is True
+
+    assert payload["trend_evidence"] == [
+        "Price is below EMA9.",
+        "Price is below VWAP.",
+    ]
+
+    assert payload["trend_warnings"] == [
+        "Trend separation is limited.",
+    ]
+
+def test_trend_detail_text_and_lists_are_normalized() -> None:
+    status = make_status(
+        trend_analyst="  TrendAnalyst  ",
+        trend_opinion="  BULLISH  ",
+        trend_evidence=(
+            "  Price is above EMA9.  ",
+            "",
+            "   ",
+            "  EMA9 slope is rising.  ",
+        ),
+        trend_warnings=(
+            "  Price is close to VWAP.  ",
+            "",
+        ),
+    )
+
+    assert status.trend_analyst == "TrendAnalyst"
+    assert status.trend_opinion == "BULLISH"
+
+    assert status.trend_evidence == (
+        "Price is above EMA9.",
+        "EMA9 slope is rising.",
+    )
+
+    assert status.trend_warnings == (
+        "Price is close to VWAP.",
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1,
+        "yes",
+        object(),
+    ],
+)
+def test_status_rejects_invalid_trend_enabled(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="trend_enabled",
+    ):
+        make_status(
+            trend_enabled=value,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "90",
+        object(),
+    ],
+)
+def test_status_rejects_invalid_trend_confidence(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="trend_confidence",
+    ):
+        make_status(
+            trend_confidence=value,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.1,
+        100.1,
+    ],
+)
+def test_status_rejects_out_of_range_trend_confidence(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="trend_confidence",
+    ):
+        make_status(
+            trend_confidence=value,
         )
 

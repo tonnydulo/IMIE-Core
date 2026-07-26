@@ -106,6 +106,13 @@ class RuntimeDashboardStatus:
     acceptance_evidence: tuple[str, ...] = ()
     acceptance_warnings: tuple[str, ...] = ()
 
+    trend_analyst: str | None = None
+    trend_opinion: str | None = None
+    trend_confidence: float | None = None
+    trend_enabled: bool | None = None
+    trend_evidence: tuple[str, ...] = ()
+    trend_warnings: tuple[str, ...] = ()
+
     def __post_init__(
         self,
     ) -> None:
@@ -273,6 +280,7 @@ class RuntimeDashboardStatus:
             "market_phase_strength",
             "confluence_score",
             "acceptance_confidence",
+            "trend_confidence",
         ):
             value = getattr(
                 self,
@@ -393,6 +401,18 @@ class RuntimeDashboardStatus:
         ):
             raise TypeError(
                 "acceptance_confirmed must be "
+                "a bool or None."
+            )
+
+        if (
+            self.trend_enabled is not None
+            and not isinstance(
+                self.trend_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "trend_enabled must be "
                 "a bool or None."
             )
 
@@ -517,10 +537,13 @@ class RuntimeDashboardStatus:
             "setup_lifecycle_direction",
             "setup_lifecycle_action",
             "setup_lifecycle_reason",
-            "latest_error_type",
             "acceptance_direction",
             "acceptance_level",
             "acceptance_reason",
+            "trend_analyst",
+            "trend_opinion",
+            "latest_error_type",
+            
         ):
             value = getattr(
                 self,
@@ -556,6 +579,8 @@ class RuntimeDashboardStatus:
             "institutional_bias_opposing_domains",
             "acceptance_evidence",
             "acceptance_warnings",
+            "trend_evidence",
+            "trend_warnings",
         ):
             value = getattr(
                 self,
@@ -928,6 +953,24 @@ class RuntimeDashboardStatus:
                 ),
                 "acceptance_warnings": list(
                     self.acceptance_warnings
+                ),
+                "trend_analyst": (
+                    self.trend_analyst
+                ),
+                "trend_opinion": (
+                    self.trend_opinion
+                ),
+                "trend_confidence": (
+                    self.trend_confidence
+                ),
+                "trend_enabled": (
+                    self.trend_enabled
+                ),
+                "trend_evidence": list(
+                    self.trend_evidence
+                ),
+                "trend_warnings": list(
+                    self.trend_warnings
                 ),
             }
         )

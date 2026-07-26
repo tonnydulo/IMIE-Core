@@ -1329,6 +1329,88 @@ def build_dashboard_html(
                 </ul>
             </article>
 
+             <article class="card">
+                <div class="label">
+                    Trend Analyst
+                </div>
+
+                <div
+                    id="trendAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Trend Opinion
+                </div>
+
+                <div
+                    id="trendOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Trend Confidence
+                </div>
+
+                <div
+                    id="trendConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Trend Enabled
+                </div>
+
+                <div
+                    id="trendEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Trend Evidence
+                </div>
+
+                <ul
+                    id="trendEvidence"
+                    class="explanation-list"
+                >
+                    <li class="empty-list">
+                        No trend evidence.
+                    </li>
+                </ul>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Trend Warnings
+                </div>
+
+                <ul
+                    id="trendWarnings"
+                    class="explanation-list warning-list"
+                >
+                    <li class="empty-list">
+                        No trend warnings.
+                    </li>
+                </ul>
+            </article>
+
             <article class="card">
                 <div class="label">
                     Current State
@@ -1804,6 +1886,39 @@ def build_dashboard_html(
 
             if (confirmed === false) {{
                 element.textContent = "NOT CONFIRMED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
+        function updateTrendEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "trendEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
                 element.classList.add(
                     "plan-invalid"
                 );
@@ -2709,6 +2824,43 @@ def build_dashboard_html(
                     "acceptanceWarnings",
                     payload.acceptance_warnings,
                     "No acceptance warnings."
+                );
+
+                //====================================================
+                // TREND DETAIL
+                //====================================================
+
+                setText(
+                    "trendAnalyst",
+                    payload.trend_analyst
+                        ?? "—"
+                );
+
+                setText(
+                    "trendOpinion",
+                    payload.trend_opinion
+                        ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "trendConfidence",
+                    payload.trend_confidence
+                );
+
+                updateTrendEnabled(
+                    payload.trend_enabled
+                );
+
+                updateTextList(
+                    "trendEvidence",
+                    payload.trend_evidence,
+                    "No trend evidence."
+                );
+
+                updateTextList(
+                    "trendWarnings",
+                    payload.trend_warnings,
+                    "No trend warnings."
                 );
 
                 //====================================================

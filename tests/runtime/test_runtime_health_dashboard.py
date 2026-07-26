@@ -1005,4 +1005,86 @@ def test_dashboard_acceptance_detail_reuses_existing_renderers() -> None:
         in html
     )
 
-    
+def test_dashboard_contains_trend_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "trendAnalyst",
+        "trendOpinion",
+        "trendConfidence",
+        "trendEnabled",
+        "trendEvidence",
+        "trendWarnings",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_trend_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.trend_analyst",
+        "payload.trend_opinion",
+        "payload.trend_confidence",
+        "payload.trend_enabled",
+        "payload.trend_evidence",
+        "payload.trend_warnings",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_trend_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateTrendEnabled(" in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+    assert '"plan-valid"' in html
+    assert '"plan-invalid"' in html
+
+def test_dashboard_trend_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'setText(\n'
+        '                    "trendAnalyst",\n'
+        "                    payload.trend_analyst"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "trendOpinion",\n'
+        "                    payload.trend_opinion"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "trendConfidence",\n'
+        "                    payload.trend_confidence"
+        in html
+    )
+
+    assert (
+        "updateTrendEnabled(\n"
+        "                    payload.trend_enabled"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "trendEvidence",\n'
+        "                    payload.trend_evidence"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "trendWarnings",\n'
+        "                    payload.trend_warnings"
+        in html
+    )
+
