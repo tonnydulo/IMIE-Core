@@ -35,6 +35,8 @@ class RuntimeDashboardStatus:
     decision_confidence: float | None = None
     decision_actionable: bool | None = None
     decision_recommendation: str | None = None
+    decision_reasons: tuple[str, ...] = ()
+    decision_warnings: tuple[str, ...] = ()
 
     trade_direction: str | None = None
     trade_plan_valid: bool | None = None
@@ -571,6 +573,8 @@ class RuntimeDashboardStatus:
             )
 
         for field_name in (
+            "decision_reasons",
+            "decision_warnings",
             "trade_reasons",
             "trade_warnings",
             "market_phase_supporting_domains",
@@ -757,6 +761,12 @@ class RuntimeDashboardStatus:
                 ),
                 "decision_recommendation": (
                     self.decision_recommendation
+                ),
+                "decision_reasons": list(
+                    self.decision_reasons
+                ),
+                "decision_warnings": list(
+                    self.decision_warnings
                 ),
                 "trade_direction": (
                     self.trade_direction

@@ -514,6 +514,36 @@ def build_dashboard_html(
                 </div>
             </article>
 
+             <article class="card wide">
+                <div class="label">
+                    Decision Reasons
+                </div>
+
+                <ul
+                    id="decisionReasons"
+                    class="explanation-list"
+                >
+                    <li class="empty-list">
+                        No decision reasons available.
+                    </li>
+                </ul>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Decision Warnings
+                </div>
+
+                <ul
+                    id="decisionWarnings"
+                    class="explanation-list warning-list"
+                >
+                    <li class="empty-list">
+                        No decision warnings.
+                    </li>
+                </ul>
+            </article>
+
              <article class="card">
                 <div class="label">
                     Plan Valid
@@ -2459,6 +2489,18 @@ def build_dashboard_html(
                     "decisionRecommendation",
                     payload.decision_recommendation
                         ?? "—"
+                );
+
+                updateTextList(
+                    "decisionReasons",
+                    payload.decision_reasons,
+                    "No decision reasons available."
+                );
+
+                updateTextList(
+                    "decisionWarnings",
+                    payload.decision_warnings,
+                    "No decision warnings."
                 );
 
                 updateTradePlanValid(

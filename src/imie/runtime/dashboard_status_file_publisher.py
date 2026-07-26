@@ -363,6 +363,20 @@ class DashboardStatusFilePublisher:
                 if decision_result is not None
                 else None
             ),
+            decision_reasons=(
+                tuple(
+                    decision_result.reasons
+                )
+                if decision_result is not None
+                else ()
+            ),
+            decision_warnings=(
+                tuple(
+                    decision_result.warnings
+                )
+                if decision_result is not None
+                else ()
+            ),
             trade_direction=(
                 self._display_value(
                     trade_plan.direction

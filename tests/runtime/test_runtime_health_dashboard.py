@@ -1088,3 +1088,38 @@ def test_dashboard_trend_detail_reuses_existing_renderers() -> None:
         in html
     )
 
+def test_dashboard_contains_decision_rationale_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="decisionReasons"' in html
+    assert 'id="decisionWarnings"' in html
+
+def test_dashboard_reads_decision_rationale_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.decision_reasons" in html
+    assert "payload.decision_warnings" in html
+
+def test_dashboard_contains_decision_rationale_empty_messages() -> None:
+    html = build_dashboard_html()
+
+    assert "No decision reasons available." in html
+    assert "No decision warnings." in html
+
+def test_dashboard_decision_rationale_reuses_text_list_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateTextList(\n'
+        '                    "decisionReasons",\n'
+        "                    payload.decision_reasons"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "decisionWarnings",\n'
+        "                    payload.decision_warnings"
+        in html
+    )
+

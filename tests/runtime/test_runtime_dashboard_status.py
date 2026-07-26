@@ -50,6 +50,8 @@ def make_status(
     decision_confidence: float | None = None,
     decision_actionable: bool | None = None,
     decision_recommendation: str | None = None,
+    decision_reasons: tuple[str, ...] = (),
+    decision_warnings: tuple[str, ...] = (),
     trade_direction: str | None = None,
     trade_narrative: str | None = None,
     trade_reasons: tuple[str, ...] = (),
@@ -136,6 +138,8 @@ def make_status(
         decision_recommendation=(
             decision_recommendation
         ),
+        decision_reasons=decision_reasons,
+        decision_warnings=decision_warnings,
         trade_direction=trade_direction,
         trade_narrative=trade_narrative,
         trade_reasons=trade_reasons,
@@ -1129,4 +1133,96 @@ def test_status_rejects_out_of_range_trend_confidence(
         make_status(
             trend_confidence=value,
         )
+
+def test_status_accepts_decision_rationale() -> None:
+    status = make_status(
+        decision_reasons=(
+            "Directional trend is confirmed.",
+            "Setup lifecycle requirements are satisfied.",
+        ),
+        decision_warnings=(
+            "Price is approaching nearby liquidity.",
+        ),
+    )
+
+    assert status.decision_reasons == (
+        "Directional trend is confirmed.",
+        "Setup lifecycle requirements are satisfied.",
+    )
+
+    assert status.decision_warnings == (
+        "Price is approaching nearby liquidity.",
+    )
+
+def test_status_serializes_decision_rationale() -> None:
+    status = make_status(
+        decision_reasons=(
+            "Completed-candle acceptance is confirmed.",
+        ),
+        decision_warnings=(
+            "Spread should be reviewed before entry.",
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["decision_reasons"] == [
+        "Completed-candle acceptance is confirmed.",
+    ]
+
+    assert payload["decision_warnings"] == [
+        "Spread should be reviewed before entry.",
+    ]
+
+def test_decision_rationale_items_are_normalized() -> None:
+    status = make_status(
+        decision_reasons=(
+            "  Trend supports continuation.  ",
+            "",
+            "   ",
+            "  Acceptance is confirmed.  ",
+        ),
+        decision_warnings=(
+            "  Nearby liquidity may reduce available room.  ",
+            "",
+        ),
+    )
+
+    assert status.decision_reasons == (
+        "Trend supports continuation.",
+        "Acceptance is confirmed.",
+    )
+
+    assert status.decision_warnings == (
+        "Nearby liquidity may reduce available room.",
+    )
+
+def test_decision_reasons_must_contain_strings() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "decision_reasons must contain "
+            "only strings"
+        ),
+    ):
+        make_status(
+            decision_reasons=(
+                123,  # type: ignore[arg-type]
+            )
+        )
+
+def test_decision_warnings_must_contain_strings() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "decision_warnings must contain "
+            "only strings"
+        ),
+    ):
+        make_status(
+            decision_warnings=(
+                object(),  # type: ignore[arg-type]
+            )
+        )
+
 

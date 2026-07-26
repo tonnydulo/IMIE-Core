@@ -404,6 +404,12 @@ def test_publish_result_populates_decision_details(
         is None
     )
 
+    assert payload["decision_reasons"] == [
+        "Dashboard publisher test decision.",
+    ]
+
+    assert payload["decision_warnings"] == []
+
 
 def test_health_update_creates_dashboard_file(
     tmp_path: Path,
@@ -434,6 +440,8 @@ def test_health_update_creates_dashboard_file(
     assert payload["timeframe"] == "2m"
     assert payload["latest_cycle_status"] is None
     assert payload["has_cycle"] is False
+    assert payload["decision_reasons"] == []
+    assert payload["decision_warnings"] == []
 
 
 def test_result_update_is_combined_with_health(
