@@ -378,6 +378,46 @@ def build_dashboard_html(
             color: #ff7f8e;
         }}
 
+        .analyst-summary {{
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 12px;
+        }}
+
+        .analyst-summary-row {{
+            display: grid;
+            grid-template-columns:
+                minmax(7rem, 0.7fr)
+                minmax(14rem, 2fr)
+                minmax(6rem, 0.6fr)
+                minmax(6rem, 0.6fr);
+            gap: 0.75rem;
+            align-items: start;
+            padding: 0.75rem;
+            border: 1px solid #253044;
+            border-radius: 0.65rem;
+            background: #101722;
+        }}
+
+        .analyst-summary-heading {{
+            color: #8fa1b6;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }}
+
+        .analyst-summary-value {{
+            margin-top: 0.2rem;
+            overflow-wrap: anywhere;
+        }}
+
+        @media (max-width: 760px) {{
+            .analyst-summary-row {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+
     </style>
 </head>
 
@@ -542,6 +582,21 @@ def build_dashboard_html(
                         No decision warnings.
                     </li>
                 </ul>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Analyst Summary
+                </div>
+
+                <div
+                    id="analystSummary"
+                    class="analyst-summary"
+                >
+                    <div class="empty-list">
+                        No analyst summary available.
+                    </div>
+                </div>
             </article>
 
              <article class="card">
@@ -2183,6 +2238,178 @@ def build_dashboard_html(
             }}
         }}
 
+        function updateAnalystSummary(summary) {{
+            const container = document.getElementById(
+                "analystSummary"
+            );
+
+            container.replaceChildren();
+
+            if (
+                !summary
+                || typeof summary !== "object"
+                || Array.isArray(summary)
+                || Object.keys(summary).length === 0
+            ) {{
+                const empty = document.createElement(
+                    "div"
+                );
+
+                empty.className = "empty-list";
+                empty.textContent =
+                    "No analyst summary available.";
+
+                container.appendChild(empty);
+                return;
+            }}
+
+            for (
+                const [
+                    analystId,
+                    details,
+                ] of Object.entries(summary)
+            ) {{
+                const row = document.createElement(
+                    "div"
+                );
+
+                row.className =
+                    "analyst-summary-row";
+
+                const analystCell =
+                    document.createElement("div");
+
+                const analystHeading =
+                    document.createElement("div");
+
+                analystHeading.className =
+                    "analyst-summary-heading";
+                analystHeading.textContent =
+                    "Analyst";
+
+                const analystValue =
+                    document.createElement("div");
+
+                analystValue.className =
+                    "analyst-summary-value";
+                analystValue.textContent =
+                    analystId;
+
+                analystCell.append(
+                    analystHeading,
+                    analystValue
+                );
+
+                const opinionCell =
+                    document.createElement("div");
+
+                const opinionHeading =
+                    document.createElement("div");
+
+                opinionHeading.className =
+                    "analyst-summary-heading";
+                opinionHeading.textContent =
+                    "Opinion";
+
+                const opinionValue =
+                    document.createElement("div");
+
+                opinionValue.className =
+                    "analyst-summary-value";
+                opinionValue.textContent =
+                    details?.opinion || "—";
+
+                opinionCell.append(
+                    opinionHeading,
+                    opinionValue
+                );
+
+                const confidenceCell =
+                    document.createElement("div");
+
+                const confidenceHeading =
+                    document.createElement("div");
+
+                confidenceHeading.className =
+                    "analyst-summary-heading";
+                confidenceHeading.textContent =
+                    "Confidence";
+
+                const confidenceValue =
+                    document.createElement("div");
+
+                confidenceValue.className =
+                    "analyst-summary-value";
+
+                confidenceValue.textContent =
+                    typeof details?.confidence
+                        === "number"
+                        ? (
+                            details.confidence
+                                .toFixed(1)
+                            + "%"
+                        )
+                        : "—";
+
+                confidenceCell.append(
+                    confidenceHeading,
+                    confidenceValue
+                );
+
+                const enabledCell =
+                    document.createElement("div");
+
+                const enabledHeading =
+                    document.createElement("div");
+
+                enabledHeading.className =
+                    "analyst-summary-heading";
+                enabledHeading.textContent =
+                    "Status";
+
+                const enabledValue =
+                    document.createElement("div");
+
+                enabledValue.className =
+                    "analyst-summary-value";
+
+                if (details?.enabled === true) {{
+                    enabledValue.textContent =
+                        "ENABLED";
+                    enabledValue.classList.add(
+                        "plan-valid"
+                    );
+                }} else if (
+                    details?.enabled === false
+                ) {{
+                    enabledValue.textContent =
+                        "DISABLED";
+                    enabledValue.classList.add(
+                        "plan-invalid"
+                    );
+                }} else {{
+                    enabledValue.textContent = "—";
+                    enabledValue.classList.add(
+                        "institution-unknown"
+                    );
+                }}
+
+                enabledCell.append(
+                    enabledHeading,
+                    enabledValue
+                );
+
+                row.append(
+                    analystCell,
+                    opinionCell,
+                    confidenceCell,
+                    enabledCell
+                );
+
+                container.appendChild(row);
+            }}
+        }}
+
         function updateInstitutionalDirection(
             id,
             direction
@@ -2501,6 +2728,10 @@ def build_dashboard_html(
                     "decisionWarnings",
                     payload.decision_warnings,
                     "No decision warnings."
+                );
+
+                updateAnalystSummary(
+                    payload.analyst_summary
                 );
 
                 updateTradePlanValid(

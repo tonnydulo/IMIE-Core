@@ -377,6 +377,15 @@ class DashboardStatusFilePublisher:
                 if decision_result is not None
                 else ()
             ),
+            analyst_summary=(
+                {
+                    analyst_id: dict(details)
+                    for analyst_id, details
+                    in decision_result.analyst_summary.items()
+                }
+                if decision_result is not None
+                else {}
+            ),
             trade_direction=(
                 self._display_value(
                     trade_plan.direction

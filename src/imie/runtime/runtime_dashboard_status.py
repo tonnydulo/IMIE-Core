@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
@@ -37,6 +37,10 @@ class RuntimeDashboardStatus:
     decision_recommendation: str | None = None
     decision_reasons: tuple[str, ...] = ()
     decision_warnings: tuple[str, ...] = ()
+
+    analyst_summary: dict[str, dict[str, object]] = field(
+        default_factory=dict
+    )
 
     trade_direction: str | None = None
     trade_plan_valid: bool | None = None
@@ -604,6 +608,14 @@ class RuntimeDashboardStatus:
                 normalized,
             )
 
+        object.__setattr__(
+            self,
+            "analyst_summary",
+            self._normalize_analyst_summary(
+                self.analyst_summary
+            ),
+        )
+
         for field_name in (
             "latest_cycle_started_at",
             "latest_cycle_completed_at",
@@ -768,6 +780,11 @@ class RuntimeDashboardStatus:
                 "decision_warnings": list(
                     self.decision_warnings
                 ),
+                "analyst_summary": {
+                    analyst_id: dict(details)
+                    for analyst_id, details
+                    in self.analyst_summary.items()
+                },
                 "trade_direction": (
                     self.trade_direction
                 ),
@@ -1136,3 +1153,97 @@ class RuntimeDashboardStatus:
             raise ValueError(
                 f"{field_name} must be timezone-aware."
             )
+
+    @staticmethod
+    def _normalize_analyst_summary(
+        summary: object,
+    ) -> dict[str, dict[str, object]]:
+        if not isinstance(summary, dict):
+            raise TypeError(
+                "analyst_summary must be a dictionary"
+            )
+
+        normalized: dict[
+            str,
+            dict[str, object],
+        ] = {}
+
+        for analyst_id, details in summary.items():
+            if not isinstance(analyst_id, str):
+                raise TypeError(
+                    "analyst_summary keys must be strings"
+                )
+
+            normalized_id = (
+                analyst_id.strip().upper()
+            )
+
+            if not normalized_id:
+                continue
+
+            if not isinstance(details, dict):
+                raise TypeError(
+                    "analyst_summary values must be "
+                    "dictionaries"
+                )
+
+            opinion = details.get(
+                "opinion",
+                "",
+            )
+
+            if not isinstance(opinion, str):
+                raise TypeError(
+                    "analyst_summary opinion must be "
+                    "a string"
+                )
+
+            confidence = details.get(
+                "confidence",
+                0.0,
+            )
+
+            if (
+                isinstance(confidence, bool)
+                or not isinstance(
+                    confidence,
+                    int | float,
+                )
+            ):
+                raise TypeError(
+                    "analyst_summary confidence must "
+                    "be numeric"
+                )
+
+            confidence_value = float(
+                confidence
+            )
+
+            if not (
+                0.0
+                <= confidence_value
+                <= 100.0
+            ):
+                raise ValueError(
+                    "analyst_summary confidence must "
+                    "be between 0 and 100"
+                )
+
+            enabled = details.get(
+                "enabled",
+                True,
+            )
+
+            if not isinstance(enabled, bool):
+                raise TypeError(
+                    "analyst_summary enabled must be "
+                    "a boolean"
+                )
+
+            normalized[normalized_id] = {
+                "opinion": opinion.strip(),
+                "confidence": confidence_value,
+                "enabled": enabled,
+            }
+
+        return normalized

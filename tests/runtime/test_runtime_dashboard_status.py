@@ -52,6 +52,7 @@ def make_status(
     decision_recommendation: str | None = None,
     decision_reasons: tuple[str, ...] = (),
     decision_warnings: tuple[str, ...] = (),
+    analyst_summary: dict[str, dict[str, object]] | None = None,
     trade_direction: str | None = None,
     trade_narrative: str | None = None,
     trade_reasons: tuple[str, ...] = (),
@@ -262,7 +263,13 @@ def make_status(
         trend_enabled=trend_enabled,
         trend_evidence=trend_evidence,
         trend_warnings=trend_warnings,
+        analyst_summary=(
+        analyst_summary
+        if analyst_summary is not None
+        else {}
+    ),
     )
+
 
 
 def test_dashboard_status_can_be_created() -> None:
@@ -1225,4 +1232,138 @@ def test_decision_warnings_must_contain_strings() -> None:
             )
         )
 
+def test_status_accepts_analyst_summary() -> None:
+    status = make_status(
+        analyst_summary={
+            "TREND": {
+                "opinion": "Directional trend is bullish.",
+                "confidence": 82.0,
+                "enabled": True,
+            },
+            "LIQUIDITY": {
+                "opinion": "Sell-side liquidity is active.",
+                "confidence": 74.0,
+                "enabled": True,
+            },
+        }
+    )
 
+    assert status.analyst_summary == {
+        "TREND": {
+            "opinion": "Directional trend is bullish.",
+            "confidence": 82.0,
+            "enabled": True,
+        },
+        "LIQUIDITY": {
+            "opinion": "Sell-side liquidity is active.",
+            "confidence": 74.0,
+            "enabled": True,
+        },
+    }
+
+def test_status_normalizes_analyst_summary() -> None:
+    status = make_status(
+        analyst_summary={
+            " trend ": {
+                "opinion": "  Bullish continuation.  ",
+                "confidence": 81,
+                "enabled": True,
+            },
+            "   ": {
+                "opinion": "Ignored",
+                "confidence": 50.0,
+                "enabled": True,
+            },
+        }
+    )
+
+    assert status.analyst_summary == {
+        "TREND": {
+            "opinion": "Bullish continuation.",
+            "confidence": 81.0,
+            "enabled": True,
+        },
+    }
+
+def test_status_serializes_analyst_summary() -> None:
+    status = make_status(
+        analyst_summary={
+            "ACCEPTANCE": {
+                "opinion": "Acceptance is confirmed.",
+                "confidence": 88.0,
+                "enabled": True,
+            },
+        }
+    )
+
+    payload = status.to_dict()
+
+    assert payload["analyst_summary"] == {
+        "ACCEPTANCE": {
+            "opinion": "Acceptance is confirmed.",
+            "confidence": 88.0,
+            "enabled": True,
+        },
+    }
+
+def test_analyst_summary_must_be_dictionary() -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_summary must be a dictionary",
+    ):
+        make_status(
+            analyst_summary=[  # type: ignore[arg-type]
+                "TREND"
+            ]
+        )
+
+def test_analyst_summary_values_must_be_dictionaries() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "analyst_summary values must be "
+            "dictionaries"
+        ),
+    ):
+        make_status(
+            analyst_summary={
+                "TREND": "bullish",  # type: ignore[dict-item]
+            }
+        )
+
+def test_analyst_summary_confidence_must_be_valid() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_summary confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            analyst_summary={
+                "TREND": {
+                    "opinion": "Bullish",
+                    "confidence": 101.0,
+                    "enabled": True,
+                },
+            }
+        )
+
+def test_analyst_summary_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "analyst_summary enabled must be "
+            "a boolean"
+        ),
+    ):
+        make_status(
+            analyst_summary={
+                "TREND": {
+                    "opinion": "Bullish",
+                    "confidence": 80.0,
+                    "enabled": "yes",
+                },
+            }
+        )
+        

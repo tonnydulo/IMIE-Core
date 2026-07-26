@@ -442,6 +442,7 @@ def test_health_update_creates_dashboard_file(
     assert payload["has_cycle"] is False
     assert payload["decision_reasons"] == []
     assert payload["decision_warnings"] == []
+    assert payload["analyst_summary"] == {}
 
 
 def test_result_update_is_combined_with_health(

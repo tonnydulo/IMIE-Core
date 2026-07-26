@@ -1123,3 +1123,52 @@ def test_dashboard_decision_rationale_reuses_text_list_renderer() -> None:
         in html
     )
 
+def test_dashboard_contains_analyst_summary_container() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystSummary"' in html
+    assert "Analyst Summary" in html
+
+def test_dashboard_reads_analyst_summary_payload() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.analyst_summary" in html
+
+def test_dashboard_contains_analyst_summary_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateAnalystSummary(summary)"
+        in html
+    )
+
+    assert (
+        "Object.entries(summary)"
+        in html
+    )
+
+def test_dashboard_analyst_summary_renders_expected_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'analystHeading.textContent =' in html
+    assert 'opinionHeading.textContent =' in html
+    assert 'confidenceHeading.textContent =' in html
+    assert 'enabledHeading.textContent =' in html
+
+    assert "details?.opinion" in html
+    assert "details?.confidence" in html
+    assert "details?.enabled" in html
+
+def test_dashboard_contains_analyst_summary_empty_message() -> None:
+    html = build_dashboard_html()
+
+    assert "No analyst summary available." in html
+
+def test_dashboard_analyst_summary_uses_text_content() -> None:
+    html = build_dashboard_html()
+
+    assert "analystValue.textContent" in html
+    assert "opinionValue.textContent" in html
+    assert "confidenceValue.textContent" in html
+    assert "enabledValue.textContent" in html
+
