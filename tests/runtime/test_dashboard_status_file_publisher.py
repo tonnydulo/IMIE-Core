@@ -976,6 +976,25 @@ def test_publish_result_populates_trade_plan_details(
         payload["setup_lifecycle_reason"]
         == "Setup lifecycle is ready."
     )
+
+    assert payload["acceptance_confirmed"] is True
+    assert payload["acceptance_direction"] == "long"
+    assert payload["acceptance_level"] == "STRONG"
+    assert payload["acceptance_score"] == 90
+    assert payload["acceptance_confidence"] == 90.0
+    assert payload["acceptance_trigger_price"] == 500.0
+    assert payload["acceptance_previous_level"] == 499.75
+    assert payload["acceptance_pullback_low"] == 499.0
+    assert payload["acceptance_pullback_high"] == 500.0
+    assert (
+        payload["acceptance_reason"]
+        == "Acceptance confirmed."
+    )
+    assert payload["acceptance_evidence"] == [
+        "Completed-candle acceptance confirmed.",
+    ]
+    assert payload["acceptance_warnings"] == []
+
     assert (
         payload["confluence_confidence_adjustment"]
         == 8.0
@@ -1021,6 +1040,27 @@ def test_publish_result_populates_trade_plan_details(
     assert payload["confluence_neutral_count"] == 0
     assert payload["confluence_unknown_count"] == 0
     assert payload["confluence_domain_count"] == 3
+
+    assert payload["acceptance_confirmed"] is True
+    assert payload["acceptance_direction"] == "long"
+    assert payload["acceptance_level"] == "STRONG"
+    assert payload["acceptance_score"] == 90
+    assert payload["acceptance_confidence"] == 90.0
+    assert payload["acceptance_trigger_price"] == 500.0
+    assert payload["acceptance_previous_level"] == 499.75
+    assert payload["acceptance_pullback_low"] == 499.0
+    assert payload["acceptance_pullback_high"] == 500.0
+
+    assert (
+        payload["acceptance_reason"]
+        == "Acceptance confirmed."
+    )
+
+    assert payload["acceptance_evidence"] == [
+        "Completed-candle acceptance confirmed.",
+    ]
+
+    assert payload["acceptance_warnings"] == []
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1206,3 +1246,27 @@ def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
         payload["setup_lifecycle_reason"]
         is None
     )
+    assert payload["acceptance_confirmed"] is None
+    assert payload["acceptance_direction"] is None
+    assert payload["acceptance_level"] is None
+    assert payload["acceptance_score"] is None
+    assert payload["acceptance_confidence"] is None
+    assert payload["acceptance_trigger_price"] is None
+    assert payload["acceptance_previous_level"] is None
+    assert payload["acceptance_pullback_low"] is None
+    assert payload["acceptance_pullback_high"] is None
+    assert payload["acceptance_reason"] is None
+    assert payload["acceptance_evidence"] == []
+    assert payload["acceptance_warnings"] == []
+    assert payload["acceptance_confirmed"] is None
+    assert payload["acceptance_direction"] is None
+    assert payload["acceptance_level"] is None
+    assert payload["acceptance_score"] is None
+    assert payload["acceptance_confidence"] is None
+    assert payload["acceptance_trigger_price"] is None
+    assert payload["acceptance_previous_level"] is None
+    assert payload["acceptance_pullback_low"] is None
+    assert payload["acceptance_pullback_high"] is None
+    assert payload["acceptance_reason"] is None
+    assert payload["acceptance_evidence"] == []
+    assert payload["acceptance_warnings"] == []

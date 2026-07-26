@@ -93,6 +93,19 @@ class RuntimeDashboardStatus:
     setup_lifecycle_action: str | None = None
     setup_lifecycle_reason: str | None = None
 
+    acceptance_confirmed: bool | None = None
+    acceptance_direction: str | None = None
+    acceptance_level: str | None = None
+    acceptance_score: int | None = None
+    acceptance_confidence: float | None = None
+    acceptance_trigger_price: float | None = None
+    acceptance_previous_level: float | None = None
+    acceptance_pullback_low: float | None = None
+    acceptance_pullback_high: float | None = None
+    acceptance_reason: str | None = None
+    acceptance_evidence: tuple[str, ...] = ()
+    acceptance_warnings: tuple[str, ...] = ()
+
     def __post_init__(
         self,
     ) -> None:
@@ -259,6 +272,7 @@ class RuntimeDashboardStatus:
             "market_phase_confidence",
             "market_phase_strength",
             "confluence_score",
+            "acceptance_confidence",
         ):
             value = getattr(
                 self,
@@ -370,6 +384,18 @@ class RuntimeDashboardStatus:
                 "a bool or None."
             )
 
+        if (
+            self.acceptance_confirmed is not None
+            and not isinstance(
+                self.acceptance_confirmed,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "acceptance_confirmed must be "
+                "a bool or None."
+            )
+
         for field_name in (
             "trade_entry",
             "trade_stop",
@@ -377,6 +403,10 @@ class RuntimeDashboardStatus:
             "trade_target2",
             "trade_rr1",
             "trade_rr2",
+            "acceptance_trigger_price",
+            "acceptance_previous_level",
+            "acceptance_pullback_low",
+            "acceptance_pullback_high",
         ):
             value = getattr(
                 self,
@@ -429,6 +459,37 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.acceptance_score is not None
+            and (
+                isinstance(
+                    self.acceptance_score,
+                    bool,
+                )
+                or not isinstance(
+                    self.acceptance_score,
+                    int,
+                )
+            )
+        ):
+            raise TypeError(
+                "acceptance_score must be "
+                "an int or None."
+            )
+
+        if (
+            self.acceptance_score is not None
+            and not (
+                0
+                <= self.acceptance_score
+                <= 100
+            )
+        ):
+            raise ValueError(
+                "acceptance_score must be "
+                "between 0 and 100."
+            )
+
+        if (
             self.trade_quality
             is not None
             and not (
@@ -457,6 +518,9 @@ class RuntimeDashboardStatus:
             "setup_lifecycle_action",
             "setup_lifecycle_reason",
             "latest_error_type",
+            "acceptance_direction",
+            "acceptance_level",
+            "acceptance_reason",
         ):
             value = getattr(
                 self,
@@ -490,6 +554,8 @@ class RuntimeDashboardStatus:
             "market_phase_opposing_domains",
             "institutional_bias_supporting_domains",
             "institutional_bias_opposing_domains",
+            "acceptance_evidence",
+            "acceptance_warnings",
         ):
             value = getattr(
                 self,
@@ -826,6 +892,42 @@ class RuntimeDashboardStatus:
                 "has_cycle": self.has_cycle,
                 "cycle_failed": (
                     self.cycle_failed
+                ),
+                "acceptance_confirmed": (
+                    self.acceptance_confirmed
+                ),
+                "acceptance_direction": (
+                    self.acceptance_direction
+                ),
+                "acceptance_level": (
+                    self.acceptance_level
+                ),
+                "acceptance_score": (
+                    self.acceptance_score
+                ),
+                "acceptance_confidence": (
+                    self.acceptance_confidence
+                ),
+                "acceptance_trigger_price": (
+                    self.acceptance_trigger_price
+                ),
+                "acceptance_previous_level": (
+                    self.acceptance_previous_level
+                ),
+                "acceptance_pullback_low": (
+                    self.acceptance_pullback_low
+                ),
+                "acceptance_pullback_high": (
+                    self.acceptance_pullback_high
+                ),
+                "acceptance_reason": (
+                    self.acceptance_reason
+                ),
+                "acceptance_evidence": list(
+                    self.acceptance_evidence
+                ),
+                "acceptance_warnings": list(
+                    self.acceptance_warnings
                 ),
             }
         )

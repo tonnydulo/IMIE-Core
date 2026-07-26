@@ -300,6 +300,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        acceptance = (
+            institutional_context.acceptance
+            if institutional_context is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -625,6 +631,70 @@ class DashboardStatusFilePublisher:
                 setup_lifecycle.reason
                 if setup_lifecycle is not None
                 else None
+            ),
+            acceptance_confirmed=(
+                acceptance.accepted
+                if acceptance is not None
+                else None
+            ),
+            acceptance_direction=(
+                acceptance.direction
+                if acceptance is not None
+                else None
+            ),
+            acceptance_level=(
+                acceptance.level
+                if acceptance is not None
+                else None
+            ),
+            acceptance_score=(
+                acceptance.score
+                if acceptance is not None
+                else None
+            ),
+            acceptance_confidence=(
+                acceptance.confidence
+                if acceptance is not None
+                else None
+            ),
+            acceptance_trigger_price=(
+                acceptance.trigger_price
+                if acceptance is not None
+                else None
+            ),
+            acceptance_previous_level=(
+                acceptance.previous_level
+                if acceptance is not None
+                else None
+            ),
+            acceptance_pullback_low=(
+                acceptance.pullback_low
+                if acceptance is not None
+                else None
+            ),
+            acceptance_pullback_high=(
+                acceptance.pullback_high
+                if acceptance is not None
+                else None
+            ),
+            acceptance_reason=(
+                acceptance.reason
+                if acceptance is not None
+                else None
+            ),
+            acceptance_evidence=(
+                tuple(
+                    acceptance.evidence
+                )
+                if acceptance is not None
+                else ()
+            ),
+            acceptance_warnings=(
+                tuple(
+                    acceptance.warnings
+                )
+                if acceptance is not None
+                else ()
             ),
 
             latest_error_type=(

@@ -1171,6 +1171,166 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
+                    Acceptance Confirmed
+                </div>
+
+                <div
+                    id="acceptanceConfirmed"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Acceptance Direction
+                </div>
+
+                <div
+                    id="acceptanceDirection"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Acceptance Level
+                </div>
+
+                <div
+                    id="acceptanceLevel"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Acceptance Score
+                </div>
+
+                <div
+                    id="acceptanceScore"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Acceptance Confidence
+                </div>
+
+                <div
+                    id="acceptanceConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Trigger Price
+                </div>
+
+                <div
+                    id="acceptanceTriggerPrice"
+                    class="value trade-price"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Previous Level
+                </div>
+
+                <div
+                    id="acceptancePreviousLevel"
+                    class="value trade-price"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Pullback Low
+                </div>
+
+                <div
+                    id="acceptancePullbackLow"
+                    class="value trade-price"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Pullback High
+                </div>
+
+                <div
+                    id="acceptancePullbackHigh"
+                    class="value trade-price"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Acceptance Reason
+                </div>
+
+                <div
+                    id="acceptanceReason"
+                    class="value recommendation"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Acceptance Evidence
+                </div>
+
+                <ul
+                    id="acceptanceEvidence"
+                    class="explanation-list"
+                >
+                    <li class="empty-list">
+                        No acceptance evidence.
+                    </li>
+                </ul>
+            </article>
+
+            <article class="card wide">
+                <div class="label">
+                    Acceptance Warnings
+                </div>
+
+                <ul
+                    id="acceptanceWarnings"
+                    class="explanation-list warning-list"
+                >
+                    <li class="empty-list">
+                        No acceptance warnings.
+                    </li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <div class="label">
                     Current State
                 </div>
 
@@ -1622,6 +1782,39 @@ def build_dashboard_html(
             }}
 
             element.textContent = "—";
+        }}
+
+        function updateAcceptanceConfirmed(
+            confirmed
+        ) {{
+            const element = document.getElementById(
+                "acceptanceConfirmed"
+            );
+
+            element.className = "value";
+
+            if (confirmed === true) {{
+                element.textContent = "CONFIRMED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (confirmed === false) {{
+                element.textContent = "NOT CONFIRMED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
         }}
 
         function updateTradeDirection(
@@ -2440,6 +2633,82 @@ def build_dashboard_html(
                     "setupLifecycleReason",
                     payload.setup_lifecycle_reason
                         ?? "—"
+                );
+
+                //====================================================
+                // ACCEPTANCE DETAIL
+                //====================================================
+
+                updateAcceptanceConfirmed(
+                    payload.acceptance_confirmed
+                );
+
+                setText(
+                    "acceptanceDirection",
+                    payload.acceptance_direction
+                        ?? "—"
+                );
+
+                setText(
+                    "acceptanceLevel",
+                    payload.acceptance_level
+                        ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "acceptanceScore",
+                    payload.acceptance_score
+                );
+
+                updatePercentageMetric(
+                    "acceptanceConfidence",
+                    payload.acceptance_confidence
+                );
+
+                setText(
+                    "acceptanceTriggerPrice",
+                    formatTradePrice(
+                        payload.acceptance_trigger_price
+                    )
+                );
+
+                setText(
+                    "acceptancePreviousLevel",
+                    formatTradePrice(
+                        payload.acceptance_previous_level
+                    )
+                );
+
+                setText(
+                    "acceptancePullbackLow",
+                    formatTradePrice(
+                        payload.acceptance_pullback_low
+                    )
+                );
+
+                setText(
+                    "acceptancePullbackHigh",
+                    formatTradePrice(
+                        payload.acceptance_pullback_high
+                    )
+                );
+
+                setText(
+                    "acceptanceReason",
+                    payload.acceptance_reason
+                        ?? "—"
+                );
+
+                updateTextList(
+                    "acceptanceEvidence",
+                    payload.acceptance_evidence,
+                    "No acceptance evidence."
+                );
+
+                updateTextList(
+                    "acceptanceWarnings",
+                    payload.acceptance_warnings,
+                    "No acceptance warnings."
                 );
 
                 //====================================================

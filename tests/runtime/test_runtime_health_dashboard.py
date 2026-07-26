@@ -888,3 +888,121 @@ def test_dashboard_setup_lifecycle_reuses_existing_renderers() -> None:
         "                    payload.setup_lifecycle_reason"
         in html
     )
+
+def test_dashboard_contains_acceptance_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "acceptanceConfirmed",
+        "acceptanceDirection",
+        "acceptanceLevel",
+        "acceptanceScore",
+        "acceptanceConfidence",
+        "acceptanceTriggerPrice",
+        "acceptancePreviousLevel",
+        "acceptancePullbackLow",
+        "acceptancePullbackHigh",
+        "acceptanceReason",
+        "acceptanceEvidence",
+        "acceptanceWarnings",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_acceptance_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.acceptance_confirmed",
+        "payload.acceptance_direction",
+        "payload.acceptance_level",
+        "payload.acceptance_score",
+        "payload.acceptance_confidence",
+        "payload.acceptance_trigger_price",
+        "payload.acceptance_previous_level",
+        "payload.acceptance_pullback_low",
+        "payload.acceptance_pullback_high",
+        "payload.acceptance_reason",
+        "payload.acceptance_evidence",
+        "payload.acceptance_warnings",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_acceptance_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateAcceptanceConfirmed(" in html
+    assert '"CONFIRMED"' in html
+    assert '"NOT CONFIRMED"' in html
+    assert '"plan-valid"' in html
+    assert '"plan-invalid"' in html
+
+def test_dashboard_acceptance_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "updateAcceptanceConfirmed(\n"
+        "                    payload.acceptance_confirmed"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "acceptanceScore",\n'
+        "                    payload.acceptance_score"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "acceptanceConfidence",\n'
+        "                    payload.acceptance_confidence"
+        in html
+    )
+
+    price_fields = (
+        (
+            "acceptanceTriggerPrice",
+            "acceptance_trigger_price",
+        ),
+        (
+            "acceptancePreviousLevel",
+            "acceptance_previous_level",
+        ),
+        (
+            "acceptancePullbackLow",
+            "acceptance_pullback_low",
+        ),
+        (
+            "acceptancePullbackHigh",
+            "acceptance_pullback_high",
+        ),
+    )
+
+    for element_id, payload_field in price_fields:
+        assert (
+            'setText(\n'
+            f'                    "{element_id}",\n'
+            "                    formatTradePrice(\n"
+            f"                        payload.{payload_field}"
+            in html
+        )
+
+    assert (
+        'updateTextList(\n'
+        '                    "acceptanceEvidence",\n'
+        "                    payload.acceptance_evidence"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "acceptanceWarnings",\n'
+        "                    payload.acceptance_warnings"
+        in html
+    )
+
+    
