@@ -336,6 +336,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        auction_summary = (
+            decision_result.analyst_summary.get(
+                "AUCTION"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -863,6 +871,32 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if order_block_summary is not None
+                else None
+            ),
+            auction_analyst=(
+                "AUCTION"
+                if auction_summary is not None
+                else None
+            ),
+            auction_opinion=(
+                auction_summary.get(
+                    "opinion"
+                )
+                if auction_summary is not None
+                else None
+            ),
+            auction_confidence=(
+                auction_summary.get(
+                    "confidence"
+                )
+                if auction_summary is not None
+                else None
+            ),
+            auction_enabled=(
+                auction_summary.get(
+                    "enabled"
+                )
+                if auction_summary is not None
                 else None
             ),
 

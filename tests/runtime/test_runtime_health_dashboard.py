@@ -1266,15 +1266,6 @@ def test_dashboard_calls_liquidity_enabled_renderer() -> None:
         in html
     )
 
-def test_dashboard_calls_liquidity_enabled_renderer() -> None:
-    html = build_dashboard_html()
-
-    assert (
-        'updateLiquidityEnabled(\n'
-        "                    payload.liquidity_enabled"
-        in html
-    )
-
 def test_dashboard_contains_order_block_analyst_fields() -> None:
     html = build_dashboard_html()
 
@@ -1322,4 +1313,49 @@ def test_dashboard_calls_order_block_enabled_renderer() -> None:
         in html
     )
 
-    
+def test_dashboard_contains_auction_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="auctionAnalyst"' in html
+    assert 'id="auctionOpinion"' in html
+    assert 'id="auctionConfidence"' in html
+    assert 'id="auctionEnabled"' in html
+
+def test_dashboard_reads_auction_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.auction_analyst" in html
+    assert "payload.auction_opinion" in html
+    assert "payload.auction_confidence" in html
+    assert "payload.auction_enabled" in html
+
+def test_dashboard_contains_auction_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateAuctionEnabled("
+        in html
+    )
+
+    assert '"auctionEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_auction_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "auctionConfidence",\n'
+        "                    payload.auction_confidence"
+        in html
+    )
+
+def test_dashboard_calls_auction_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateAuctionEnabled(\n'
+        "                    payload.auction_enabled"
+        in html
+    )

@@ -740,6 +740,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Auction Analyst
+                </div>
+
+                <div
+                    id="auctionAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Auction Opinion
+                </div>
+
+                <div
+                    id="auctionOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Auction Confidence
+                </div>
+
+                <div
+                    id="auctionConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Auction Enabled
+                </div>
+
+                <div
+                    id="auctionEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2272,6 +2324,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateAuctionEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "auctionEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3446,6 +3531,25 @@ def build_dashboard_html(
 
                 updateOrderBlockEnabled(
                     payload.order_block_enabled
+                );
+
+                setText(
+                    "auctionAnalyst",
+                    payload.auction_analyst ?? "—"
+                );
+
+                setText(
+                    "auctionOpinion",
+                    payload.auction_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "auctionConfidence",
+                    payload.auction_confidence
+                );
+
+                updateAuctionEnabled(
+                    payload.auction_enabled
                 );
 
                 //====================================================

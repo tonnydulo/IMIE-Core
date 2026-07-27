@@ -163,6 +163,13 @@ def make_decision(
             "confidence": 81.0,
             "enabled": True,
         },
+        "AUCTION": {
+            "opinion": (
+                "Buyers maintain auction control."
+            ),
+            "confidence": 79.0,
+            "enabled": True,
+        },
     },
         trade_plan=trade_plan,
         institutional_context=(
@@ -487,6 +494,16 @@ def test_health_update_creates_dashboard_file(
     assert payload["order_block_opinion"] is None
     assert payload["order_block_confidence"] is None
     assert payload["order_block_enabled"] is None
+
+    assert payload["order_block_analyst"] is None
+    assert payload["order_block_opinion"] is None
+    assert payload["order_block_confidence"] is None
+    assert payload["order_block_enabled"] is None
+
+    assert payload["auction_analyst"] is None
+    assert payload["auction_opinion"] is None
+    assert payload["auction_confidence"] is None
+    assert payload["auction_enabled"] is None
 
 
 def test_result_update_is_combined_with_health(
@@ -1151,6 +1168,24 @@ def test_publish_result_populates_trade_plan_details(
 
     assert payload["order_block_confidence"] == 81.0
     assert payload["order_block_enabled"] is True
+
+    assert payload["order_block_analyst"] == "ORDER_BLOCK"
+
+    assert payload["order_block_opinion"] == (
+        "Bullish order block remains valid."
+    )
+
+    assert payload["order_block_confidence"] == 81.0
+    assert payload["order_block_enabled"] is True
+
+    assert payload["auction_analyst"] == "AUCTION"
+
+    assert payload["auction_opinion"] == (
+        "Buyers maintain auction control."
+    )
+
+    assert payload["auction_confidence"] == 79.0
+    assert payload["auction_enabled"] is True
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(

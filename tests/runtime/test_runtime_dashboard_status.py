@@ -124,6 +124,11 @@ def make_status(
     order_block_confidence: float | None = None,
     order_block_enabled: bool | None = None,
 
+    auction_analyst: str | None = None,
+    auction_opinion: str | None = None,
+    auction_confidence: float | None = None,
+    auction_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -295,6 +300,10 @@ def make_status(
         order_block_opinion=order_block_opinion,
         order_block_confidence=order_block_confidence,
         order_block_enabled=order_block_enabled,
+        auction_analyst=auction_analyst,
+        auction_opinion=auction_opinion,
+        auction_confidence=auction_confidence,
+        auction_enabled=auction_enabled,
     )
 
 
@@ -1670,5 +1679,97 @@ def test_order_block_confidence_must_be_in_range() -> None:
             order_block_confidence=101.0,
         )
 
+def test_status_accepts_auction_analyst_detail() -> None:
+    status = make_status(
+        auction_analyst="AUCTION",
+        auction_opinion=(
+            "Buyers maintain auction control."
+        ),
+        auction_confidence=79.0,
+        auction_enabled=True,
+    )
 
+    assert status.auction_analyst == "AUCTION"
+
+    assert status.auction_opinion == (
+        "Buyers maintain auction control."
+    )
+
+    assert status.auction_confidence == 79.0
+    assert status.auction_enabled is True
+
+def test_status_normalizes_auction_text() -> None:
+    status = make_status(
+        auction_analyst="  AUCTION  ",
+        auction_opinion=(
+            "  Auction conditions favor buyers.  "
+        ),
+    )
+
+    assert status.auction_analyst == "AUCTION"
+
+    assert status.auction_opinion == (
+        "Auction conditions favor buyers."
+    )
+
+def test_status_serializes_auction_analyst_detail() -> None:
+    status = make_status(
+        auction_analyst="AUCTION",
+        auction_opinion=(
+            "Auction control remains balanced."
+        ),
+        auction_confidence=65.0,
+        auction_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["auction_analyst"] == "AUCTION"
+
+    assert payload["auction_opinion"] == (
+        "Auction control remains balanced."
+    )
+
+    assert payload["auction_confidence"] == 65.0
+    assert payload["auction_enabled"] is False
+
+def test_auction_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "auction_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            auction_enabled=(
+                "yes"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_auction_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "auction_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            auction_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_auction_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "auction_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            auction_confidence=101.0,
+        )
 

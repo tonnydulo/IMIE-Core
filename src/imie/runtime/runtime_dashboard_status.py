@@ -134,6 +134,11 @@ class RuntimeDashboardStatus:
     order_block_confidence: float | None = None
     order_block_enabled: bool | None = None
 
+    auction_analyst: str | None = None
+    auction_opinion: str | None = None
+    auction_confidence: float | None = None
+    auction_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -305,6 +310,7 @@ class RuntimeDashboardStatus:
             "structure_confidence",
             "liquidity_confidence",
             "order_block_confidence",
+            "auction_confidence",
         ):
             value = getattr(
                 self,
@@ -474,6 +480,17 @@ class RuntimeDashboardStatus:
                 "order_block_enabled must be "
                 "a bool or None."
             )
+        if (
+            self.auction_enabled is not None
+            and not isinstance(
+                self.auction_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "auction_enabled must be "
+                "a bool or None."
+            )
 
         for field_name in (
             "trade_entry",
@@ -611,6 +628,8 @@ class RuntimeDashboardStatus:
             "liquidity_opinion",
             "order_block_analyst",
             "order_block_opinion",
+            "auction_analyst",
+            "auction_opinion",
             "latest_error_type",
             
         ):
@@ -1097,6 +1116,18 @@ class RuntimeDashboardStatus:
                 ),
                 "order_block_enabled": (
                     self.order_block_enabled
+                ),
+                "auction_analyst": (
+                    self.auction_analyst
+                ),
+                "auction_opinion": (
+                    self.auction_opinion
+                ),
+                "auction_confidence": (
+                    self.auction_confidence
+                ),
+                "auction_enabled": (
+                    self.auction_enabled
                 ),
             }
         )
