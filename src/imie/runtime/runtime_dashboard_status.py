@@ -119,6 +119,11 @@ class RuntimeDashboardStatus:
     trend_evidence: tuple[str, ...] = ()
     trend_warnings: tuple[str, ...] = ()
 
+    structure_analyst: str | None = None
+    structure_opinion: str | None = None
+    structure_confidence: float | None = None
+    structure_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -287,6 +292,7 @@ class RuntimeDashboardStatus:
             "confluence_score",
             "acceptance_confidence",
             "trend_confidence",
+            "structure_confidence",
         ):
             value = getattr(
                 self,
@@ -422,6 +428,18 @@ class RuntimeDashboardStatus:
                 "a bool or None."
             )
 
+        if (
+            self.structure_enabled is not None
+            and not isinstance(
+                self.structure_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "structure_enabled must be "
+                "a bool or None."
+            )
+
         for field_name in (
             "trade_entry",
             "trade_stop",
@@ -548,6 +566,8 @@ class RuntimeDashboardStatus:
             "acceptance_reason",
             "trend_analyst",
             "trend_opinion",
+            "structure_analyst",
+            "structure_opinion",
             "latest_error_type",
             
         ):
@@ -998,6 +1018,18 @@ class RuntimeDashboardStatus:
                 ),
                 "trend_warnings": list(
                     self.trend_warnings
+                ),
+                "structure_analyst": (
+                    self.structure_analyst
+                ),
+                "structure_opinion": (
+                    self.structure_opinion
+                ),
+                "structure_confidence": (
+                    self.structure_confidence
+                ),
+                "structure_enabled": (
+                    self.structure_enabled
                 ),
             }
         )

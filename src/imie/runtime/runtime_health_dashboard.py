@@ -584,6 +584,58 @@ def build_dashboard_html(
                 </ul>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Structure Analyst
+                </div>
+
+                <div
+                    id="structureAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Structure Opinion
+                </div>
+
+                <div
+                    id="structureOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Structure Confidence
+                </div>
+
+                <div
+                    id="structureConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Structure Enabled
+                </div>
+
+                <div
+                    id="structureEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2017,6 +2069,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateStructureEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "structureEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3134,6 +3219,25 @@ def build_dashboard_html(
                     "trendWarnings",
                     payload.trend_warnings,
                     "No trend warnings."
+                );
+
+                setText(
+                    "structureAnalyst",
+                    payload.structure_analyst ?? "—"
+                );
+
+                setText(
+                    "structureOpinion",
+                    payload.structure_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "structureConfidence",
+                    payload.structure_confidence
+                );
+
+                updateStructureEnabled(
+                    payload.structure_enabled
                 );
 
                 //====================================================

@@ -133,7 +133,23 @@ def make_decision(
             "Dashboard publisher test decision.",
         ),
         warnings=(),
-        analyst_summary={},
+        analyst_summary={
+            "TREND": {
+                "opinion": (
+                    "Directional trend is bullish."
+                ),
+                "confidence": 82.0,
+                "enabled": True,
+            },
+            "STRUCTURE": {
+                "opinion": (
+                    "Bullish structure continuation "
+                    "is confirmed."
+                ),
+                "confidence": 84.0,
+                "enabled": True,
+            },
+        },
         trade_plan=trade_plan,
         institutional_context=(
         institutional_context
@@ -443,6 +459,10 @@ def test_health_update_creates_dashboard_file(
     assert payload["decision_reasons"] == []
     assert payload["decision_warnings"] == []
     assert payload["analyst_summary"] == {}
+    assert payload["structure_analyst"] is None
+    assert payload["structure_opinion"] is None
+    assert payload["structure_confidence"] is None
+    assert payload["structure_enabled"] is None
 
 
 def test_result_update_is_combined_with_health(
@@ -1081,6 +1101,14 @@ def test_publish_result_populates_trade_plan_details(
     ]
 
     assert payload["trend_warnings"] == []
+    assert payload["structure_analyst"] == "STRUCTURE"
+
+    assert payload["structure_opinion"] == (
+        "Bullish structure continuation is confirmed."
+    )
+
+    assert payload["structure_confidence"] == 84.0
+    assert payload["structure_enabled"] is True
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(

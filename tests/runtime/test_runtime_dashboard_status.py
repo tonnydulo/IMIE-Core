@@ -109,6 +109,11 @@ def make_status(
     trend_evidence: tuple[str, ...] = (),
     trend_warnings: tuple[str, ...] = (),
 
+    structure_analyst: str | None = None,
+    structure_opinion: str | None = None,
+    structure_confidence: float | None = None,
+    structure_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -267,7 +272,11 @@ def make_status(
         analyst_summary
         if analyst_summary is not None
         else {}
-    ),
+        ),
+        structure_analyst=structure_analyst,
+        structure_opinion=structure_opinion,
+        structure_confidence=structure_confidence,
+        structure_enabled=structure_enabled,
     )
 
 
@@ -1367,3 +1376,86 @@ def test_analyst_summary_enabled_must_be_boolean() -> None:
             }
         )
         
+def test_status_accepts_structure_analyst_detail() -> None:
+    status = make_status(
+        structure_analyst="STRUCTURE",
+        structure_opinion=(
+            "Bullish structure continuation is confirmed."
+        ),
+        structure_confidence=84.0,
+        structure_enabled=True,
+    )
+
+    assert status.structure_analyst == "STRUCTURE"
+    assert status.structure_opinion == (
+        "Bullish structure continuation is confirmed."
+    )
+    assert status.structure_confidence == 84.0
+    assert status.structure_enabled is True
+
+def test_status_normalizes_structure_text() -> None:
+    status = make_status(
+        structure_analyst="  STRUCTURE  ",
+        structure_opinion=(
+            "  Bearish structure remains active.  "
+        ),
+    )
+
+    assert status.structure_analyst == "STRUCTURE"
+    assert status.structure_opinion == (
+        "Bearish structure remains active."
+    )
+
+def test_status_serializes_structure_analyst_detail() -> None:
+    status = make_status(
+        structure_analyst="STRUCTURE",
+        structure_opinion="Structure is bullish.",
+        structure_confidence=79.0,
+        structure_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["structure_analyst"] == "STRUCTURE"
+    assert payload["structure_opinion"] == (
+        "Structure is bullish."
+    )
+    assert payload["structure_confidence"] == 79.0
+    assert payload["structure_enabled"] is False
+
+def test_structure_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "structure_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            structure_enabled="yes",  # type: ignore[arg-type]
+        )
+
+def test_structure_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "structure_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            structure_confidence="high",  # type: ignore[arg-type]
+        )
+
+def test_structure_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "structure_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            structure_confidence=101.0,
+        )
+

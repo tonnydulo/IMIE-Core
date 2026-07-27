@@ -1172,3 +1172,50 @@ def test_dashboard_analyst_summary_uses_text_content() -> None:
     assert "confidenceValue.textContent" in html
     assert "enabledValue.textContent" in html
 
+def test_dashboard_contains_structure_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="structureAnalyst"' in html
+    assert 'id="structureOpinion"' in html
+    assert 'id="structureConfidence"' in html
+    assert 'id="structureEnabled"' in html
+
+def test_dashboard_reads_structure_analyst_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.structure_analyst" in html
+    assert "payload.structure_opinion" in html
+    assert "payload.structure_confidence" in html
+    assert "payload.structure_enabled" in html
+
+def test_dashboard_contains_structure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateStructureEnabled("
+        in html
+    )
+
+    assert '"structureEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_structure_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "structureConfidence",\n'
+        "                    payload.structure_confidence"
+        in html
+    )
+
+def test_dashboard_calls_structure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateStructureEnabled(\n'
+        "                    payload.structure_enabled"
+        in html
+    )
+

@@ -312,6 +312,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        structure_summary = (
+            decision_result.analyst_summary.get(
+                "STRUCTURE"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -759,6 +767,33 @@ class DashboardStatusFilePublisher:
                 )
                 if trend is not None
                 else ()
+            ),
+
+            structure_analyst=(
+                "STRUCTURE"
+                if structure_summary is not None
+                else None
+            ),
+            structure_opinion=(
+                structure_summary.get(
+                    "opinion"
+                )
+                if structure_summary is not None
+                else None
+            ),
+            structure_confidence=(
+                structure_summary.get(
+                    "confidence"
+                )
+                if structure_summary is not None
+                else None
+            ),
+            structure_enabled=(
+                structure_summary.get(
+                    "enabled"
+                )
+                if structure_summary is not None
+                else None
             ),
 
             latest_error_type=(
