@@ -1275,3 +1275,51 @@ def test_dashboard_calls_liquidity_enabled_renderer() -> None:
         in html
     )
 
+def test_dashboard_contains_order_block_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="orderBlockAnalyst"' in html
+    assert 'id="orderBlockOpinion"' in html
+    assert 'id="orderBlockConfidence"' in html
+    assert 'id="orderBlockEnabled"' in html
+
+def test_dashboard_reads_order_block_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.order_block_analyst" in html
+    assert "payload.order_block_opinion" in html
+    assert "payload.order_block_confidence" in html
+    assert "payload.order_block_enabled" in html
+
+def test_dashboard_contains_order_block_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateOrderBlockEnabled("
+        in html
+    )
+
+    assert '"orderBlockEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_order_block_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "orderBlockConfidence",\n'
+        "                    payload.order_block_confidence"
+        in html
+    )
+
+def test_dashboard_calls_order_block_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateOrderBlockEnabled(\n'
+        "                    payload.order_block_enabled"
+        in html
+    )
+
+    

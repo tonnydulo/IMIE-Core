@@ -688,6 +688,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+             <article class="card">
+                <div class="label">
+                    Order Block Analyst
+                </div>
+
+                <div
+                    id="orderBlockAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Order Block Opinion
+                </div>
+
+                <div
+                    id="orderBlockOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Order Block Confidence
+                </div>
+
+                <div
+                    id="orderBlockConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Order Block Enabled
+                </div>
+
+                <div
+                    id="orderBlockEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2187,6 +2239,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateOrderBlockEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "orderBlockEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3342,6 +3427,25 @@ def build_dashboard_html(
 
                 updateLiquidityEnabled(
                     payload.liquidity_enabled
+                );
+
+                setText(
+                    "orderBlockAnalyst",
+                    payload.order_block_analyst ?? "—"
+                );
+
+                setText(
+                    "orderBlockOpinion",
+                    payload.order_block_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "orderBlockConfidence",
+                    payload.order_block_confidence
+                );
+
+                updateOrderBlockEnabled(
+                    payload.order_block_enabled
                 );
 
                 //====================================================

@@ -119,6 +119,11 @@ def make_status(
     liquidity_confidence: float | None = None,
     liquidity_enabled: bool | None = None,
 
+    order_block_analyst: str | None = None,
+    order_block_opinion: str | None = None,
+    order_block_confidence: float | None = None,
+    order_block_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -286,6 +291,10 @@ def make_status(
         liquidity_opinion=liquidity_opinion,
         liquidity_confidence=liquidity_confidence,
         liquidity_enabled=liquidity_enabled,
+        order_block_analyst=order_block_analyst,
+        order_block_opinion=order_block_opinion,
+        order_block_confidence=order_block_confidence,
+        order_block_enabled=order_block_enabled,
     )
 
 
@@ -1558,5 +1567,108 @@ def test_liquidity_confidence_must_be_in_range() -> None:
             liquidity_confidence=101.0,
         )
 
-    
+def test_status_accepts_order_block_analyst_detail() -> None:
+    status = make_status(
+        order_block_analyst="ORDER_BLOCK",
+        order_block_opinion=(
+            "Bullish order block remains valid."
+        ),
+        order_block_confidence=81.0,
+        order_block_enabled=True,
+    )
+
+    assert (
+        status.order_block_analyst
+        == "ORDER_BLOCK"
+    )
+
+    assert status.order_block_opinion == (
+        "Bullish order block remains valid."
+    )
+
+    assert status.order_block_confidence == 81.0
+    assert status.order_block_enabled is True
+
+def test_status_normalizes_order_block_text() -> None:
+    status = make_status(
+        order_block_analyst="  ORDER_BLOCK  ",
+        order_block_opinion=(
+            "  Price is reacting from a bullish order block.  "
+        ),
+    )
+
+    assert (
+        status.order_block_analyst
+        == "ORDER_BLOCK"
+    )
+
+    assert status.order_block_opinion == (
+        "Price is reacting from a bullish order block."
+    )
+
+def test_status_serializes_order_block_analyst_detail() -> None:
+    status = make_status(
+        order_block_analyst="ORDER_BLOCK",
+        order_block_opinion=(
+            "Order block support is limited."
+        ),
+        order_block_confidence=69.0,
+        order_block_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["order_block_analyst"]
+        == "ORDER_BLOCK"
+    )
+
+    assert payload["order_block_opinion"] == (
+        "Order block support is limited."
+    )
+
+    assert payload["order_block_confidence"] == 69.0
+    assert payload["order_block_enabled"] is False
+
+def test_order_block_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "order_block_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            order_block_enabled=(
+                "yes"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_order_block_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "order_block_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            order_block_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_order_block_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "order_block_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            order_block_confidence=101.0,
+        )
+
+
 

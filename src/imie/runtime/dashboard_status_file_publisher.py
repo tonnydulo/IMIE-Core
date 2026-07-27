@@ -328,6 +328,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        order_block_summary = (
+            decision_result.analyst_summary.get(
+                "ORDER_BLOCK"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -828,6 +836,33 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if liquidity_summary is not None
+                else None
+            ),
+
+            order_block_analyst=(
+                "ORDER_BLOCK"
+                if order_block_summary is not None
+                else None
+            ),
+            order_block_opinion=(
+                order_block_summary.get(
+                    "opinion"
+                )
+                if order_block_summary is not None
+                else None
+            ),
+            order_block_confidence=(
+                order_block_summary.get(
+                    "confidence"
+                )
+                if order_block_summary is not None
+                else None
+            ),
+            order_block_enabled=(
+                order_block_summary.get(
+                    "enabled"
+                )
+                if order_block_summary is not None
                 else None
             ),
 

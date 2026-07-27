@@ -134,22 +134,36 @@ def make_decision(
         ),
         warnings=(),
         analyst_summary={
-            "TREND": {
-                "opinion": (
-                    "Directional trend is bullish."
-                ),
-                "confidence": 82.0,
-                "enabled": True,
-            },
-            "STRUCTURE": {
-                "opinion": (
-                    "Bullish structure continuation "
-                    "is confirmed."
-                ),
-                "confidence": 84.0,
-                "enabled": True,
-            },
+        "TREND": {
+            "opinion": (
+                "Directional trend is bullish."
+            ),
+            "confidence": 82.0,
+            "enabled": True,
         },
+        "STRUCTURE": {
+            "opinion": (
+                "Bullish structure continuation "
+                "is confirmed."
+            ),
+            "confidence": 84.0,
+            "enabled": True,
+        },
+        "LIQUIDITY": {
+            "opinion": (
+                "Sell-side liquidity remains active."
+            ),
+            "confidence": 78.0,
+            "enabled": True,
+        },
+        "ORDER_BLOCK": {
+            "opinion": (
+                "Bullish order block remains valid."
+            ),
+            "confidence": 81.0,
+            "enabled": True,
+        },
+    },
         trade_plan=trade_plan,
         institutional_context=(
         institutional_context
@@ -463,6 +477,16 @@ def test_health_update_creates_dashboard_file(
     assert payload["structure_opinion"] is None
     assert payload["structure_confidence"] is None
     assert payload["structure_enabled"] is None
+
+    assert payload["liquidity_analyst"] is None
+    assert payload["liquidity_opinion"] is None
+    assert payload["liquidity_confidence"] is None
+    assert payload["liquidity_enabled"] is None
+
+    assert payload["order_block_analyst"] is None
+    assert payload["order_block_opinion"] is None
+    assert payload["order_block_confidence"] is None
+    assert payload["order_block_enabled"] is None
 
 
 def test_result_update_is_combined_with_health(
@@ -1109,6 +1133,24 @@ def test_publish_result_populates_trade_plan_details(
 
     assert payload["structure_confidence"] == 84.0
     assert payload["structure_enabled"] is True
+
+    assert payload["liquidity_analyst"] == "LIQUIDITY"
+
+    assert payload["liquidity_opinion"] == (
+        "Sell-side liquidity remains active."
+    )
+
+    assert payload["liquidity_confidence"] == 78.0
+    assert payload["liquidity_enabled"] is True
+
+    assert payload["order_block_analyst"] == "ORDER_BLOCK"
+
+    assert payload["order_block_opinion"] == (
+        "Bullish order block remains valid."
+    )
+
+    assert payload["order_block_confidence"] == 81.0
+    assert payload["order_block_enabled"] is True
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
