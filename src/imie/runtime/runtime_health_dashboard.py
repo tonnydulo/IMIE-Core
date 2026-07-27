@@ -636,6 +636,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Liquidity Analyst
+                </div>
+
+                <div
+                    id="liquidityAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Liquidity Opinion
+                </div>
+
+                <div
+                    id="liquidityOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Liquidity Confidence
+                </div>
+
+                <div
+                    id="liquidityConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Liquidity Enabled
+                </div>
+
+                <div
+                    id="liquidityEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2102,6 +2154,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateLiquidityEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "liquidityEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3238,6 +3323,25 @@ def build_dashboard_html(
 
                 updateStructureEnabled(
                     payload.structure_enabled
+                );
+
+                setText(
+                    "liquidityAnalyst",
+                    payload.liquidity_analyst ?? "—"
+                );
+
+                setText(
+                    "liquidityOpinion",
+                    payload.liquidity_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "liquidityConfidence",
+                    payload.liquidity_confidence
+                );
+
+                updateLiquidityEnabled(
+                    payload.liquidity_enabled
                 );
 
                 //====================================================

@@ -114,6 +114,11 @@ def make_status(
     structure_confidence: float | None = None,
     structure_enabled: bool | None = None,
 
+    liquidity_analyst: str | None = None,
+    liquidity_opinion: str | None = None,
+    liquidity_confidence: float | None = None,
+    liquidity_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -277,6 +282,10 @@ def make_status(
         structure_opinion=structure_opinion,
         structure_confidence=structure_confidence,
         structure_enabled=structure_enabled,
+        liquidity_analyst=liquidity_analyst,
+        liquidity_opinion=liquidity_opinion,
+        liquidity_confidence=liquidity_confidence,
+        liquidity_enabled=liquidity_enabled,
     )
 
 
@@ -1458,4 +1467,96 @@ def test_structure_confidence_must_be_in_range() -> None:
         make_status(
             structure_confidence=101.0,
         )
+
+def test_status_accepts_liquidity_analyst_detail() -> None:
+    status = make_status(
+        liquidity_analyst="LIQUIDITY",
+        liquidity_opinion=(
+            "Sell-side liquidity remains active."
+        ),
+        liquidity_confidence=78.0,
+        liquidity_enabled=True,
+    )
+
+    assert status.liquidity_analyst == "LIQUIDITY"
+
+    assert status.liquidity_opinion == (
+        "Sell-side liquidity remains active."
+    )
+
+    assert status.liquidity_confidence == 78.0
+    assert status.liquidity_enabled is True
+
+def test_status_normalizes_liquidity_text() -> None:
+    status = make_status(
+        liquidity_analyst="  LIQUIDITY  ",
+        liquidity_opinion=(
+            "  Buy-side liquidity is nearby.  "
+        ),
+    )
+
+    assert status.liquidity_analyst == "LIQUIDITY"
+
+    assert status.liquidity_opinion == (
+        "Buy-side liquidity is nearby."
+    )
+
+def test_status_serializes_liquidity_analyst_detail() -> None:
+    status = make_status(
+        liquidity_analyst="LIQUIDITY",
+        liquidity_opinion=(
+            "Liquidity conditions are balanced."
+        ),
+        liquidity_confidence=71.0,
+        liquidity_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["liquidity_analyst"] == "LIQUIDITY"
+
+    assert payload["liquidity_opinion"] == (
+        "Liquidity conditions are balanced."
+    )
+
+    assert payload["liquidity_confidence"] == 71.0
+    assert payload["liquidity_enabled"] is False
+
+def test_liquidity_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "liquidity_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            liquidity_enabled="yes",  # type: ignore[arg-type]
+        )
+
+def test_liquidity_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "liquidity_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            liquidity_confidence="high",  # type: ignore[arg-type]
+        )
+
+def test_liquidity_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "liquidity_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            liquidity_confidence=101.0,
+        )
+
+    
 

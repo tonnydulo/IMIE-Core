@@ -124,6 +124,11 @@ class RuntimeDashboardStatus:
     structure_confidence: float | None = None
     structure_enabled: bool | None = None
 
+    liquidity_analyst: str | None = None
+    liquidity_opinion: str | None = None
+    liquidity_confidence: float | None = None
+    liquidity_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -293,6 +298,7 @@ class RuntimeDashboardStatus:
             "acceptance_confidence",
             "trend_confidence",
             "structure_confidence",
+            "liquidity_confidence",
         ):
             value = getattr(
                 self,
@@ -440,6 +446,18 @@ class RuntimeDashboardStatus:
                 "a bool or None."
             )
 
+        if (
+            self.liquidity_enabled is not None
+            and not isinstance(
+                self.liquidity_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "liquidity_enabled must be "
+                "a bool or None."
+            )
+
         for field_name in (
             "trade_entry",
             "trade_stop",
@@ -568,6 +586,8 @@ class RuntimeDashboardStatus:
             "trend_opinion",
             "structure_analyst",
             "structure_opinion",
+            "liquidity_analyst",
+            "liquidity_opinion",
             "latest_error_type",
             
         ):
@@ -1030,6 +1050,18 @@ class RuntimeDashboardStatus:
                 ),
                 "structure_enabled": (
                     self.structure_enabled
+                ),
+                "liquidity_analyst": (
+                    self.liquidity_analyst
+                ),
+                "liquidity_opinion": (
+                    self.liquidity_opinion
+                ),
+                "liquidity_confidence": (
+                    self.liquidity_confidence
+                ),
+                "liquidity_enabled": (
+                    self.liquidity_enabled
                 ),
             }
         )

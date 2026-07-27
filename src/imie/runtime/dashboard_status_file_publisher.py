@@ -320,6 +320,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        liquidity_summary = (
+            decision_result.analyst_summary.get(
+                "LIQUIDITY"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -793,6 +801,33 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if structure_summary is not None
+                else None
+            ),
+
+            liquidity_analyst=(
+                "LIQUIDITY"
+                if liquidity_summary is not None
+                else None
+            ),
+            liquidity_opinion=(
+                liquidity_summary.get(
+                    "opinion"
+                )
+                if liquidity_summary is not None
+                else None
+            ),
+            liquidity_confidence=(
+                liquidity_summary.get(
+                    "confidence"
+                )
+                if liquidity_summary is not None
+                else None
+            ),
+            liquidity_enabled=(
+                liquidity_summary.get(
+                    "enabled"
+                )
+                if liquidity_summary is not None
                 else None
             ),
 

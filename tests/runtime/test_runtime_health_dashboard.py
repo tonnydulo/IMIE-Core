@@ -1219,3 +1219,59 @@ def test_dashboard_calls_structure_enabled_renderer() -> None:
         in html
     )
 
+def test_dashboard_contains_liquidity_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="liquidityAnalyst"' in html
+    assert 'id="liquidityOpinion"' in html
+    assert 'id="liquidityConfidence"' in html
+    assert 'id="liquidityEnabled"' in html
+
+def test_dashboard_reads_liquidity_analyst_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.liquidity_analyst" in html
+    assert "payload.liquidity_opinion" in html
+    assert "payload.liquidity_confidence" in html
+    assert "payload.liquidity_enabled" in html
+
+def test_dashboard_contains_liquidity_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateLiquidityEnabled("
+        in html
+    )
+
+    assert '"liquidityEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_liquidity_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "liquidityConfidence",\n'
+        "                    payload.liquidity_confidence"
+        in html
+    )
+
+def test_dashboard_calls_liquidity_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateLiquidityEnabled(\n'
+        "                    payload.liquidity_enabled"
+        in html
+    )
+
+def test_dashboard_calls_liquidity_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateLiquidityEnabled(\n'
+        "                    payload.liquidity_enabled"
+        in html
+    )
+
