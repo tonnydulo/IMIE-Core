@@ -558,6 +558,10 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_coverage_state"]
         == "UNAVAILABLE"
     )
+    assert (
+        payload["analyst_coverage_message"]
+        == "No analyst domains are available."
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1290,6 +1294,13 @@ def test_publish_result_populates_trade_plan_details(
         payload["analyst_coverage_state"]
         == "COMPLETE"
     )
+    assert (
+        payload["analyst_coverage_message"]
+        == (
+            "All 8 analyst domains have produced "
+            "an opinion."
+        )
+    )
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1597,6 +1608,14 @@ def test_publish_result_calculates_partial_analyst_coverage(
         == "PARTIAL"
     )
 
+    assert (
+        payload["analyst_coverage_message"]
+        == (
+            "1 of 2 analyst domains have produced "
+            "an opinion."
+        )
+    )
+
 def test_publish_result_marks_unresolved_analyst_coverage(
         tmp_path: Path,
     ) -> None:
@@ -1679,4 +1698,12 @@ def test_publish_result_marks_unresolved_analyst_coverage(
         assert (
             payload["analyst_coverage_state"]
             == "UNRESOLVED"
+        )
+
+        assert (
+            payload["analyst_coverage_message"]
+            == (
+                "Analyst domains are available, but none "
+                "have produced an opinion."
+            )
         )

@@ -150,6 +150,7 @@ def make_status(
     analyst_average_confidence: float | None = None,
     analyst_coverage_percentage: float | None = None,
     analyst_coverage_state: str | None = None,
+    analyst_coverage_message: str | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -349,6 +350,9 @@ def make_status(
         ),
         analyst_coverage_state=(
             analyst_coverage_state
+        ),
+        analyst_coverage_message=(
+            analyst_coverage_message
         ),
     )
 
@@ -2346,4 +2350,65 @@ def test_analyst_coverage_state_accepts_supported_values(
     )
 
     assert status.analyst_coverage_state == value
+
+def test_status_accepts_analyst_coverage_message() -> None:
+    status = make_status(
+        analyst_coverage_message=(
+            "6 of 8 analyst domains have produced an opinion."
+        ),
+    )
+
+    assert status.analyst_coverage_message == (
+        "6 of 8 analyst domains have produced an opinion."
+    )
+
+def test_status_normalizes_analyst_coverage_message() -> None:
+    status = make_status(
+        analyst_coverage_message=(
+            "  All analyst domains are resolved.  "
+        ),
+    )
+
+    assert status.analyst_coverage_message == (
+        "All analyst domains are resolved."
+    )
+
+def test_status_converts_empty_analyst_coverage_message_to_none() -> None:
+    status = make_status(
+        analyst_coverage_message="   ",
+    )
+
+    assert status.analyst_coverage_message is None
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        8,
+        object(),
+    ],
+)
+def test_analyst_coverage_message_must_be_string(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_coverage_message",
+    ):
+        make_status(
+            analyst_coverage_message=value,  # type: ignore[arg-type]
+        )
+
+def test_status_serializes_analyst_coverage_message() -> None:
+    status = make_status(
+        analyst_coverage_message=(
+            "All 8 analyst domains have produced an opinion."
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["analyst_coverage_message"] == (
+        "All 8 analyst domains have produced an opinion."
+    )
 

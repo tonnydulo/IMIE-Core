@@ -160,6 +160,7 @@ class RuntimeDashboardStatus:
     analyst_average_confidence: float | None = None
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
+    analyst_coverage_message: str | None = None
 
     def __post_init__(
         self,
@@ -733,6 +734,7 @@ class RuntimeDashboardStatus:
             "value_analyst",
             "value_opinion",
             "analyst_coverage_state",
+            "analyst_coverage_message",
             "latest_error_type",
             
         ):
@@ -1285,6 +1287,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_coverage_state": (
                     self.analyst_coverage_state
+                ),
+                "analyst_coverage_message": (
+                    self.analyst_coverage_message
                 ),
             }
         )

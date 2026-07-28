@@ -412,6 +412,13 @@ def build_dashboard_html(
             overflow-wrap: anywhere;
         }}
 
+        .metric-message {{
+            font-size: 0.92rem;
+            line-height: 1.4;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }}
+
         @media (max-width: 760px) {{
             .analyst-summary-row {{
                 grid-template-columns: 1fr;
@@ -989,6 +996,18 @@ def build_dashboard_html(
                 <div
                     class="metric-value"
                     id="analystCoverageState"
+                >
+                    —
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    Analyst Coverage Message
+                </div>
+                <div
+                    class="metric-value metric-message"
+                    id="analystCoverageMessage"
                 >
                     —
                 </div>
@@ -3468,6 +3487,11 @@ def build_dashboard_html(
 
                 updateAnalystCoverageState(
                     payload.analyst_coverage_state
+                );
+
+                setText(
+                    "analystCoverageMessage",
+                    payload.analyst_coverage_message
                 );
 
                 updateAnalystSummary(

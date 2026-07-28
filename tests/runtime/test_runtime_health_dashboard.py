@@ -1595,3 +1595,34 @@ def test_dashboard_wires_analyst_coverage_readiness_fields() -> None:
         "updateAnalystCoverageState"
         in html
     )
+
+def test_dashboard_contains_analyst_coverage_message_card() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystCoverageMessage"' in html
+    assert "Analyst Coverage Message" in html
+    assert "metric-message" in html
+
+def test_dashboard_wires_analyst_coverage_message() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "payload.analyst_coverage_message"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "analystCoverageMessage",\n'
+        "                    "
+        "payload.analyst_coverage_message"
+        in html
+    )
+
+def test_dashboard_styles_analyst_coverage_message() -> None:
+    html = build_dashboard_html()
+
+    assert ".metric-message" in html
+    assert "white-space: normal" in html
+    assert "overflow-wrap: anywhere" in html
+
