@@ -459,6 +459,16 @@ class DashboardStatusFilePublisher:
             else 0.0
         )
 
+        analyst_operational_percentage = (
+            (
+                analyst_enabled_resolved_count
+                / analyst_enabled_count
+            )
+            * 100.0
+            if analyst_enabled_count > 0
+            else 0.0
+        )
+
         if analyst_domain_count == 0:
             analyst_coverage_state = "UNAVAILABLE"
             analyst_coverage_message = (
@@ -1178,6 +1188,9 @@ class DashboardStatusFilePublisher:
             ),
             analyst_operational_message=(
                 analyst_operational_message
+            ),
+            analyst_operational_percentage=(
+                analyst_operational_percentage
             ),
             latest_error_type=(
                 cycle.error_type

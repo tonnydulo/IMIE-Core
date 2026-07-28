@@ -153,6 +153,7 @@ def make_status(
     analyst_coverage_message: str | None = None,
     analyst_operational_status: str | None = None,
     analyst_operational_message: str | None = None,
+    analyst_operational_percentage: float | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -361,6 +362,9 @@ def make_status(
         ),
         analyst_operational_message=(
             analyst_operational_message
+        ),
+        analyst_operational_percentage=(
+            analyst_operational_percentage
         ),
     )
 
@@ -2523,4 +2527,89 @@ def test_runtime_dashboard_status_rejects_invalid_analyst_operational_message(
                 123  # type: ignore[arg-type]
             )
         )
+
+def test_runtime_dashboard_status_normalizes_analyst_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_operational_percentage=50
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == 50.0
+    )
+
+    assert isinstance(
+        status.analyst_operational_percentage,
+        float,
+    )
+
+def test_runtime_dashboard_status_serializes_analyst_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_operational_percentage=75.0
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["analyst_operational_percentage"]
+        == 75.0
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "50",
+        object(),
+    ],
+)
+def test_runtime_dashboard_status_rejects_invalid_analyst_operational_percentage(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_operational_percentage",
+    ):
+        make_status(
+            analyst_operational_percentage=value,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.01,
+        100.01,
+    ],
+)
+def test_runtime_dashboard_status_rejects_out_of_range_analyst_operational_percentage(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_operational_percentage",
+    ):
+        make_status(
+            analyst_operational_percentage=value
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        0.0,
+        100.0,
+    ],
+)
+def test_runtime_dashboard_status_accepts_analyst_operational_percentage_boundaries(
+    value: float,
+) -> None:
+    status = make_status(
+        analyst_operational_percentage=value
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == value
+    )
 

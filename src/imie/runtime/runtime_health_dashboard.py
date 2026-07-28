@@ -992,6 +992,18 @@ def build_dashboard_html(
             </div>
 
             <div class="metric-card">
+                <div class="metric-label">
+                    Analyst Operational
+                </div>
+                <div
+                    class="metric-value"
+                    id="analystOperationalPercentage"
+                >
+                    —
+                </div>
+            </div>
+
+            <div class="metric-card">
                 <div class="metric-label">Coverage State</div>
                 <div
                     class="metric-value"
@@ -3570,6 +3582,11 @@ def build_dashboard_html(
                 updatePercentageMetric(
                     "analystCoveragePercentage",
                     payload.analyst_coverage_percentage
+                );
+
+                updatePercentageMetric(
+                    "analystOperationalPercentage",
+                    payload.analyst_operational_percentage
                 );
 
                 updateAnalystCoverageState(

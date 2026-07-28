@@ -1610,6 +1610,8 @@ def test_dashboard_styles_analyst_operational_statuses() -> None:
     )
     assert "analystOperationalMessage" in html
     assert "payload.analyst_operational_message" in html
+    assert "analystOperationalPercentage" in html
+    assert "payload.analyst_operational_percentage" in html
 
 def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
     html = build_dashboard_html()
@@ -1690,3 +1692,35 @@ def test_dashboard_binds_analyst_operational_message_payload() -> None:
 
     assert '"analystOperationalMessage"' in html
     assert "payload.analyst_operational_message" in html
+
+def test_dashboard_displays_analyst_operational_percentage() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystOperationalPercentage"'
+        in html
+    )
+
+    assert (
+        "payload.analyst_operational_percentage"
+        in html
+    )
+
+    assert (
+        '"analystOperationalPercentage"'
+        in html
+    )
+
+def test_dashboard_binds_analyst_operational_percentage() -> None:
+    html = build_dashboard_html()
+
+    assert "updatePercentageMetric(" in html
+    assert (
+        '"analystOperationalPercentage"'
+        in html
+    )
+    assert (
+        "payload.analyst_operational_percentage"
+        in html
+    )
+

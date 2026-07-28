@@ -612,6 +612,10 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_operational_message"]
         == "No analyst domains are available."
     )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 0.0
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1362,6 +1366,10 @@ def test_publish_result_populates_trade_plan_details(
             "have produced an opinion."
         )
     )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 100.0
+    )
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1688,6 +1696,10 @@ def test_publish_result_calculates_partial_analyst_coverage(
             "have produced an opinion."
         )
     )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 100.0
+    )
 
 def test_publish_result_marks_unresolved_analyst_coverage(
         tmp_path: Path,
@@ -1791,6 +1803,10 @@ def test_publish_result_marks_unresolved_analyst_coverage(
                 "produced an opinion."
             )
         )
+        assert (
+            payload["analyst_operational_percentage"]
+            == 0.0
+        )
 
 def test_publish_result_marks_disabled_analyst_operation(
     tmp_path: Path,
@@ -1842,6 +1858,10 @@ def test_publish_result_marks_disabled_analyst_operation(
     assert (
         payload["analyst_operational_message"]
         == "All analyst domains are disabled."
+    )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 0.0
     )
 
 
@@ -1901,6 +1921,10 @@ def test_publish_result_marks_degraded_analyst_operation(
             "have produced an opinion."
         )
     )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 50.0
+    )
 
 
 def test_disabled_unresolved_analyst_does_not_degrade_operation(
@@ -1958,4 +1982,8 @@ def test_disabled_unresolved_analyst_does_not_degrade_operation(
             "All 1 enabled analyst domains "
             "have produced an opinion."
         )
+    )
+    assert (
+        payload["analyst_operational_percentage"]
+        == 100.0
     )

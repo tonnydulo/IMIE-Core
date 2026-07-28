@@ -163,6 +163,7 @@ class RuntimeDashboardStatus:
     analyst_coverage_message: str | None = None
     analyst_operational_status: str | None = None
     analyst_operational_message: str | None = None
+    analyst_operational_percentage: float | None = None
 
     def __post_init__(
         self,
@@ -341,6 +342,7 @@ class RuntimeDashboardStatus:
             "value_confidence",
             "analyst_average_confidence",
             "analyst_coverage_percentage",
+            "analyst_operational_percentage",
         ):
             value = getattr(
                 self,
@@ -1317,6 +1319,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_operational_message": (
                     self.analyst_operational_message
+                ),
+                "analyst_operational_percentage": (
+                    self.analyst_operational_percentage
                 ),
             }
         )
