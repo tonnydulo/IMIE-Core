@@ -1013,6 +1013,18 @@ def build_dashboard_html(
                 </span>
             </div>
 
+            <div class="metric-row metric-row-wide">
+                <span class="metric-label">
+                    Operational Message
+                </span>
+                <span
+                    id="analystOperationalMessage"
+                    class="metric-value"
+                >
+                    No analyst operational message available.
+                </span>
+            </div>
+
             <div class="metric-card">
                 <div class="metric-label">
                     Analyst Coverage Message
@@ -3566,6 +3578,12 @@ def build_dashboard_html(
 
                 updateAnalystOperationalStatus(
                     payload.analyst_operational_status
+                );
+
+                setText(
+                    "analystOperationalMessage",
+                    payload.analyst_operational_message
+                        ?? "No analyst operational message available."
                 );
 
                 setText(

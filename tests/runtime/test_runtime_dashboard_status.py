@@ -152,6 +152,7 @@ def make_status(
     analyst_coverage_state: str | None = None,
     analyst_coverage_message: str | None = None,
     analyst_operational_status: str | None = None,
+    analyst_operational_message: str | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -357,6 +358,9 @@ def make_status(
         ),
         analyst_operational_status=(
             analyst_operational_status
+        ),
+        analyst_operational_message=(
+            analyst_operational_message
         ),
     )
 
@@ -2458,5 +2462,65 @@ def test_runtime_dashboard_status_rejects_invalid_analyst_operational_status(
     ):
         make_status(
             analyst_operational_status=value,
+        )
+
+def test_runtime_dashboard_status_normalizes_analyst_operational_message(
+) -> None:
+    status = make_status(
+        analyst_operational_message=(
+            "  All enabled analyst domains "
+            "have produced an opinion.  "
+        )
+    )
+
+    assert (
+        status.analyst_operational_message
+        == (
+            "All enabled analyst domains "
+            "have produced an opinion."
+        )
+    )
+
+def test_runtime_dashboard_status_normalizes_empty_analyst_operational_message(
+) -> None:
+    status = make_status(
+        analyst_operational_message="   "
+    )
+
+    assert (
+        status.analyst_operational_message
+        is None
+    )
+
+def test_runtime_dashboard_status_serializes_analyst_operational_message(
+) -> None:
+    status = make_status(
+        analyst_operational_status="DEGRADED",
+        analyst_operational_message=(
+            "1 of 2 enabled analyst domains "
+            "have produced an opinion."
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["analyst_operational_message"]
+        == (
+            "1 of 2 enabled analyst domains "
+            "have produced an opinion."
+        )
+    )
+
+def test_runtime_dashboard_status_rejects_invalid_analyst_operational_message(
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_operational_message",
+    ):
+        make_status(
+            analyst_operational_message=(
+                123  # type: ignore[arg-type]
+            )
         )
 

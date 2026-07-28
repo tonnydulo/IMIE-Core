@@ -486,17 +486,36 @@ class DashboardStatusFilePublisher:
 
         if analyst_domain_count == 0:
             analyst_operational_status = "UNAVAILABLE"
+            analyst_operational_message = (
+                "No analyst domains are available."
+            )
         elif analyst_enabled_count == 0:
             analyst_operational_status = "DISABLED"
+            analyst_operational_message = (
+                "All analyst domains are disabled."
+            )
         elif analyst_enabled_resolved_count == 0:
             analyst_operational_status = "UNRESOLVED"
+            analyst_operational_message = (
+                "Enabled analyst domains have not "
+                "produced an opinion."
+            )
         elif (
             analyst_enabled_resolved_count
             < analyst_enabled_count
         ):
             analyst_operational_status = "DEGRADED"
+            analyst_operational_message = (
+                f"{analyst_enabled_resolved_count} of "
+                f"{analyst_enabled_count} enabled analyst "
+                "domains have produced an opinion."
+            )
         else:
             analyst_operational_status = "OPERATIONAL"
+            analyst_operational_message = (
+                f"All {analyst_enabled_count} enabled analyst "
+                "domains have produced an opinion."
+            )
 
         return RuntimeDashboardStatus(
             health=self._health,
@@ -1156,6 +1175,9 @@ class DashboardStatusFilePublisher:
             ),
             analyst_operational_status=(
                 analyst_operational_status
+            ),
+            analyst_operational_message=(
+                analyst_operational_message
             ),
             latest_error_type=(
                 cycle.error_type

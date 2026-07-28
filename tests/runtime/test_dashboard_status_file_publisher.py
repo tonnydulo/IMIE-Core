@@ -608,6 +608,10 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_operational_status"]
         == "UNAVAILABLE"
     )
+    assert (
+        payload["analyst_operational_message"]
+        == "No analyst domains are available."
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1351,6 +1355,13 @@ def test_publish_result_populates_trade_plan_details(
         payload["analyst_operational_status"]
         == "OPERATIONAL"
     )
+    assert (
+        payload["analyst_operational_message"]
+        == (
+            "All 8 enabled analyst domains "
+            "have produced an opinion."
+        )
+    )
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1670,6 +1681,13 @@ def test_publish_result_calculates_partial_analyst_coverage(
         payload["analyst_operational_status"]
         == "OPERATIONAL"
     )
+    assert (
+        payload["analyst_operational_message"]
+        == (
+            "All 1 enabled analyst domains "
+            "have produced an opinion."
+        )
+    )
 
 def test_publish_result_marks_unresolved_analyst_coverage(
         tmp_path: Path,
@@ -1766,6 +1784,13 @@ def test_publish_result_marks_unresolved_analyst_coverage(
             payload["analyst_operational_status"]
             == "UNRESOLVED"
         )
+        assert (
+            payload["analyst_operational_message"]
+            == (
+                "Enabled analyst domains have not "
+                "produced an opinion."
+            )
+        )
 
 def test_publish_result_marks_disabled_analyst_operation(
     tmp_path: Path,
@@ -1813,6 +1838,10 @@ def test_publish_result_marks_disabled_analyst_operation(
     assert (
         payload["analyst_operational_status"]
         == "DISABLED"
+    )
+    assert (
+        payload["analyst_operational_message"]
+        == "All analyst domains are disabled."
     )
 
 
@@ -1865,6 +1894,13 @@ def test_publish_result_marks_degraded_analyst_operation(
         payload["analyst_operational_status"]
         == "DEGRADED"
     )
+    assert (
+        payload["analyst_operational_message"]
+        == (
+            "1 of 2 enabled analyst domains "
+            "have produced an opinion."
+        )
+    )
 
 
 def test_disabled_unresolved_analyst_does_not_degrade_operation(
@@ -1915,4 +1951,11 @@ def test_disabled_unresolved_analyst_does_not_degrade_operation(
     assert (
         payload["analyst_operational_status"]
         == "OPERATIONAL"
+    )
+    assert (
+        payload["analyst_operational_message"]
+        == (
+            "All 1 enabled analyst domains "
+            "have produced an opinion."
+        )
     )

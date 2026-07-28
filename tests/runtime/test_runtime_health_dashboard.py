@@ -1608,6 +1608,8 @@ def test_dashboard_styles_analyst_operational_statuses() -> None:
         'element.textContent = "Unavailable";'
         in html
     )
+    assert "analystOperationalMessage" in html
+    assert "payload.analyst_operational_message" in html
 
 def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
     html = build_dashboard_html()
@@ -1665,3 +1667,26 @@ def test_dashboard_styles_analyst_coverage_message() -> None:
     assert "white-space: normal" in html
     assert "overflow-wrap: anywhere" in html
 
+def test_dashboard_displays_analyst_operational_message() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystOperationalMessage"'
+        in html
+    )
+
+    assert (
+        "payload.analyst_operational_message"
+        in html
+    )
+
+    assert (
+        "No analyst operational message available."
+        in html
+    )
+
+def test_dashboard_binds_analyst_operational_message_payload() -> None:
+    html = build_dashboard_html()
+
+    assert '"analystOperationalMessage"' in html
+    assert "payload.analyst_operational_message" in html

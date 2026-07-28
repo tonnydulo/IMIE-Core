@@ -162,6 +162,7 @@ class RuntimeDashboardStatus:
     analyst_coverage_state: str | None = None
     analyst_coverage_message: str | None = None
     analyst_operational_status: str | None = None
+    analyst_operational_message: str | None = None
 
     def __post_init__(
         self,
@@ -737,6 +738,7 @@ class RuntimeDashboardStatus:
             "analyst_coverage_state",
             "analyst_coverage_message",
             "analyst_operational_status",
+            "analyst_operational_message",
             "latest_error_type",
             
         ):
@@ -1312,6 +1314,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_operational_status": (
                     self.analyst_operational_status
+                ),
+                "analyst_operational_message": (
+                    self.analyst_operational_message
                 ),
             }
         )
