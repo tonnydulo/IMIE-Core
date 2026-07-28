@@ -352,6 +352,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        participation_summary = (
+            decision_result.analyst_summary.get(
+                "PARTICIPATION"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -931,6 +939,32 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if pressure_summary is not None
+                else None
+            ),
+            participation_analyst=(
+                "PARTICIPATION"
+                if participation_summary is not None
+                else None
+            ),
+            participation_opinion=(
+                participation_summary.get(
+                    "opinion"
+                )
+                if participation_summary is not None
+                else None
+            ),
+            participation_confidence=(
+                participation_summary.get(
+                    "confidence"
+                )
+                if participation_summary is not None
+                else None
+            ),
+            participation_enabled=(
+                participation_summary.get(
+                    "enabled"
+                )
+                if participation_summary is not None
                 else None
             ),
 

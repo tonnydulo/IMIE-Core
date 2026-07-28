@@ -144,6 +144,11 @@ class RuntimeDashboardStatus:
     pressure_confidence: float | None = None
     pressure_enabled: bool | None = None
 
+    participation_analyst: str | None = None
+    participation_opinion: str | None = None
+    participation_confidence: float | None = None
+    participation_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -317,6 +322,7 @@ class RuntimeDashboardStatus:
             "order_block_confidence",
             "auction_confidence",
             "pressure_confidence",
+            "participation_confidence",
         ):
             value = getattr(
                 self,
@@ -508,6 +514,17 @@ class RuntimeDashboardStatus:
                 "pressure_enabled must be "
                 "a bool or None."
             )
+        if (
+            self.participation_enabled is not None
+            and not isinstance(
+                self.participation_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "participation_enabled must be "
+                "a bool or None."
+            )
 
         for field_name in (
             "trade_entry",
@@ -649,6 +666,8 @@ class RuntimeDashboardStatus:
             "auction_opinion",
             "pressure_analyst",
             "pressure_opinion",
+            "participation_analyst",
+            "participation_opinion",
             "latest_error_type",
             
         ):
@@ -1159,6 +1178,18 @@ class RuntimeDashboardStatus:
                 ),
                 "pressure_enabled": (
                     self.pressure_enabled
+                ),
+                "participation_analyst": (
+                    self.participation_analyst
+                ),
+                "participation_opinion": (
+                    self.participation_opinion
+                ),
+                "participation_confidence": (
+                    self.participation_confidence
+                ),
+                "participation_enabled": (
+                    self.participation_enabled
                 ),
             }
         )

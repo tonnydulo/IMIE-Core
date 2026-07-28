@@ -134,6 +134,11 @@ def make_status(
     pressure_confidence: float | None = None,
     pressure_enabled: bool | None = None,
 
+    participation_analyst: str | None = None,
+    participation_opinion: str | None = None,
+    participation_confidence: float | None = None,
+    participation_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -313,6 +318,10 @@ def make_status(
         pressure_opinion=pressure_opinion,
         pressure_confidence=pressure_confidence,
         pressure_enabled=pressure_enabled,
+        participation_analyst=participation_analyst,
+        participation_opinion=participation_opinion,
+        participation_confidence=participation_confidence,
+        participation_enabled=participation_enabled,
             )
 
 
@@ -1874,5 +1883,117 @@ def test_pressure_confidence_must_be_in_range() -> None:
     ):
         make_status(
             pressure_confidence=101.0,
+        )
+
+def test_status_accepts_participation_analyst_detail() -> None:
+    status = make_status(
+        participation_analyst="PARTICIPATION",
+        participation_opinion=(
+            "Institutional participation is expanding."
+        ),
+        participation_confidence=76.0,
+        participation_enabled=True,
+    )
+
+    assert (
+        status.participation_analyst
+        == "PARTICIPATION"
+    )
+
+    assert status.participation_opinion == (
+        "Institutional participation is expanding."
+    )
+
+    assert status.participation_confidence == 76.0
+    assert status.participation_enabled is True
+
+def test_status_normalizes_participation_text() -> None:
+    status = make_status(
+        participation_analyst=(
+            "  PARTICIPATION  "
+        ),
+        participation_opinion=(
+            "  Participation is improving.  "
+        ),
+    )
+
+    assert (
+        status.participation_analyst
+        == "PARTICIPATION"
+    )
+
+    assert status.participation_opinion == (
+        "Participation is improving."
+    )
+
+def test_status_serializes_participation_analyst_detail() -> None:
+    status = make_status(
+        participation_analyst="PARTICIPATION",
+        participation_opinion=(
+            "Participation remains limited."
+        ),
+        participation_confidence=62.0,
+        participation_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["participation_analyst"]
+        == "PARTICIPATION"
+    )
+
+    assert payload["participation_opinion"] == (
+        "Participation remains limited."
+    )
+
+    assert (
+        payload["participation_confidence"]
+        == 62.0
+    )
+
+    assert (
+        payload["participation_enabled"]
+        is False
+    )
+
+def test_participation_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "participation_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            participation_enabled=(
+                "yes"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_participation_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "participation_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            participation_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_participation_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "participation_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            participation_confidence=101.0,
         )
 

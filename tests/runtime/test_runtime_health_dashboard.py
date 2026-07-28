@@ -1407,3 +1407,50 @@ def test_dashboard_calls_pressure_enabled_renderer() -> None:
         in html
     )
 
+def test_dashboard_contains_participation_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="participationAnalyst"' in html
+    assert 'id="participationOpinion"' in html
+    assert 'id="participationConfidence"' in html
+    assert 'id="participationEnabled"' in html
+
+def test_dashboard_reads_participation_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.participation_analyst" in html
+    assert "payload.participation_opinion" in html
+    assert "payload.participation_confidence" in html
+    assert "payload.participation_enabled" in html
+
+def test_dashboard_contains_participation_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateParticipationEnabled("
+        in html
+    )
+
+    assert '"participationEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_participation_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "participationConfidence",\n'
+        "                    payload.participation_confidence"
+        in html
+    )
+
+def test_dashboard_calls_participation_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateParticipationEnabled(\n'
+        "                    payload.participation_enabled"
+        in html
+    )
+

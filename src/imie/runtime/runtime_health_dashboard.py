@@ -844,6 +844,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+              <article class="card">
+                <div class="label">
+                    Participation Analyst
+                </div>
+
+                <div
+                    id="participationAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Participation Opinion
+                </div>
+
+                <div
+                    id="participationOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Participation Confidence
+                </div>
+
+                <div
+                    id="participationConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Participation Enabled
+                </div>
+
+                <div
+                    id="participationEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2442,6 +2494,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateParticipationEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "participationEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3654,6 +3739,25 @@ def build_dashboard_html(
 
                 updatePressureEnabled(
                     payload.pressure_enabled
+                );
+
+                setText(
+                    "participationAnalyst",
+                    payload.participation_analyst ?? "—"
+                );
+
+                setText(
+                    "participationOpinion",
+                    payload.participation_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "participationConfidence",
+                    payload.participation_confidence
+                );
+
+                updateParticipationEnabled(
+                    payload.participation_enabled
                 );
 
                 //====================================================
