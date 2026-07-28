@@ -198,6 +198,48 @@ def make_decision(
     ),
     )
 
+def make_decision_with_analyst_summary(
+    analyst_summary: dict[str, dict[str, object]],
+) -> DecisionResult:
+    decision = make_decision()
+
+    return DecisionResult(
+        decision=decision.decision,
+        actionable=decision.actionable,
+        confidence=decision.confidence,
+        recommendation=decision.recommendation,
+        reasons=decision.reasons,
+        warnings=decision.warnings,
+        analyst_summary=analyst_summary,
+        trade_plan=decision.trade_plan,
+        institutional_context=(
+            decision.institutional_context
+        ),
+    )
+
+def make_completed_result_with_analyst_summary(
+    analyst_summary: dict[str, dict[str, object]],
+) -> AnalysisCycleResult:
+    return AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=NOW,
+        completed_at=(
+            NOW
+            + timedelta(
+                seconds=2
+            )
+        ),
+        message="Analysis cycle completed.",
+        market_session=make_market_session(),
+        decision=(
+            make_decision_with_analyst_summary(
+                analyst_summary
+            )
+        ),
+    )
+
 def make_trade_plan() -> TradePlan:
     return TradePlan(
         symbol="NVDA",
@@ -561,6 +603,10 @@ def test_health_update_creates_dashboard_file(
     assert (
         payload["analyst_coverage_message"]
         == "No analyst domains are available."
+    )
+    assert (
+        payload["analyst_operational_status"]
+        == "UNAVAILABLE"
     )
 
 
@@ -1301,6 +1347,10 @@ def test_publish_result_populates_trade_plan_details(
             "an opinion."
         )
     )
+    assert (
+        payload["analyst_operational_status"]
+        == "OPERATIONAL"
+    )
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1616,6 +1666,11 @@ def test_publish_result_calculates_partial_analyst_coverage(
         )
     )
 
+    assert (
+        payload["analyst_operational_status"]
+        == "OPERATIONAL"
+    )
+
 def test_publish_result_marks_unresolved_analyst_coverage(
         tmp_path: Path,
     ) -> None:
@@ -1707,3 +1762,157 @@ def test_publish_result_marks_unresolved_analyst_coverage(
                 "have produced an opinion."
             )
         )
+        assert (
+            payload["analyst_operational_status"]
+            == "UNRESOLVED"
+        )
+
+def test_publish_result_marks_disabled_analyst_operation(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "",
+                "confidence": 0.0,
+                "enabled": False,
+            },
+            "LIQUIDITY": {
+                "opinion": "",
+                "confidence": 0.0,
+                "enabled": False,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_operational_status"]
+        == "DISABLED"
+    )
+
+
+def test_publish_result_marks_degraded_analyst_operation(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": (
+                    "Directional trend is bullish."
+                ),
+                "confidence": 82.0,
+                "enabled": True,
+            },
+            "LIQUIDITY": {
+                "opinion": "",
+                "confidence": 0.0,
+                "enabled": True,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_operational_status"]
+        == "DEGRADED"
+    )
+
+
+def test_disabled_unresolved_analyst_does_not_degrade_operation(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": (
+                    "Directional trend is bullish."
+                ),
+                "confidence": 82.0,
+                "enabled": True,
+            },
+            "LIQUIDITY": {
+                "opinion": "",
+                "confidence": 0.0,
+                "enabled": False,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_operational_status"]
+        == "OPERATIONAL"
+    )

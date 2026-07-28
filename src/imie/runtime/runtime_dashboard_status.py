@@ -161,6 +161,7 @@ class RuntimeDashboardStatus:
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
     analyst_coverage_message: str | None = None
+    analyst_operational_status: str | None = None
 
     def __post_init__(
         self,
@@ -450,21 +451,6 @@ class RuntimeDashboardStatus:
             )
 
         if (
-            self.analyst_coverage_state is not None
-            and self.analyst_coverage_state
-            not in {
-                "UNAVAILABLE",
-                "UNRESOLVED",
-                "PARTIAL",
-                "COMPLETE",
-            }
-        ):
-            raise ValueError(
-                "analyst_coverage_state must be one of: "
-                "UNAVAILABLE, UNRESOLVED, PARTIAL, COMPLETE."
-            )
-
-        if (
             self.decision_actionable
             is not None
             and not isinstance(
@@ -591,6 +577,21 @@ class RuntimeDashboardStatus:
             raise TypeError(
                 "value_enabled must be "
                 "a bool or None."
+            )
+
+        if (
+            self.analyst_coverage_state is not None
+            and self.analyst_coverage_state
+            not in {
+                "UNAVAILABLE",
+                "UNRESOLVED",
+                "PARTIAL",
+                "COMPLETE",
+            }
+        ):
+            raise ValueError(
+                "analyst_coverage_state must be one of: "
+                "UNAVAILABLE, UNRESOLVED, PARTIAL, COMPLETE."
             )
 
         for field_name in (
@@ -735,6 +736,7 @@ class RuntimeDashboardStatus:
             "value_opinion",
             "analyst_coverage_state",
             "analyst_coverage_message",
+            "analyst_operational_status",
             "latest_error_type",
             
         ):
@@ -761,6 +763,23 @@ class RuntimeDashboardStatus:
                 self,
                 field_name,
                 normalized or None,
+            )
+
+        if (
+            self.analyst_operational_status is not None
+            and self.analyst_operational_status
+            not in {
+                "UNAVAILABLE",
+                "DISABLED",
+                "UNRESOLVED",
+                "DEGRADED",
+                "OPERATIONAL",
+            }
+        ):
+            raise ValueError(
+                "analyst_operational_status must be one of: "
+                "UNAVAILABLE, DISABLED, UNRESOLVED, "
+                "DEGRADED, OPERATIONAL."
             )
 
         for field_name in (
@@ -1290,6 +1309,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_coverage_message": (
                     self.analyst_coverage_message
+                ),
+                "analyst_operational_status": (
+                    self.analyst_operational_status
                 ),
             }
         )

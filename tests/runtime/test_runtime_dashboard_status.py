@@ -151,6 +151,7 @@ def make_status(
     analyst_coverage_percentage: float | None = None,
     analyst_coverage_state: str | None = None,
     analyst_coverage_message: str | None = None,
+    analyst_operational_status: str | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -353,6 +354,9 @@ def make_status(
         ),
         analyst_coverage_message=(
             analyst_coverage_message
+        ),
+        analyst_operational_status=(
+            analyst_operational_status
         ),
     )
 
@@ -2411,4 +2415,48 @@ def test_status_serializes_analyst_coverage_message() -> None:
     assert payload["analyst_coverage_message"] == (
         "All 8 analyst domains have produced an opinion."
     )
+
+def test_runtime_dashboard_status_normalizes_analyst_operational_status() -> None:
+    status = make_status(
+        analyst_operational_status=(
+            "  OPERATIONAL  "
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == "OPERATIONAL"
+    )
+
+
+def test_runtime_dashboard_status_normalizes_empty_analyst_operational_status() -> None:
+    status = make_status(
+        analyst_operational_status="   ",
+    )
+
+    assert (
+        status.analyst_operational_status
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "UNKNOWN",
+        "READY",
+        "FAILED",
+        "operational",
+    ],
+)
+def test_runtime_dashboard_status_rejects_invalid_analyst_operational_status(
+    value: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_operational_status",
+    ):
+        make_status(
+            analyst_operational_status=value,
+        )
 

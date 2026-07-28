@@ -1565,10 +1565,49 @@ def test_dashboard_styles_analyst_coverage_states() -> None:
     assert '"PARTIAL"' in html
     assert '"UNRESOLVED"' in html
 
+    assert '"OPERATIONAL"' in html
+    assert '"DEGRADED"' in html
+    assert '"DISABLED"' in html
+    assert '"UNAVAILABLE"' in html
+
     assert '"status-good"' in html
     assert '"status-warning"' in html
     assert '"status-bad"' in html
     assert '"status-neutral"' in html
+
+    assert "updateAnalystOperationalStatus" in html
+    assert "payload.analyst_operational_status" in html
+    assert 'id="analystOperationalStatus"' in html
+
+def test_dashboard_styles_analyst_operational_statuses() -> None:
+    html = build_dashboard_html()
+
+    assert 'case "OPERATIONAL":' in html
+    assert 'case "DEGRADED":' in html
+    assert 'case "UNRESOLVED":' in html
+    assert 'case "DISABLED":' in html
+    assert 'case "UNAVAILABLE":' in html
+
+    assert (
+        'element.textContent = "Operational";'
+        in html
+    )
+    assert (
+        'element.textContent = "Degraded";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unresolved";'
+        in html
+    )
+    assert (
+        'element.textContent = "Disabled";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unavailable";'
+        in html
+    )
 
 def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
     html = build_dashboard_html()

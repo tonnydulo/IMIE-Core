@@ -1001,6 +1001,18 @@ def build_dashboard_html(
                 </div>
             </div>
 
+            <div class="metric-row">
+                <span class="metric-label">
+                    Operational Status
+                </span>
+                <span
+                    id="analystOperationalStatus"
+                    class="status-neutral"
+                >
+                    Unavailable
+                </span>
+            </div>
+
             <div class="metric-card">
                 <div class="metric-label">
                     Analyst Coverage Message
@@ -3293,6 +3305,69 @@ def build_dashboard_html(
             }}
         }}
 
+        function updateAnalystOperationalStatus(
+    value
+) {{
+    const element = document.getElementById(
+        "analystOperationalStatus"
+    );
+
+    if (!element) {{
+        return;
+    }}
+
+    const normalized = (
+        typeof value === "string"
+            ? value.trim().toUpperCase()
+            : ""
+    );
+
+    element.classList.remove(
+        "status-good",
+        "status-warning",
+        "status-bad",
+        "status-neutral"
+    );
+
+    switch (normalized) {{
+        case "OPERATIONAL":
+            element.textContent = "Operational";
+            element.classList.add(
+                "status-good"
+            );
+            break;
+
+        case "DEGRADED":
+            element.textContent = "Degraded";
+            element.classList.add(
+                "status-warning"
+            );
+            break;
+
+        case "UNRESOLVED":
+            element.textContent = "Unresolved";
+            element.classList.add(
+                "status-bad"
+            );
+            break;
+
+        case "DISABLED":
+            element.textContent = "Disabled";
+            element.classList.add(
+                "status-neutral"
+            );
+            break;
+
+        case "UNAVAILABLE":
+        default:
+            element.textContent = "Unavailable";
+            element.classList.add(
+                "status-neutral"
+            );
+            break;
+    }}
+}}
+
         function updateSupportFlag(
             id,
             supported
@@ -3487,6 +3562,10 @@ def build_dashboard_html(
 
                 updateAnalystCoverageState(
                     payload.analyst_coverage_state
+                );
+
+                updateAnalystOperationalStatus(
+                    payload.analyst_operational_status
                 );
 
                 setText(

@@ -401,6 +401,24 @@ class DashboardStatusFilePublisher:
             )
         )
 
+        analyst_enabled_resolved_count = sum(
+            1
+            for details in analyst_summary.values()
+            if (
+                details.get("enabled") is True
+                and isinstance(
+                    details.get("opinion"),
+                    str,
+                )
+                and bool(
+                    details.get(
+                        "opinion",
+                        "",
+                    ).strip()
+                )
+            )
+        )
+
         analyst_confidences = [
             float(confidence)
             for details in analyst_summary.values()
@@ -465,6 +483,20 @@ class DashboardStatusFilePublisher:
                 f"All {analyst_domain_count} analyst domains "
                 "have produced an opinion."
             )
+
+        if analyst_domain_count == 0:
+            analyst_operational_status = "UNAVAILABLE"
+        elif analyst_enabled_count == 0:
+            analyst_operational_status = "DISABLED"
+        elif analyst_enabled_resolved_count == 0:
+            analyst_operational_status = "UNRESOLVED"
+        elif (
+            analyst_enabled_resolved_count
+            < analyst_enabled_count
+        ):
+            analyst_operational_status = "DEGRADED"
+        else:
+            analyst_operational_status = "OPERATIONAL"
 
         return RuntimeDashboardStatus(
             health=self._health,
@@ -1122,7 +1154,9 @@ class DashboardStatusFilePublisher:
             analyst_coverage_message=(
                 analyst_coverage_message
             ),
-
+            analyst_operational_status=(
+                analyst_operational_status
+            ),
             latest_error_type=(
                 cycle.error_type
                 if cycle is not None
