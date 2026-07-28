@@ -368,6 +368,69 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        analyst_summary = (
+            decision_result.analyst_summary
+            if decision_result is not None
+            else {}
+        )
+
+        analyst_domain_count = len(
+            analyst_summary
+        )
+
+        analyst_enabled_count = sum(
+            1
+            for details in analyst_summary.values()
+            if details.get("enabled") is True
+        )
+
+        analyst_resolved_count = sum(
+            1
+            for details in analyst_summary.values()
+            if (
+                isinstance(
+                    details.get("opinion"),
+                    str,
+                )
+                and bool(
+                    details.get(
+                        "opinion",
+                        "",
+                    ).strip()
+                )
+            )
+        )
+
+        analyst_confidences = [
+            float(confidence)
+            for details in analyst_summary.values()
+            if (
+                isinstance(
+                    (
+                        confidence := details.get(
+                            "confidence"
+                        )
+                    ),
+                    int | float,
+                )
+                and not isinstance(
+                    confidence,
+                    bool,
+                )
+            )
+        ]
+
+        analyst_average_confidence = (
+            sum(
+                analyst_confidences
+            )
+            / len(
+                analyst_confidences
+            )
+            if analyst_confidences
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1001,6 +1064,19 @@ class DashboardStatusFilePublisher:
                 )
                 if value_summary is not None
                 else None
+            ),
+
+            analyst_domain_count=(
+                analyst_domain_count
+            ),
+            analyst_enabled_count=(
+                analyst_enabled_count
+            ),
+            analyst_resolved_count=(
+                analyst_resolved_count
+            ),
+            analyst_average_confidence=(
+                analyst_average_confidence
             ),
 
             latest_error_type=(

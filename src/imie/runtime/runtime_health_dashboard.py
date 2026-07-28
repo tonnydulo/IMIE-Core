@@ -948,6 +948,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+             <article class="card">
+                <div class="label">
+                    Analyst Domains
+                </div>
+
+                <div
+                    id="analystDomainCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Analysts Enabled
+                </div>
+
+                <div
+                    id="analystEnabledCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Analysts Resolved
+                </div>
+
+                <div
+                    id="analystResolvedCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Average Analyst Confidence
+                </div>
+
+                <div
+                    id="analystAverageConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -3323,6 +3375,26 @@ def build_dashboard_html(
                     "decisionWarnings",
                     payload.decision_warnings,
                     "No decision warnings."
+                );
+
+                updateInstitutionalCount(
+                    "analystDomainCount",
+                    payload.analyst_domain_count
+                );
+
+                updateInstitutionalCount(
+                    "analystEnabledCount",
+                    payload.analyst_enabled_count
+                );
+
+                updateInstitutionalCount(
+                    "analystResolvedCount",
+                    payload.analyst_resolved_count
+                );
+
+                updatePercentageMetric(
+                    "analystAverageConfidence",
+                    payload.analyst_average_confidence
                 );
 
                 updateAnalystSummary(

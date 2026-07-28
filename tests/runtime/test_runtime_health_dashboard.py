@@ -1172,6 +1172,63 @@ def test_dashboard_analyst_summary_uses_text_content() -> None:
     assert "confidenceValue.textContent" in html
     assert "enabledValue.textContent" in html
 
+def test_dashboard_contains_analyst_coverage_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystDomainCount"' in html
+    assert 'id="analystEnabledCount"' in html
+    assert 'id="analystResolvedCount"' in html
+    assert 'id="analystAverageConfidence"' in html
+
+def test_dashboard_reads_analyst_coverage_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.analyst_domain_count" in html
+    assert "payload.analyst_enabled_count" in html
+    assert "payload.analyst_resolved_count" in html
+
+    assert (
+        "payload.analyst_average_confidence"
+        in html
+    )
+
+def test_dashboard_analyst_coverage_counts_reuse_count_renderer() -> None:
+    html = build_dashboard_html()
+
+    expected = (
+        (
+            "analystDomainCount",
+            "analyst_domain_count",
+        ),
+        (
+            "analystEnabledCount",
+            "analyst_enabled_count",
+        ),
+        (
+            "analystResolvedCount",
+            "analyst_resolved_count",
+        ),
+    )
+
+    for element_id, payload_field in expected:
+        assert (
+            "updateInstitutionalCount(\n"
+            f'                    "{element_id}",\n'
+            f"                    payload.{payload_field}"
+            in html
+        )
+
+def test_dashboard_analyst_average_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "analystAverageConfidence",\n'
+        "                    "
+        "payload.analyst_average_confidence"
+        in html
+    )
+
 def test_dashboard_contains_structure_analyst_fields() -> None:
     html = build_dashboard_html()
 

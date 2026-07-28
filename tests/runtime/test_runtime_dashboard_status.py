@@ -144,6 +144,11 @@ def make_status(
     value_confidence: float | None = None,
     value_enabled: bool | None = None,
 
+    analyst_domain_count: int | None = None,
+    analyst_enabled_count: int | None = None,
+    analyst_resolved_count: int | None = None,
+    analyst_average_confidence: float | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -331,7 +336,13 @@ def make_status(
         value_opinion=value_opinion,
         value_confidence=value_confidence,
         value_enabled=value_enabled,
-            )
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_resolved_count=analyst_resolved_count,
+        analyst_average_confidence=(
+            analyst_average_confidence
+        ),
+    )
 
 
 
@@ -2098,5 +2109,135 @@ def test_value_confidence_must_be_in_range() -> None:
     ):
         make_status(
             value_confidence=101.0,
+        )
+
+def test_status_accepts_analyst_coverage_summary() -> None:
+    status = make_status(
+        analyst_domain_count=8,
+        analyst_enabled_count=8,
+        analyst_resolved_count=7,
+        analyst_average_confidence=78.5,
+    )
+
+    assert status.analyst_domain_count == 8
+    assert status.analyst_enabled_count == 8
+    assert status.analyst_resolved_count == 7
+
+    assert (
+        status.analyst_average_confidence
+        == 78.5
+    )
+
+def test_status_serializes_analyst_coverage_summary() -> None:
+    status = make_status(
+        analyst_domain_count=8,
+        analyst_enabled_count=7,
+        analyst_resolved_count=6,
+        analyst_average_confidence=74.0,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["analyst_domain_count"] == 8
+    assert payload["analyst_enabled_count"] == 7
+    assert payload["analyst_resolved_count"] == 6
+
+    assert (
+        payload["analyst_average_confidence"]
+        == 74.0
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_domain_count",
+        "analyst_enabled_count",
+        "analyst_resolved_count",
+    ],
+)
+def test_analyst_coverage_counts_must_be_integers(
+    field_name: str,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: 2.5,
+            },
+        )
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_domain_count",
+        "analyst_enabled_count",
+        "analyst_resolved_count",
+    ],
+)
+def test_analyst_coverage_counts_cannot_be_negative(
+    field_name: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: -1,
+            },
+        )
+
+def test_enabled_count_cannot_exceed_domain_count() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_count cannot exceed "
+            "analyst_domain_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=7,
+            analyst_enabled_count=8,
+        )
+
+def test_resolved_count_cannot_exceed_domain_count() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_resolved_count cannot exceed "
+            "analyst_domain_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=7,
+            analyst_resolved_count=8,
+        )
+
+def test_analyst_average_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "analyst_average_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            analyst_average_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_analyst_average_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_average_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            analyst_average_confidence=101.0,
         )
 

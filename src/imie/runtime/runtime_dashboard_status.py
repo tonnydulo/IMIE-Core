@@ -154,6 +154,11 @@ class RuntimeDashboardStatus:
     value_confidence: float | None = None
     value_enabled: bool | None = None
 
+    analyst_domain_count: int | None = None
+    analyst_enabled_count: int | None = None
+    analyst_resolved_count: int | None = None
+    analyst_average_confidence: float | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -329,6 +334,7 @@ class RuntimeDashboardStatus:
             "pressure_confidence",
             "participation_confidence",
             "value_confidence",
+            "analyst_average_confidence",
         ):
             value = getattr(
                 self,
@@ -385,6 +391,9 @@ class RuntimeDashboardStatus:
             "confluence_neutral_count",
             "confluence_unknown_count",
             "confluence_domain_count",
+            "analyst_domain_count",
+            "analyst_enabled_count",
+            "analyst_resolved_count",
         ):
             value = getattr(
                 self,
@@ -413,6 +422,28 @@ class RuntimeDashboardStatus:
                 raise ValueError(
                     f"{field_name} cannot be negative."
                 )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_enabled_count is not None
+            and self.analyst_enabled_count
+            > self.analyst_domain_count
+        ):
+            raise ValueError(
+                "analyst_enabled_count cannot exceed "
+                "analyst_domain_count."
+            )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_resolved_count is not None
+            and self.analyst_resolved_count
+            > self.analyst_domain_count
+        ):
+            raise ValueError(
+                "analyst_resolved_count cannot exceed "
+                "analyst_domain_count."
+            )
 
         if (
             self.decision_actionable
@@ -669,10 +700,6 @@ class RuntimeDashboardStatus:
             "acceptance_reason",
             "trend_analyst",
             "trend_opinion",
-            "structure_analyst",
-            "structure_opinion",
-            "liquidity_analyst",
-            "liquidity_opinion",
             "structure_analyst",
             "structure_opinion",
             "liquidity_analyst",
@@ -1221,6 +1248,18 @@ class RuntimeDashboardStatus:
                 ),
                 "value_enabled": (
                     self.value_enabled
+                ),
+                "analyst_domain_count": (
+                    self.analyst_domain_count
+                ),
+                "analyst_enabled_count": (
+                    self.analyst_enabled_count
+                ),
+                "analyst_resolved_count": (
+                    self.analyst_resolved_count
+                ),
+                "analyst_average_confidence": (
+                    self.analyst_average_confidence
                 ),
             }
         )
