@@ -431,6 +431,25 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        analyst_coverage_percentage = (
+            (
+                analyst_resolved_count
+                / analyst_domain_count
+            )
+            * 100.0
+            if analyst_domain_count > 0
+            else 0.0
+        )
+
+        if analyst_domain_count == 0:
+            analyst_coverage_state = "UNAVAILABLE"
+        elif analyst_resolved_count == 0:
+            analyst_coverage_state = "UNRESOLVED"
+        elif analyst_resolved_count < analyst_domain_count:
+            analyst_coverage_state = "PARTIAL"
+        else:
+            analyst_coverage_state = "COMPLETE"
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1077,6 +1096,12 @@ class DashboardStatusFilePublisher:
             ),
             analyst_average_confidence=(
                 analyst_average_confidence
+            ),
+            analyst_coverage_percentage=(
+                analyst_coverage_percentage
+            ),
+            analyst_coverage_state=(
+                analyst_coverage_state
             ),
 
             latest_error_type=(

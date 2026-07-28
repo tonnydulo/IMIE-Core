@@ -148,6 +148,8 @@ def make_status(
     analyst_enabled_count: int | None = None,
     analyst_resolved_count: int | None = None,
     analyst_average_confidence: float | None = None,
+    analyst_coverage_percentage: float | None = None,
+    analyst_coverage_state: str | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -342,8 +344,13 @@ def make_status(
         analyst_average_confidence=(
             analyst_average_confidence
         ),
+        analyst_coverage_percentage=(
+            analyst_coverage_percentage
+        ),
+        analyst_coverage_state=(
+            analyst_coverage_state
+        ),
     )
-
 
 
 def test_dashboard_status_can_be_created() -> None:
@@ -2240,4 +2247,103 @@ def test_analyst_average_confidence_must_be_in_range() -> None:
         make_status(
             analyst_average_confidence=101.0,
         )
+
+def test_status_accepts_analyst_coverage_readiness() -> None:
+    status = make_status(
+        analyst_domain_count=8,
+        analyst_resolved_count=6,
+        analyst_coverage_percentage=75.0,
+        analyst_coverage_state="PARTIAL",
+    )
+
+    assert status.analyst_coverage_percentage == 75.0
+    assert status.analyst_coverage_state == "PARTIAL"
+
+def test_status_serializes_analyst_coverage_readiness() -> None:
+    status = make_status(
+        analyst_domain_count=8,
+        analyst_resolved_count=8,
+        analyst_coverage_percentage=100.0,
+        analyst_coverage_state="COMPLETE",
+    )
+
+    payload = status.to_dict()
+
+    assert payload["analyst_coverage_percentage"] == 100.0
+    assert payload["analyst_coverage_state"] == "COMPLETE"
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "75",
+        object(),
+    ],
+)
+def test_analyst_coverage_percentage_must_be_numeric(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_coverage_percentage",
+    ):
+        make_status(
+            analyst_coverage_percentage=value,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.1,
+        100.1,
+    ],
+)
+def test_analyst_coverage_percentage_must_be_in_range(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_coverage_percentage",
+    ):
+        make_status(
+            analyst_coverage_percentage=value,
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "READY",
+        "FULL",
+        "UNKNOWN",
+        "",
+    ],
+)
+def test_analyst_coverage_state_must_be_supported(
+    value: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_coverage_state",
+    ):
+        make_status(
+            analyst_coverage_state=value,
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "UNAVAILABLE",
+        "UNRESOLVED",
+        "PARTIAL",
+        "COMPLETE",
+    ],
+)
+def test_analyst_coverage_state_accepts_supported_values(
+    value: str,
+) -> None:
+    status = make_status(
+        analyst_coverage_state=value,
+    )
+
+    assert status.analyst_coverage_state == value
 

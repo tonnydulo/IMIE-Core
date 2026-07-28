@@ -158,6 +158,8 @@ class RuntimeDashboardStatus:
     analyst_enabled_count: int | None = None
     analyst_resolved_count: int | None = None
     analyst_average_confidence: float | None = None
+    analyst_coverage_percentage: float | None = None
+    analyst_coverage_state: str | None = None
 
     def __post_init__(
         self,
@@ -335,6 +337,7 @@ class RuntimeDashboardStatus:
             "participation_confidence",
             "value_confidence",
             "analyst_average_confidence",
+            "analyst_coverage_percentage",
         ):
             value = getattr(
                 self,
@@ -443,6 +446,21 @@ class RuntimeDashboardStatus:
             raise ValueError(
                 "analyst_resolved_count cannot exceed "
                 "analyst_domain_count."
+            )
+
+        if (
+            self.analyst_coverage_state is not None
+            and self.analyst_coverage_state
+            not in {
+                "UNAVAILABLE",
+                "UNRESOLVED",
+                "PARTIAL",
+                "COMPLETE",
+            }
+        ):
+            raise ValueError(
+                "analyst_coverage_state must be one of: "
+                "UNAVAILABLE, UNRESOLVED, PARTIAL, COMPLETE."
             )
 
         if (
@@ -714,6 +732,7 @@ class RuntimeDashboardStatus:
             "participation_opinion",
             "value_analyst",
             "value_opinion",
+            "analyst_coverage_state",
             "latest_error_type",
             
         ):
@@ -1260,6 +1279,12 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_average_confidence": (
                     self.analyst_average_confidence
+                ),
+                "analyst_coverage_percentage": (
+                    self.analyst_coverage_percentage
+                ),
+                "analyst_coverage_state": (
+                    self.analyst_coverage_state
                 ),
             }
         )

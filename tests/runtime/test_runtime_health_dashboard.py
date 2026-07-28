@@ -1558,3 +1558,40 @@ def test_dashboard_calls_value_enabled_renderer() -> None:
         in html
     )
 
+def test_dashboard_styles_analyst_coverage_states() -> None:
+    html = build_dashboard_html()
+
+    assert '"COMPLETE"' in html
+    assert '"PARTIAL"' in html
+    assert '"UNRESOLVED"' in html
+
+    assert '"status-good"' in html
+    assert '"status-warning"' in html
+    assert '"status-bad"' in html
+    assert '"status-neutral"' in html
+
+def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystCoveragePercentage"' in html
+    assert 'id="analystCoverageState"' in html
+    assert "Analyst Coverage" in html
+    assert "Coverage State" in html
+
+def test_dashboard_wires_analyst_coverage_readiness_fields() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "payload.analyst_coverage_percentage"
+        in html
+    )
+
+    assert (
+        "payload.analyst_coverage_state"
+        in html
+    )
+
+    assert (
+        "updateAnalystCoverageState"
+        in html
+    )

@@ -549,6 +549,15 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_average_confidence"]
         is None
     )
+    assert (
+        payload["analyst_coverage_percentage"]
+        == 0.0
+    )
+
+    assert (
+        payload["analyst_coverage_state"]
+        == "UNAVAILABLE"
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1272,6 +1281,15 @@ def test_publish_result_populates_trade_plan_details(
             78.875
         )
     )
+    assert (
+        payload["analyst_coverage_percentage"]
+        == 100.0
+    )
+
+    assert (
+        payload["analyst_coverage_state"]
+        == "COMPLETE"
+    )
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
@@ -1569,3 +1587,96 @@ def test_publish_result_calculates_partial_analyst_coverage(
         payload["analyst_average_confidence"]
         == 70.0
     )
+    assert (
+        payload["analyst_coverage_percentage"]
+        == 50.0
+    )
+
+    assert (
+        payload["analyst_coverage_state"]
+        == "PARTIAL"
+    )
+
+def test_publish_result_marks_unresolved_analyst_coverage(
+        tmp_path: Path,
+    ) -> None:
+        path = (
+            tmp_path
+            / "dashboard.json"
+        )
+
+        publisher = DashboardStatusFilePublisher(
+            path=path,
+            symbol="NVDA",
+            timeframe="2m",
+        )
+
+        decision = make_decision()
+
+        decision = DecisionResult(
+            decision=decision.decision,
+            actionable=decision.actionable,
+            confidence=decision.confidence,
+            recommendation=decision.recommendation,
+            reasons=decision.reasons,
+            warnings=decision.warnings,
+            analyst_summary={
+                "TREND": {
+                    "opinion": "",
+                    "confidence": 80.0,
+                    "enabled": True,
+                },
+                "LIQUIDITY": {
+                    "opinion": "   ",
+                    "confidence": 60.0,
+                    "enabled": True,
+                },
+            },
+            trade_plan=decision.trade_plan,
+            institutional_context=(
+                decision.institutional_context
+            ),
+        )
+
+        result = AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=NOW,
+            completed_at=(
+                NOW
+                + timedelta(
+                    seconds=2
+                )
+            ),
+            message="Analysis cycle completed.",
+            market_session=make_market_session(),
+            decision=decision,
+        )
+
+        publisher.publish_health(
+            make_health()
+        )
+
+        publisher.publish_result(
+            result
+        )
+
+        payload = json.loads(
+            path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        assert payload["analyst_domain_count"] == 2
+        assert payload["analyst_resolved_count"] == 0
+
+        assert (
+            payload["analyst_coverage_percentage"]
+            == 0.0
+        )
+
+        assert (
+            payload["analyst_coverage_state"]
+            == "UNRESOLVED"
+        )

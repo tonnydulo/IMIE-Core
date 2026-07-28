@@ -974,6 +974,26 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <div class="metric-card">
+                <div class="metric-label">Analyst Coverage</div>
+                <div
+                    class="metric-value"
+                    id="analystCoveragePercentage"
+                >
+                    —
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Coverage State</div>
+                <div
+                    class="metric-value"
+                    id="analystCoverageState"
+                >
+                    —
+                </div>
+            </div>
+
             <article class="card">
                 <div class="label">
                     Analysts Resolved
@@ -3210,6 +3230,50 @@ def build_dashboard_html(
             }}
         }}
 
+        function updateAnalystCoverageState(value) {{
+            const element = document.getElementById(
+                "analystCoverageState"
+            );
+
+            if (!element) {{
+                return;
+            }}
+
+            const normalized = (
+                typeof value === "string"
+                && value.trim()
+            )
+                ? value.trim().toUpperCase()
+                : "—";
+
+            element.textContent = normalized;
+
+            element.classList.remove(
+                "status-good",
+                "status-warning",
+                "status-bad",
+                "status-neutral"
+            );
+
+            if (normalized === "COMPLETE") {{
+                element.classList.add(
+                    "status-good"
+                );
+            }} else if (normalized === "PARTIAL") {{
+                element.classList.add(
+                    "status-warning"
+                );
+            }} else if (normalized === "UNRESOLVED") {{
+                element.classList.add(
+                    "status-bad"
+                );
+            }} else {{
+                element.classList.add(
+                    "status-neutral"
+                );
+            }}
+        }}
+
         function updateSupportFlag(
             id,
             supported
@@ -3395,6 +3459,15 @@ def build_dashboard_html(
                 updatePercentageMetric(
                     "analystAverageConfidence",
                     payload.analyst_average_confidence
+                );
+
+                updatePercentageMetric(
+                    "analystCoveragePercentage",
+                    payload.analyst_coverage_percentage
+                );
+
+                updateAnalystCoverageState(
+                    payload.analyst_coverage_state
                 );
 
                 updateAnalystSummary(
