@@ -344,6 +344,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        pressure_summary = (
+            decision_result.analyst_summary.get(
+                "PRESSURE"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -897,6 +905,32 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if auction_summary is not None
+                else None
+            ),
+            pressure_analyst=(
+                "PRESSURE"
+                if pressure_summary is not None
+                else None
+            ),
+            pressure_opinion=(
+                pressure_summary.get(
+                    "opinion"
+                )
+                if pressure_summary is not None
+                else None
+            ),
+            pressure_confidence=(
+                pressure_summary.get(
+                    "confidence"
+                )
+                if pressure_summary is not None
+                else None
+            ),
+            pressure_enabled=(
+                pressure_summary.get(
+                    "enabled"
+                )
+                if pressure_summary is not None
                 else None
             ),
 

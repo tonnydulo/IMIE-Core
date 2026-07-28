@@ -139,6 +139,11 @@ class RuntimeDashboardStatus:
     auction_confidence: float | None = None
     auction_enabled: bool | None = None
 
+    pressure_analyst: str | None = None
+    pressure_opinion: str | None = None
+    pressure_confidence: float | None = None
+    pressure_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -311,6 +316,7 @@ class RuntimeDashboardStatus:
             "liquidity_confidence",
             "order_block_confidence",
             "auction_confidence",
+            "pressure_confidence",
         ):
             value = getattr(
                 self,
@@ -491,6 +497,17 @@ class RuntimeDashboardStatus:
                 "auction_enabled must be "
                 "a bool or None."
             )
+        if (
+            self.pressure_enabled is not None
+            and not isinstance(
+                self.pressure_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "pressure_enabled must be "
+                "a bool or None."
+            )
 
         for field_name in (
             "trade_entry",
@@ -630,6 +647,8 @@ class RuntimeDashboardStatus:
             "order_block_opinion",
             "auction_analyst",
             "auction_opinion",
+            "pressure_analyst",
+            "pressure_opinion",
             "latest_error_type",
             
         ):
@@ -1128,6 +1147,18 @@ class RuntimeDashboardStatus:
                 ),
                 "auction_enabled": (
                     self.auction_enabled
+                ),
+                "pressure_analyst": (
+                    self.pressure_analyst
+                ),
+                "pressure_opinion": (
+                    self.pressure_opinion
+                ),
+                "pressure_confidence": (
+                    self.pressure_confidence
+                ),
+                "pressure_enabled": (
+                    self.pressure_enabled
                 ),
             }
         )

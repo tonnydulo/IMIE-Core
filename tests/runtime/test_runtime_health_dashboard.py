@@ -1359,3 +1359,51 @@ def test_dashboard_calls_auction_enabled_renderer() -> None:
         "                    payload.auction_enabled"
         in html
     )
+
+def test_dashboard_contains_pressure_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="pressureAnalyst"' in html
+    assert 'id="pressureOpinion"' in html
+    assert 'id="pressureConfidence"' in html
+    assert 'id="pressureEnabled"' in html
+
+def test_dashboard_reads_pressure_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.pressure_analyst" in html
+    assert "payload.pressure_opinion" in html
+    assert "payload.pressure_confidence" in html
+    assert "payload.pressure_enabled" in html
+
+def test_dashboard_contains_pressure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updatePressureEnabled("
+        in html
+    )
+
+    assert '"pressureEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_pressure_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "pressureConfidence",\n'
+        "                    payload.pressure_confidence"
+        in html
+    )
+
+def test_dashboard_calls_pressure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePressureEnabled(\n'
+        "                    payload.pressure_enabled"
+        in html
+    )
+

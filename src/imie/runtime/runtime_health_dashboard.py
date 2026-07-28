@@ -792,6 +792,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Pressure Analyst
+                </div>
+
+                <div
+                    id="pressureAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Pressure Opinion
+                </div>
+
+                <div
+                    id="pressureOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Pressure Confidence
+                </div>
+
+                <div
+                    id="pressureConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Pressure Enabled
+                </div>
+
+                <div
+                    id="pressureEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2357,6 +2409,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updatePressureEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "pressureEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3550,6 +3635,25 @@ def build_dashboard_html(
 
                 updateAuctionEnabled(
                     payload.auction_enabled
+                );
+
+                setText(
+                    "pressureAnalyst",
+                    payload.pressure_analyst ?? "—"
+                );
+
+                setText(
+                    "pressureOpinion",
+                    payload.pressure_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "pressureConfidence",
+                    payload.pressure_confidence
+                );
+
+                updatePressureEnabled(
+                    payload.pressure_enabled
                 );
 
                 //====================================================

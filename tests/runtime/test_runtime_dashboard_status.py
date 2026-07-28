@@ -129,6 +129,11 @@ def make_status(
     auction_confidence: float | None = None,
     auction_enabled: bool | None = None,
 
+    pressure_analyst: str | None = None,
+    pressure_opinion: str | None = None,
+    pressure_confidence: float | None = None,
+    pressure_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -304,7 +309,11 @@ def make_status(
         auction_opinion=auction_opinion,
         auction_confidence=auction_confidence,
         auction_enabled=auction_enabled,
-    )
+        pressure_analyst=pressure_analyst,
+        pressure_opinion=pressure_opinion,
+        pressure_confidence=pressure_confidence,
+        pressure_enabled=pressure_enabled,
+            )
 
 
 
@@ -1771,5 +1780,99 @@ def test_auction_confidence_must_be_in_range() -> None:
     ):
         make_status(
             auction_confidence=101.0,
+        )
+
+def test_status_accepts_pressure_analyst_detail() -> None:
+    status = make_status(
+        pressure_analyst="PRESSURE",
+        pressure_opinion=(
+            "Buying pressure remains dominant."
+        ),
+        pressure_confidence=77.0,
+        pressure_enabled=True,
+    )
+
+    assert status.pressure_analyst == "PRESSURE"
+
+    assert status.pressure_opinion == (
+        "Buying pressure remains dominant."
+    )
+
+    assert status.pressure_confidence == 77.0
+    assert status.pressure_enabled is True
+
+def test_status_normalizes_pressure_text() -> None:
+    status = make_status(
+        pressure_analyst="  PRESSURE  ",
+        pressure_opinion=(
+            "  Selling pressure is weakening.  "
+        ),
+    )
+
+    assert status.pressure_analyst == "PRESSURE"
+
+    assert status.pressure_opinion == (
+        "Selling pressure is weakening."
+    )
+
+def test_status_serializes_pressure_analyst_detail() -> None:
+    status = make_status(
+        pressure_analyst="PRESSURE",
+        pressure_opinion=(
+            "Pressure conditions remain balanced."
+        ),
+        pressure_confidence=64.0,
+        pressure_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["pressure_analyst"] == "PRESSURE"
+
+    assert payload["pressure_opinion"] == (
+        "Pressure conditions remain balanced."
+    )
+
+    assert payload["pressure_confidence"] == 64.0
+    assert payload["pressure_enabled"] is False
+
+def test_pressure_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "pressure_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            pressure_enabled=(
+                "yes"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_pressure_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "pressure_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            pressure_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_pressure_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "pressure_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            pressure_confidence=101.0,
         )
 

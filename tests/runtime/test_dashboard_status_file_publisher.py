@@ -170,6 +170,13 @@ def make_decision(
             "confidence": 79.0,
             "enabled": True,
         },
+        "PRESSURE": {
+            "opinion": (
+                "Buying pressure remains dominant."
+            ),
+            "confidence": 77.0,
+            "enabled": True,
+        },
     },
         trade_plan=trade_plan,
         institutional_context=(
@@ -504,6 +511,11 @@ def test_health_update_creates_dashboard_file(
     assert payload["auction_opinion"] is None
     assert payload["auction_confidence"] is None
     assert payload["auction_enabled"] is None
+
+    assert payload["pressure_analyst"] is None
+    assert payload["pressure_opinion"] is None
+    assert payload["pressure_confidence"] is None
+    assert payload["pressure_enabled"] is None
 
 
 def test_result_update_is_combined_with_health(
@@ -1186,6 +1198,15 @@ def test_publish_result_populates_trade_plan_details(
 
     assert payload["auction_confidence"] == 79.0
     assert payload["auction_enabled"] is True
+
+    assert payload["pressure_analyst"] == "PRESSURE"
+
+    assert payload["pressure_opinion"] == (
+        "Buying pressure remains dominant."
+    )
+
+    assert payload["pressure_confidence"] == 77.0
+    assert payload["pressure_enabled"] is True
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(
