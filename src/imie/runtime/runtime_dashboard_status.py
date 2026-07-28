@@ -149,6 +149,11 @@ class RuntimeDashboardStatus:
     participation_confidence: float | None = None
     participation_enabled: bool | None = None
 
+    value_analyst: str | None = None
+    value_opinion: str | None = None
+    value_confidence: float | None = None
+    value_enabled: bool | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -323,6 +328,7 @@ class RuntimeDashboardStatus:
             "auction_confidence",
             "pressure_confidence",
             "participation_confidence",
+            "value_confidence",
         ):
             value = getattr(
                 self,
@@ -525,6 +531,17 @@ class RuntimeDashboardStatus:
                 "participation_enabled must be "
                 "a bool or None."
             )
+        if (
+            self.value_enabled is not None
+            and not isinstance(
+                self.value_enabled,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "value_enabled must be "
+                "a bool or None."
+            )
 
         for field_name in (
             "trade_entry",
@@ -668,6 +685,8 @@ class RuntimeDashboardStatus:
             "pressure_opinion",
             "participation_analyst",
             "participation_opinion",
+            "value_analyst",
+            "value_opinion",
             "latest_error_type",
             
         ):
@@ -1190,6 +1209,18 @@ class RuntimeDashboardStatus:
                 ),
                 "participation_enabled": (
                     self.participation_enabled
+                ),
+                "value_analyst": (
+                    self.value_analyst
+                ),
+                "value_opinion": (
+                    self.value_opinion
+                ),
+                "value_confidence": (
+                    self.value_confidence
+                ),
+                "value_enabled": (
+                    self.value_enabled
                 ),
             }
         )

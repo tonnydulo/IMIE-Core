@@ -896,6 +896,58 @@ def build_dashboard_html(
                 </div>
             </article>
 
+             <article class="card">
+                <div class="label">
+                    Value Analyst
+                </div>
+
+                <div
+                    id="valueAnalyst"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Value Opinion
+                </div>
+
+                <div
+                    id="valueOpinion"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Value Confidence
+                </div>
+
+                <div
+                    id="valueConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Value Enabled
+                </div>
+
+                <div
+                    id="valueEnabled"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -2527,6 +2579,39 @@ def build_dashboard_html(
             );
         }}
 
+        function updateValueEnabled(
+            enabled
+        ) {{
+            const element = document.getElementById(
+                "valueEnabled"
+            );
+
+            element.className = "value";
+
+            if (enabled === true) {{
+                element.textContent = "ENABLED";
+                element.classList.add(
+                    "plan-valid"
+                );
+
+                return;
+            }}
+
+            if (enabled === false) {{
+                element.textContent = "DISABLED";
+                element.classList.add(
+                    "plan-invalid"
+                );
+
+                return;
+            }}
+
+            element.textContent = "—";
+            element.classList.add(
+                "institution-unknown"
+            );
+        }}
+
         function updateTradeDirection(
             direction
         ) {{
@@ -3758,6 +3843,25 @@ def build_dashboard_html(
 
                 updateParticipationEnabled(
                     payload.participation_enabled
+                );
+
+                setText(
+                    "valueAnalyst",
+                    payload.value_analyst ?? "—"
+                );
+
+                setText(
+                    "valueOpinion",
+                    payload.value_opinion ?? "—"
+                );
+
+                updatePercentageMetric(
+                    "valueConfidence",
+                    payload.value_confidence
+                );
+
+                updateValueEnabled(
+                    payload.value_enabled
                 );
 
                 //====================================================

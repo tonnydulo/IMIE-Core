@@ -139,6 +139,11 @@ def make_status(
     participation_confidence: float | None = None,
     participation_enabled: bool | None = None,
 
+    value_analyst: str | None = None,
+    value_opinion: str | None = None,
+    value_confidence: float | None = None,
+    value_enabled: bool | None = None,
+
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
         health=make_health(),
@@ -322,6 +327,10 @@ def make_status(
         participation_opinion=participation_opinion,
         participation_confidence=participation_confidence,
         participation_enabled=participation_enabled,
+        value_analyst=value_analyst,
+        value_opinion=value_opinion,
+        value_confidence=value_confidence,
+        value_enabled=value_enabled,
             )
 
 
@@ -1995,5 +2004,99 @@ def test_participation_confidence_must_be_in_range() -> None:
     ):
         make_status(
             participation_confidence=101.0,
+        )
+
+def test_status_accepts_value_analyst_detail() -> None:
+    status = make_status(
+        value_analyst="VALUE",
+        value_opinion=(
+            "Price remains within fair value."
+        ),
+        value_confidence=74.0,
+        value_enabled=True,
+    )
+
+    assert status.value_analyst == "VALUE"
+
+    assert status.value_opinion == (
+        "Price remains within fair value."
+    )
+
+    assert status.value_confidence == 74.0
+    assert status.value_enabled is True
+
+def test_status_normalizes_value_text() -> None:
+    status = make_status(
+        value_analyst="  VALUE  ",
+        value_opinion=(
+            "  Price is trading at a discount.  "
+        ),
+    )
+
+    assert status.value_analyst == "VALUE"
+
+    assert status.value_opinion == (
+        "Price is trading at a discount."
+    )
+
+def test_status_serializes_value_analyst_detail() -> None:
+    status = make_status(
+        value_analyst="VALUE",
+        value_opinion=(
+            "Price is extended above fair value."
+        ),
+        value_confidence=61.0,
+        value_enabled=False,
+    )
+
+    payload = status.to_dict()
+
+    assert payload["value_analyst"] == "VALUE"
+
+    assert payload["value_opinion"] == (
+        "Price is extended above fair value."
+    )
+
+    assert payload["value_confidence"] == 61.0
+    assert payload["value_enabled"] is False
+
+def test_value_enabled_must_be_boolean() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "value_enabled must be "
+            "a bool or None"
+        ),
+    ):
+        make_status(
+            value_enabled=(
+                "yes"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_value_confidence_must_be_numeric() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "value_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            value_confidence=(
+                "high"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_value_confidence_must_be_in_range() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "value_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            value_confidence=101.0,
         )
 

@@ -184,6 +184,13 @@ def make_decision(
             "confidence": 76.0,
             "enabled": True,
         },
+        "VALUE": {
+            "opinion": (
+                "Price remains within fair value."
+            ),
+            "confidence": 74.0,
+            "enabled": True,
+        },
     },
         trade_plan=trade_plan,
         institutional_context=(
@@ -528,6 +535,11 @@ def test_health_update_creates_dashboard_file(
     assert payload["participation_opinion"] is None
     assert payload["participation_confidence"] is None
     assert payload["participation_enabled"] is None
+
+    assert payload["value_analyst"] is None
+    assert payload["value_opinion"] is None
+    assert payload["value_confidence"] is None
+    assert payload["value_enabled"] is None
 
 
 def test_result_update_is_combined_with_health(
@@ -1231,6 +1243,15 @@ def test_publish_result_populates_trade_plan_details(
 
     assert payload["participation_confidence"] == 76.0
     assert payload["participation_enabled"] is True
+
+    assert payload["value_analyst"] == "VALUE"
+
+    assert payload["value_opinion"] == (
+        "Price remains within fair value."
+    )
+
+    assert payload["value_confidence"] == 74.0
+    assert payload["value_enabled"] is True
 
 
 def test_publish_result_uses_empty_institutional_fields_when_context_is_missing(

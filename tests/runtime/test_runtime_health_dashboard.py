@@ -1454,3 +1454,50 @@ def test_dashboard_calls_participation_enabled_renderer() -> None:
         in html
     )
 
+def test_dashboard_contains_value_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="valueAnalyst"' in html
+    assert 'id="valueOpinion"' in html
+    assert 'id="valueConfidence"' in html
+    assert 'id="valueEnabled"' in html
+
+def test_dashboard_reads_value_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.value_analyst" in html
+    assert "payload.value_opinion" in html
+    assert "payload.value_confidence" in html
+    assert "payload.value_enabled" in html
+
+def test_dashboard_contains_value_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateValueEnabled("
+        in html
+    )
+
+    assert '"valueEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_value_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "valueConfidence",\n'
+        "                    payload.value_confidence"
+        in html
+    )
+
+def test_dashboard_calls_value_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateValueEnabled(\n'
+        "                    payload.value_enabled"
+        in html
+    )
+

@@ -360,6 +360,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        value_summary = (
+            decision_result.analyst_summary.get(
+                "VALUE"
+            )
+            if decision_result is not None
+            else None
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -965,6 +973,33 @@ class DashboardStatusFilePublisher:
                     "enabled"
                 )
                 if participation_summary is not None
+                else None
+            ),
+
+            value_analyst=(
+                "VALUE"
+                if value_summary is not None
+                else None
+            ),
+            value_opinion=(
+                value_summary.get(
+                    "opinion"
+                )
+                if value_summary is not None
+                else None
+            ),
+            value_confidence=(
+                value_summary.get(
+                    "confidence"
+                )
+                if value_summary is not None
+                else None
+            ),
+            value_enabled=(
+                value_summary.get(
+                    "enabled"
+                )
+                if value_summary is not None
                 else None
             ),
 
