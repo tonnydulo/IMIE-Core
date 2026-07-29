@@ -495,6 +495,14 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        analyst_confidence_count = len(
+                analyst_confidences
+            )
+
+        analyst_enabled_confidence_count = len(
+                analyst_enabled_confidences
+            )
+
         analyst_operational_percentage = (
             (
                 analyst_enabled_resolved_count
@@ -1212,6 +1220,12 @@ class DashboardStatusFilePublisher:
             ),
             analyst_enabled_unresolved_count=(
                 analyst_enabled_unresolved_count
+            ),
+            analyst_confidence_count=(
+                analyst_confidence_count
+            ),
+            analyst_enabled_confidence_count=(
+                analyst_enabled_confidence_count
             ),
             analyst_average_confidence=(
                 analyst_average_confidence

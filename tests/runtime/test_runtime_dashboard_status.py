@@ -157,6 +157,8 @@ def make_status(
     analyst_operational_status: str | None = None,
     analyst_operational_message: str | None = None,
     analyst_operational_percentage: float | None = None,
+    analyst_confidence_count: int | None = None,
+    analyst_enabled_confidence_count: int | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -377,6 +379,12 @@ def make_status(
         ),
         analyst_enabled_average_confidence=(
             analyst_enabled_average_confidence
+        ),
+        analyst_confidence_count=(
+            analyst_confidence_count
+        ),
+        analyst_enabled_confidence_count=(
+            analyst_enabled_confidence_count
         ),
     )
 
@@ -2364,6 +2372,7 @@ def test_status_serializes_analyst_coverage_readiness() -> None:
         object(),
     ],
 )
+
 def test_analyst_coverage_percentage_must_be_numeric(
     value: object,
 ) -> None:
@@ -2382,6 +2391,7 @@ def test_analyst_coverage_percentage_must_be_numeric(
         100.1,
     ],
 )
+
 def test_analyst_coverage_percentage_must_be_in_range(
     value: float,
 ) -> None:
@@ -2402,6 +2412,7 @@ def test_analyst_coverage_percentage_must_be_in_range(
         "",
     ],
 )
+
 def test_analyst_coverage_state_must_be_supported(
     value: str,
 ) -> None:
@@ -2422,6 +2433,7 @@ def test_analyst_coverage_state_must_be_supported(
         "COMPLETE",
     ],
 )
+
 def test_analyst_coverage_state_accepts_supported_values(
     value: str,
 ) -> None:
@@ -2430,6 +2442,76 @@ def test_analyst_coverage_state_accepts_supported_values(
     )
 
     assert status.analyst_coverage_state == value
+
+def test_status_accepts_analyst_confidence_counts() -> None:
+    status = make_status(
+        analyst_confidence_count=6,
+        analyst_enabled_confidence_count=4,
+    )
+
+    payload = status.to_dict()
+
+    assert status.analyst_confidence_count == 6
+    assert status.analyst_enabled_confidence_count == 4
+
+    assert payload["analyst_confidence_count"] == 6
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 4
+    )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_confidence_count",
+        "analyst_enabled_confidence_count",
+    ],
+)
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        1.5,
+        "2",
+    ],
+)
+
+def test_analyst_confidence_counts_must_be_integers(
+    field_name: str,
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: value,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_confidence_count",
+        "analyst_enabled_confidence_count",
+    ],
+)
+
+def test_analyst_confidence_counts_cannot_be_negative(
+    field_name: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: -1,
+            }
+        )
 
 def test_status_accepts_analyst_coverage_message() -> None:
     status = make_status(

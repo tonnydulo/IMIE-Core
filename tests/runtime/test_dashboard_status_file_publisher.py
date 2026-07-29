@@ -628,6 +628,14 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_enabled_average_confidence"]
         is None
     )
+    assert payload["analyst_domain_count"] == 0
+    assert payload["analyst_enabled_count"] == 0
+    assert payload["analyst_resolved_count"] == 0
+    assert payload["analyst_confidence_count"] == 0
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 0
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1733,6 +1741,11 @@ def test_publish_result_calculates_partial_analyst_coverage(
         payload["analyst_enabled_unresolved_count"]
         == 0
     )
+    assert payload["analyst_confidence_count"] == 2
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 1
+    )
 
 
 def test_publish_result_marks_unresolved_analyst_coverage(
@@ -2128,4 +2141,9 @@ def test_publish_result_calculates_enabled_average_confidence(
     assert (
         payload["analyst_enabled_average_confidence"]
         == 70.0
+    )
+    assert payload["analyst_confidence_count"] == 3
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 2
     )

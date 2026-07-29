@@ -1090,6 +1090,32 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
+                    Analyst Confidence Contributors
+                </div>
+
+                <div
+                    id="analystConfidenceCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Enabled Confidence Contributors
+                </div>
+
+                <div
+                    id="analystEnabledConfidenceCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
                     All-Domain Average Confidence
                 </div>
 
@@ -3812,6 +3838,15 @@ def build_dashboard_html(
                     "confluenceConflictCount",
                     payload.confluence_conflict_count,
                     true
+                );
+                updateInstitutionalCount(
+                    "analystConfidenceCount",
+                    payload.analyst_confidence_count
+                );
+
+                updateInstitutionalCount(
+                    "analystEnabledConfidenceCount",
+                    payload.analyst_enabled_confidence_count
                 );
 
                 //====================================================

@@ -1796,3 +1796,44 @@ def test_dashboard_binds_enabled_analyst_average_confidence(
         in html
     )
 
+def test_dashboard_displays_analyst_confidence_counts(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystConfidenceCount"' in html
+    assert (
+        "Analyst Confidence Contributors"
+        in html
+    )
+
+    assert (
+        'id="analystEnabledConfidenceCount"'
+        in html
+    )
+    assert (
+        "Enabled Confidence Contributors"
+        in html
+    )
+
+
+def test_dashboard_binds_analyst_confidence_counts(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        '"analystConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystEnabledConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_enabled_confidence_count"
+        in html
+    )
