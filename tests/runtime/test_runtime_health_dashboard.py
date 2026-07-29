@@ -1768,3 +1768,31 @@ def test_dashboard_binds_analyst_enabled_unresolved_count(
     )
 
 
+def test_dashboard_displays_enabled_analyst_average_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystEnabledAverageConfidence"'
+        in html
+    )
+    assert (
+        "Enabled Analyst Average Confidence"
+        in html
+    )
+
+
+def test_dashboard_binds_enabled_analyst_average_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert "updatePercentageMetric(" in html
+    assert (
+        '"analystEnabledAverageConfidence"'
+        in html
+    )
+    assert (
+        "payload.analyst_enabled_average_confidence"
+        in html
+    )
+

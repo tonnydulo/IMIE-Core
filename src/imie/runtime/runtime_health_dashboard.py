@@ -1101,6 +1101,19 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Enabled Analyst Average Confidence
+                </div>
+
+                <div
+                    id="analystEnabledAverageConfidence"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -3613,6 +3626,11 @@ def build_dashboard_html(
                 updatePercentageMetric(
                     "analystAverageConfidence",
                     payload.analyst_average_confidence
+                );
+
+                updatePercentageMetric(
+                    "analystEnabledAverageConfidence",
+                    payload.analyst_enabled_average_confidence
                 );
 
                 updatePercentageMetric(

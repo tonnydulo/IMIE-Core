@@ -624,6 +624,10 @@ def test_health_update_creates_dashboard_file(
         payload["analyst_enabled_unresolved_count"]
         == 0
     )
+    assert (
+        payload["analyst_enabled_average_confidence"]
+        is None
+    )
 
 
 def test_result_update_is_combined_with_health(
@@ -1683,6 +1687,11 @@ def test_publish_result_calculates_partial_analyst_coverage(
         payload["analyst_average_confidence"]
         == 70.0
     )
+
+    assert (
+        payload["analyst_enabled_average_confidence"]
+        == 80.0
+    )
     assert (
         payload["analyst_coverage_percentage"]
         == 50.0
@@ -1724,6 +1733,7 @@ def test_publish_result_calculates_partial_analyst_coverage(
         payload["analyst_enabled_unresolved_count"]
         == 0
     )
+
 
 def test_publish_result_marks_unresolved_analyst_coverage(
         tmp_path: Path,
@@ -2041,4 +2051,81 @@ def test_disabled_unresolved_analyst_does_not_degrade_operation(
     assert (
         payload["analyst_enabled_unresolved_count"]
         == 0
+    )
+
+def test_publish_result_calculates_enabled_average_confidence(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    decision = make_decision()
+
+    decision = DecisionResult(
+        decision=decision.decision,
+        actionable=decision.actionable,
+        confidence=decision.confidence,
+        recommendation=decision.recommendation,
+        reasons=decision.reasons,
+        warnings=decision.warnings,
+        analyst_summary={
+            "TREND": {
+                "opinion": "Bullish.",
+                "confidence": 80.0,
+                "enabled": True,
+            },
+            "STRUCTURE": {
+                "opinion": "Bullish continuation.",
+                "confidence": 60.0,
+                "enabled": True,
+            },
+            "LIQUIDITY": {
+                "opinion": "Balanced.",
+                "confidence": 20.0,
+                "enabled": False,
+            },
+        },
+        trade_plan=decision.trade_plan,
+        institutional_context=(
+            decision.institutional_context
+        ),
+    )
+
+    result = AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=NOW,
+        completed_at=NOW + timedelta(seconds=2),
+        message="Analysis cycle completed.",
+        market_session=make_market_session(),
+        decision=decision,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_average_confidence"]
+        == pytest.approx(160.0 / 3.0)
+    )
+
+    assert (
+        payload["analyst_enabled_average_confidence"]
+        == 70.0
     )

@@ -150,6 +150,7 @@ def make_status(
     analyst_enabled_resolved_count: int | None = None,
     analyst_enabled_unresolved_count: int | None = None,
     analyst_average_confidence: float | None = None,
+    analyst_enabled_average_confidence: float | None = None,
     analyst_coverage_percentage: float | None = None,
     analyst_coverage_state: str | None = None,
     analyst_coverage_message: str | None = None,
@@ -373,6 +374,9 @@ def make_status(
         ),
         analyst_enabled_unresolved_count=(
             analyst_enabled_unresolved_count
+        ),
+        analyst_enabled_average_confidence=(
+            analyst_enabled_average_confidence
         ),
     )
 
@@ -1470,6 +1474,62 @@ def test_analyst_summary_enabled_must_be_boolean() -> None:
                     "enabled": "yes",
                 },
             }
+        )
+
+def test_status_accepts_enabled_average_confidence() -> None:
+    status = make_status(
+        analyst_enabled_average_confidence=82.5,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        == 82.5
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["analyst_enabled_average_confidence"]
+        == 82.5
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "82.5",
+        object(),
+    ],
+)
+def test_enabled_average_confidence_must_be_numeric(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_enabled_average_confidence",
+    ):
+        make_status(
+            analyst_enabled_average_confidence=value,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.1,
+        100.1,
+    ],
+)
+def test_enabled_average_confidence_must_be_in_range(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_enabled_average_confidence",
+    ):
+        make_status(
+            analyst_enabled_average_confidence=value,
         )
         
 def test_status_accepts_structure_analyst_detail() -> None:

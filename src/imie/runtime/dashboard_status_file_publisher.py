@@ -443,6 +443,26 @@ class DashboardStatusFilePublisher:
             )
         ]
 
+        analyst_enabled_confidences = [
+            float(confidence)
+            for details in analyst_summary.values()
+            if (
+                details.get("enabled") is True
+                and isinstance(
+                    (
+                        confidence := details.get(
+                            "confidence"
+                        )
+                    ),
+                    int | float,
+                )
+                and not isinstance(
+                    confidence,
+                    bool,
+                )
+            )
+        ]
+
         analyst_average_confidence = (
             sum(
                 analyst_confidences
@@ -462,6 +482,17 @@ class DashboardStatusFilePublisher:
             * 100.0
             if analyst_domain_count > 0
             else 0.0
+        )
+
+        analyst_enabled_average_confidence = (
+            sum(
+                analyst_enabled_confidences
+            )
+            / len(
+                analyst_enabled_confidences
+            )
+            if analyst_enabled_confidences
+            else None
         )
 
         analyst_operational_percentage = (
@@ -1202,6 +1233,9 @@ class DashboardStatusFilePublisher:
             ),
             analyst_operational_percentage=(
                 analyst_operational_percentage
+            ),
+            analyst_enabled_average_confidence=(
+                analyst_enabled_average_confidence
             ),
             latest_error_type=(
                 cycle.error_type

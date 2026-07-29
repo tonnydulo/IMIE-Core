@@ -160,6 +160,7 @@ class RuntimeDashboardStatus:
     analyst_enabled_resolved_count: int | None = None
     analyst_enabled_unresolved_count: int | None = None
     analyst_average_confidence: float | None = None
+    analyst_enabled_average_confidence: float | None = None
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
     analyst_coverage_message: str | None = None
@@ -343,6 +344,7 @@ class RuntimeDashboardStatus:
             "participation_confidence",
             "value_confidence",
             "analyst_average_confidence",
+            "analyst_enabled_average_confidence",
             "analyst_coverage_percentage",
             "analyst_operational_percentage",
         ):
@@ -1366,6 +1368,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_average_confidence": (
                     self.analyst_average_confidence
+                ),
+                "analyst_enabled_average_confidence": (
+                    self.analyst_enabled_average_confidence
                 ),
                 "analyst_coverage_percentage": (
                     self.analyst_coverage_percentage
