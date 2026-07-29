@@ -1,4 +1,4 @@
-import json
+﻿import json
 
 from pathlib import Path
 
@@ -723,7 +723,7 @@ def test_confluence_renderers_support_missing_values() -> None:
     assert "supported === false" in html
     assert "value === null" in html
     assert "value === undefined" in html
-    assert 'element.textContent = "—"' in html
+    assert 'element.textContent = "â€”"' in html
 
 
 def test_dashboard_confluence_detail_uses_correct_renderers() -> None:
@@ -1740,7 +1740,7 @@ def test_dashboard_binds_analyst_enabled_resolved_count(
 ) -> None:
     html = build_dashboard_html()
 
-    assert "setText(" in html
+    assert "updateInstitutionalCount(" in html
     assert '"analystEnabledResolvedCount"' in html
     assert "payload.analyst_enabled_resolved_count" in html
 
@@ -1763,4 +1763,5 @@ def test_dashboard_binds_analyst_enabled_unresolved_count(
         "payload.analyst_enabled_unresolved_count"
         in html
     )
+
 

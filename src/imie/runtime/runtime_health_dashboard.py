@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 
@@ -466,7 +466,7 @@ def build_dashboard_html(
                     id="symbol"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -479,7 +479,7 @@ def build_dashboard_html(
                     id="timeframe"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -492,7 +492,7 @@ def build_dashboard_html(
                     id="marketSession"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -505,7 +505,7 @@ def build_dashboard_html(
                     id="latestDecision"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -518,7 +518,7 @@ def build_dashboard_html(
                     id="decisionConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -531,7 +531,7 @@ def build_dashboard_html(
                     id="decisionActionable"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -544,7 +544,7 @@ def build_dashboard_html(
                     id="tradeDirection"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -557,7 +557,7 @@ def build_dashboard_html(
                     id="decisionRecommendation"
                     class="value recommendation"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -600,7 +600,7 @@ def build_dashboard_html(
                     id="structureAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -613,7 +613,7 @@ def build_dashboard_html(
                     id="structureOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -626,7 +626,7 @@ def build_dashboard_html(
                     id="structureConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -639,7 +639,7 @@ def build_dashboard_html(
                     id="structureEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -652,7 +652,7 @@ def build_dashboard_html(
                     id="liquidityAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -665,7 +665,7 @@ def build_dashboard_html(
                     id="liquidityOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -678,7 +678,7 @@ def build_dashboard_html(
                     id="liquidityConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -691,7 +691,7 @@ def build_dashboard_html(
                     id="liquidityEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -704,7 +704,7 @@ def build_dashboard_html(
                     id="orderBlockAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -717,7 +717,7 @@ def build_dashboard_html(
                     id="orderBlockOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -730,7 +730,7 @@ def build_dashboard_html(
                     id="orderBlockConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -743,7 +743,7 @@ def build_dashboard_html(
                     id="orderBlockEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -756,7 +756,7 @@ def build_dashboard_html(
                     id="auctionAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -769,7 +769,7 @@ def build_dashboard_html(
                     id="auctionOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -782,7 +782,7 @@ def build_dashboard_html(
                     id="auctionConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -795,7 +795,7 @@ def build_dashboard_html(
                     id="auctionEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -808,7 +808,7 @@ def build_dashboard_html(
                     id="pressureAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -821,7 +821,7 @@ def build_dashboard_html(
                     id="pressureOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -834,7 +834,7 @@ def build_dashboard_html(
                     id="pressureConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -847,7 +847,7 @@ def build_dashboard_html(
                     id="pressureEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -860,7 +860,7 @@ def build_dashboard_html(
                     id="participationAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -873,7 +873,7 @@ def build_dashboard_html(
                     id="participationOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -886,7 +886,7 @@ def build_dashboard_html(
                     id="participationConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -899,7 +899,7 @@ def build_dashboard_html(
                     id="participationEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -912,7 +912,7 @@ def build_dashboard_html(
                     id="valueAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -925,7 +925,7 @@ def build_dashboard_html(
                     id="valueOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -938,7 +938,7 @@ def build_dashboard_html(
                     id="valueConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -951,7 +951,7 @@ def build_dashboard_html(
                     id="valueEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -964,7 +964,7 @@ def build_dashboard_html(
                     id="analystDomainCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -977,7 +977,7 @@ def build_dashboard_html(
                     id="analystEnabledCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -987,7 +987,7 @@ def build_dashboard_html(
                     class="metric-value"
                     id="analystCoveragePercentage"
                 >
-                    —
+                    â€”
                 </div>
             </div>
 
@@ -999,7 +999,7 @@ def build_dashboard_html(
                     class="metric-value"
                     id="analystOperationalPercentage"
                 >
-                    —
+                    â€”
                 </div>
             </div>
 
@@ -1009,7 +1009,7 @@ def build_dashboard_html(
                     class="metric-value"
                     id="analystCoverageState"
                 >
-                    —
+                    â€”
                 </div>
             </div>
 
@@ -1045,7 +1045,7 @@ def build_dashboard_html(
                     class="metric-value metric-message"
                     id="analystCoverageMessage"
                 >
-                    —
+                    â€”
                 </div>
             </div>
 
@@ -1058,7 +1058,7 @@ def build_dashboard_html(
                     id="analystResolvedCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1071,7 +1071,7 @@ def build_dashboard_html(
                     id="analystEnabledResolvedCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1084,7 +1084,7 @@ def build_dashboard_html(
                     id="analystEnabledUnresolvedCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1097,7 +1097,7 @@ def build_dashboard_html(
                     id="analystAverageConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1125,7 +1125,7 @@ def build_dashboard_html(
                     id="tradePlanValid"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1138,7 +1138,7 @@ def build_dashboard_html(
                     id="tradeEntry"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1151,7 +1151,7 @@ def build_dashboard_html(
                     id="tradeStop"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1164,7 +1164,7 @@ def build_dashboard_html(
                     id="tradeTarget1"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1177,7 +1177,7 @@ def build_dashboard_html(
                     id="tradeTarget2"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1190,7 +1190,7 @@ def build_dashboard_html(
                     id="tradeRR1"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1203,7 +1203,7 @@ def build_dashboard_html(
                     id="tradeRR2"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1216,7 +1216,7 @@ def build_dashboard_html(
                     id="tradeQuality"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1229,7 +1229,7 @@ def build_dashboard_html(
                     id="tradeNarrative"
                     class="value recommendation"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1272,7 +1272,7 @@ def build_dashboard_html(
                     id="institutionalBias"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1285,7 +1285,7 @@ def build_dashboard_html(
                     id="institutionalBiasConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1298,7 +1298,7 @@ def build_dashboard_html(
                     id="institutionalBiasStrength"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1311,7 +1311,7 @@ def build_dashboard_html(
                     id="institutionalBiasBullishScore"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1324,7 +1324,7 @@ def build_dashboard_html(
                     id="institutionalBiasBearishScore"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1337,7 +1337,7 @@ def build_dashboard_html(
                     id="institutionalBiasAgreementCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1350,7 +1350,7 @@ def build_dashboard_html(
                     id="institutionalBiasConflictCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1393,7 +1393,7 @@ def build_dashboard_html(
                     id="marketPhase"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1406,7 +1406,7 @@ def build_dashboard_html(
                     id="marketPhaseConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1422,7 +1422,7 @@ def build_dashboard_html(
                             id="confluenceConfidenceAdjustment"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1434,7 +1434,7 @@ def build_dashboard_html(
                             id="confluenceStructureSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1446,7 +1446,7 @@ def build_dashboard_html(
                             id="confluenceLiquiditySupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1458,7 +1458,7 @@ def build_dashboard_html(
                             id="confluenceOrderBlockSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1470,7 +1470,7 @@ def build_dashboard_html(
                             id="confluenceAuctionSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1482,7 +1482,7 @@ def build_dashboard_html(
                             id="confluencePressureSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1494,7 +1494,7 @@ def build_dashboard_html(
                             id="confluenceParticipationSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1506,7 +1506,7 @@ def build_dashboard_html(
                             id="confluenceValueSupport"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1518,7 +1518,7 @@ def build_dashboard_html(
                             id="confluenceBullishCount"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1530,7 +1530,7 @@ def build_dashboard_html(
                             id="confluenceBearishCount"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1542,7 +1542,7 @@ def build_dashboard_html(
                             id="confluenceNeutralCount"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1554,7 +1554,7 @@ def build_dashboard_html(
                             id="confluenceUnknownCount"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
 
@@ -1566,7 +1566,7 @@ def build_dashboard_html(
                             id="confluenceDomainCount"
                             class="value"
                         >
-                            —
+                            â€”
                         </span>
                     </div>
                 </div>
@@ -1581,7 +1581,7 @@ def build_dashboard_html(
                     id="confluenceDirection"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1594,7 +1594,7 @@ def build_dashboard_html(
                     id="confluenceScore"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1607,7 +1607,7 @@ def build_dashboard_html(
                     id="confluenceAgreementCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1620,7 +1620,7 @@ def build_dashboard_html(
                     id="confluenceConflictCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1633,7 +1633,7 @@ def build_dashboard_html(
                     id="marketPhaseStrength"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1646,7 +1646,7 @@ def build_dashboard_html(
                     id="marketPhaseAgreementCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1659,7 +1659,7 @@ def build_dashboard_html(
                     id="marketPhaseConflictCount"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1702,7 +1702,7 @@ def build_dashboard_html(
                     id="setupLifecycleState"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1715,7 +1715,7 @@ def build_dashboard_html(
                     id="setupLifecycleDirection"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1728,7 +1728,7 @@ def build_dashboard_html(
                     id="setupLifecycleConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1741,7 +1741,7 @@ def build_dashboard_html(
                     id="setupLifecycleAtrDistance"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1754,7 +1754,7 @@ def build_dashboard_html(
                     id="setupLifecycleAction"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1767,7 +1767,7 @@ def build_dashboard_html(
                     id="setupLifecycleReason"
                     class="value recommendation"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1780,7 +1780,7 @@ def build_dashboard_html(
                     id="acceptanceConfirmed"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1793,7 +1793,7 @@ def build_dashboard_html(
                     id="acceptanceDirection"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1806,7 +1806,7 @@ def build_dashboard_html(
                     id="acceptanceLevel"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1819,7 +1819,7 @@ def build_dashboard_html(
                     id="acceptanceScore"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1832,7 +1832,7 @@ def build_dashboard_html(
                     id="acceptanceConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1845,7 +1845,7 @@ def build_dashboard_html(
                     id="acceptanceTriggerPrice"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1858,7 +1858,7 @@ def build_dashboard_html(
                     id="acceptancePreviousLevel"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1871,7 +1871,7 @@ def build_dashboard_html(
                     id="acceptancePullbackLow"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1884,7 +1884,7 @@ def build_dashboard_html(
                     id="acceptancePullbackHigh"
                     class="value trade-price"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1897,7 +1897,7 @@ def build_dashboard_html(
                     id="acceptanceReason"
                     class="value recommendation"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1940,7 +1940,7 @@ def build_dashboard_html(
                     id="trendAnalyst"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1953,7 +1953,7 @@ def build_dashboard_html(
                     id="trendOpinion"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1966,7 +1966,7 @@ def build_dashboard_html(
                     id="trendConfidence"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -1979,7 +1979,7 @@ def build_dashboard_html(
                     id="trendEnabled"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2022,7 +2022,7 @@ def build_dashboard_html(
                     id="state"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2035,7 +2035,7 @@ def build_dashboard_html(
                     id="uptime"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2048,7 +2048,7 @@ def build_dashboard_html(
                     id="cycles"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2061,7 +2061,7 @@ def build_dashboard_html(
                     id="latestCycleStatus"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2074,7 +2074,7 @@ def build_dashboard_html(
                     id="latestCycleStarted"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2087,7 +2087,7 @@ def build_dashboard_html(
                     id="latestCycleCompleted"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2100,7 +2100,7 @@ def build_dashboard_html(
                     id="running"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2113,7 +2113,7 @@ def build_dashboard_html(
                     id="heartbeat"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2126,7 +2126,7 @@ def build_dashboard_html(
                     id="successfulCycle"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2139,7 +2139,7 @@ def build_dashboard_html(
                     id="transition"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2152,7 +2152,7 @@ def build_dashboard_html(
                     id="started"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2165,7 +2165,7 @@ def build_dashboard_html(
                     id="latestCycleMessage"
                     class="value"
                 >
-                    —
+                    â€”
                 </div>
             </article>
 
@@ -2203,12 +2203,12 @@ def build_dashboard_html(
                 return "NO";
             }}
 
-            return "—";
+            return "â€”";
         }}
 
         function formatDate(value) {{
             if (!value) {{
-                return "—";
+                return "â€”";
             }}
 
             const parsed = new Date(value);
@@ -2226,7 +2226,7 @@ def build_dashboard_html(
                 || seconds === undefined
                 || Number.isNaN(Number(seconds))
             ) {{
-                return "—";
+                return "â€”";
             }}
 
             let remaining = Math.max(
@@ -2353,7 +2353,7 @@ def build_dashboard_html(
             );
 
             const normalized = (
-                status || "—"
+                status || "â€”"
             ).toUpperCase();
 
             element.textContent = normalized;
@@ -2389,7 +2389,7 @@ def build_dashboard_html(
             );
 
             const normalized = (
-                decision || "—"
+                decision || "â€”"
             ).toUpperCase();
 
             element.textContent = normalized;
@@ -2429,7 +2429,7 @@ def build_dashboard_html(
                     Number(confidence)
                 )
             ) {{
-                return "—";
+                return "â€”";
             }}
 
             return (
@@ -2465,7 +2465,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
         }}
 
         function updateAcceptanceConfirmed(
@@ -2495,7 +2495,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2528,7 +2528,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2561,7 +2561,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2594,7 +2594,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2627,7 +2627,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2660,7 +2660,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2693,7 +2693,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2726,7 +2726,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2759,7 +2759,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -2773,7 +2773,7 @@ def build_dashboard_html(
             );
 
             const normalized = (
-                direction || "—"
+                direction || "â€”"
             ).toUpperCase();
 
             element.textContent = normalized;
@@ -2802,7 +2802,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                return "—";
+                return "â€”";
             }}
 
             return Number(value).toFixed(2);
@@ -2818,7 +2818,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                return "—";
+                return "â€”";
             }}
 
             return (
@@ -2837,7 +2837,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                return "—";
+                return "â€”";
             }}
 
             return (
@@ -2873,7 +2873,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
         }}
 
         function updateTradeQuality(
@@ -2892,7 +2892,7 @@ def build_dashboard_html(
                     Number(quality)
                 )
             ) {{
-                element.textContent = "—";
+                element.textContent = "â€”";
 
                 return;
             }}
@@ -3065,7 +3065,7 @@ def build_dashboard_html(
                 opinionValue.className =
                     "analyst-summary-value";
                 opinionValue.textContent =
-                    details?.opinion || "—";
+                    details?.opinion || "â€”";
 
                 opinionCell.append(
                     opinionHeading,
@@ -3097,7 +3097,7 @@ def build_dashboard_html(
                                 .toFixed(1)
                             + "%"
                         )
-                        : "—";
+                        : "â€”";
 
                 confidenceCell.append(
                     confidenceHeading,
@@ -3136,7 +3136,7 @@ def build_dashboard_html(
                         "plan-invalid"
                     );
                 }} else {{
-                    enabledValue.textContent = "—";
+                    enabledValue.textContent = "â€”";
                     enabledValue.classList.add(
                         "institution-unknown"
                     );
@@ -3172,7 +3172,7 @@ def build_dashboard_html(
                 direction === null
                 || direction === undefined
             ) {{
-                element.textContent = "—";
+                element.textContent = "â€”";
                 element.classList.add(
                     "institution-unknown"
                 );
@@ -3184,7 +3184,7 @@ def build_dashboard_html(
                 direction
             ).trim().toUpperCase();
 
-            element.textContent = normalized || "—";
+            element.textContent = normalized || "â€”";
 
             if (normalized === "BULLISH") {{
                 element.classList.add(
@@ -3226,7 +3226,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                element.textContent = "—";
+                element.textContent = "â€”";
 
                 return;
             }}
@@ -3273,7 +3273,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                element.textContent = "—";
+                element.textContent = "â€”";
 
                 return;
             }}
@@ -3325,7 +3325,7 @@ def build_dashboard_html(
                 && value.trim()
             )
                 ? value.trim().toUpperCase()
-                : "—";
+                : "â€”";
 
             element.textContent = normalized;
 
@@ -3450,7 +3450,7 @@ def build_dashboard_html(
                 return;
             }}
 
-            element.textContent = "—";
+            element.textContent = "â€”";
             element.classList.add(
                 "institution-unknown"
             );
@@ -3476,7 +3476,7 @@ def build_dashboard_html(
                     Number(value)
                 )
             ) {{
-                element.textContent = "—";
+                element.textContent = "â€”";
                 element.classList.add(
                     "institution-unknown"
                 );
@@ -3535,17 +3535,17 @@ def build_dashboard_html(
 
                 setText(
                     "symbol",
-                    payload.symbol ?? "—"
+                    payload.symbol ?? "â€”"
                 );
 
                 setText(
                     "timeframe",
-                    payload.timeframe ?? "—"
+                    payload.timeframe ?? "â€”"
                 );
 
                 setText(
                     "marketSession",
-                    payload.market_session ?? "—"
+                    payload.market_session ?? "â€”"
                 );
 
                 updateDecision(
@@ -3570,7 +3570,7 @@ def build_dashboard_html(
                 setText(
                     "decisionRecommendation",
                     payload.decision_recommendation
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updateTextList(
@@ -3600,7 +3600,7 @@ def build_dashboard_html(
                     payload.analyst_resolved_count
                 );
 
-                setText(
+                updateInstitutionalCount(
                     "analystEnabledResolvedCount",
                     payload.analyst_enabled_resolved_count
                 );
@@ -3701,7 +3701,7 @@ def build_dashboard_html(
                 setText(
                     "tradeNarrative",
                     payload.trade_narrative
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updateTextList(
@@ -3767,7 +3767,7 @@ def build_dashboard_html(
                 setText(
                     "marketPhase",
                     payload.market_phase
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -3904,13 +3904,13 @@ def build_dashboard_html(
                 setText(
                     "setupLifecycleState",
                     payload.setup_lifecycle_state
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 setText(
                     "setupLifecycleDirection",
                     payload.setup_lifecycle_direction
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -3928,13 +3928,13 @@ def build_dashboard_html(
                 setText(
                     "setupLifecycleAction",
                     payload.setup_lifecycle_action
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 setText(
                     "setupLifecycleReason",
                     payload.setup_lifecycle_reason
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 //====================================================
@@ -3948,13 +3948,13 @@ def build_dashboard_html(
                 setText(
                     "acceptanceDirection",
                     payload.acceptance_direction
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 setText(
                     "acceptanceLevel",
                     payload.acceptance_level
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -3998,7 +3998,7 @@ def build_dashboard_html(
                 setText(
                     "acceptanceReason",
                     payload.acceptance_reason
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updateTextList(
@@ -4020,13 +4020,13 @@ def build_dashboard_html(
                 setText(
                     "trendAnalyst",
                     payload.trend_analyst
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 setText(
                     "trendOpinion",
                     payload.trend_opinion
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4052,12 +4052,12 @@ def build_dashboard_html(
 
                 setText(
                     "structureAnalyst",
-                    payload.structure_analyst ?? "—"
+                    payload.structure_analyst ?? "â€”"
                 );
 
                 setText(
                     "structureOpinion",
-                    payload.structure_opinion ?? "—"
+                    payload.structure_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4071,12 +4071,12 @@ def build_dashboard_html(
 
                 setText(
                     "liquidityAnalyst",
-                    payload.liquidity_analyst ?? "—"
+                    payload.liquidity_analyst ?? "â€”"
                 );
 
                 setText(
                     "liquidityOpinion",
-                    payload.liquidity_opinion ?? "—"
+                    payload.liquidity_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4090,12 +4090,12 @@ def build_dashboard_html(
 
                 setText(
                     "orderBlockAnalyst",
-                    payload.order_block_analyst ?? "—"
+                    payload.order_block_analyst ?? "â€”"
                 );
 
                 setText(
                     "orderBlockOpinion",
-                    payload.order_block_opinion ?? "—"
+                    payload.order_block_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4109,12 +4109,12 @@ def build_dashboard_html(
 
                 setText(
                     "auctionAnalyst",
-                    payload.auction_analyst ?? "—"
+                    payload.auction_analyst ?? "â€”"
                 );
 
                 setText(
                     "auctionOpinion",
-                    payload.auction_opinion ?? "—"
+                    payload.auction_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4128,12 +4128,12 @@ def build_dashboard_html(
 
                 setText(
                     "pressureAnalyst",
-                    payload.pressure_analyst ?? "—"
+                    payload.pressure_analyst ?? "â€”"
                 );
 
                 setText(
                     "pressureOpinion",
-                    payload.pressure_opinion ?? "—"
+                    payload.pressure_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4147,12 +4147,12 @@ def build_dashboard_html(
 
                 setText(
                     "participationAnalyst",
-                    payload.participation_analyst ?? "—"
+                    payload.participation_analyst ?? "â€”"
                 );
 
                 setText(
                     "participationOpinion",
-                    payload.participation_opinion ?? "—"
+                    payload.participation_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4166,12 +4166,12 @@ def build_dashboard_html(
 
                 setText(
                     "valueAnalyst",
-                    payload.value_analyst ?? "—"
+                    payload.value_analyst ?? "â€”"
                 );
 
                 setText(
                     "valueOpinion",
-                    payload.value_opinion ?? "—"
+                    payload.value_opinion ?? "â€”"
                 );
 
                 updatePercentageMetric(
@@ -4227,7 +4227,7 @@ def build_dashboard_html(
                 setText(
                     "latestCycleMessage",
                     payload.latest_cycle_message
-                        ?? "—"
+                        ?? "â€”"
                 );
 
                 setText(
