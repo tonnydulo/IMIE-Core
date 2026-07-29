@@ -1171,6 +1171,9 @@ class DashboardStatusFilePublisher:
             analyst_resolved_count=(
                 analyst_resolved_count
             ),
+            analyst_enabled_resolved_count=(
+                analyst_enabled_resolved_count
+            ),
             analyst_average_confidence=(
                 analyst_average_confidence
             ),

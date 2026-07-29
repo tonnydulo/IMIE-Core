@@ -157,6 +157,7 @@ class RuntimeDashboardStatus:
     analyst_domain_count: int | None = None
     analyst_enabled_count: int | None = None
     analyst_resolved_count: int | None = None
+    analyst_enabled_resolved_count: int | None = None
     analyst_average_confidence: float | None = None
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
@@ -402,6 +403,7 @@ class RuntimeDashboardStatus:
             "analyst_domain_count",
             "analyst_enabled_count",
             "analyst_resolved_count",
+            "analyst_enabled_resolved_count",
         ):
             value = getattr(
                 self,
@@ -451,6 +453,30 @@ class RuntimeDashboardStatus:
             raise ValueError(
                 "analyst_resolved_count cannot exceed "
                 "analyst_domain_count."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_resolved_count
+            is not None
+            and self.analyst_enabled_resolved_count
+            > self.analyst_enabled_count
+        ):
+            raise ValueError(
+                "analyst_enabled_resolved_count cannot "
+                "exceed analyst_enabled_count."
+            )
+
+        if (
+            self.analyst_resolved_count is not None
+            and self.analyst_enabled_resolved_count
+            is not None
+            and self.analyst_enabled_resolved_count
+            > self.analyst_resolved_count
+        ):
+            raise ValueError(
+                "analyst_enabled_resolved_count cannot "
+                "exceed analyst_resolved_count."
             )
 
         if (
@@ -1301,6 +1327,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_resolved_count": (
                     self.analyst_resolved_count
+                ),
+                "analyst_enabled_resolved_count": (
+                    self.analyst_enabled_resolved_count
                 ),
                 "analyst_average_confidence": (
                     self.analyst_average_confidence

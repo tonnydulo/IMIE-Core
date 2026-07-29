@@ -1612,6 +1612,8 @@ def test_dashboard_styles_analyst_operational_statuses() -> None:
     assert "payload.analyst_operational_message" in html
     assert "analystOperationalPercentage" in html
     assert "payload.analyst_operational_percentage" in html
+    assert "analystEnabledResolvedCount" in html
+    assert "payload.analyst_enabled_resolved_count" in html
 
 def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
     html = build_dashboard_html()
@@ -1724,3 +1726,18 @@ def test_dashboard_binds_analyst_operational_percentage() -> None:
         in html
     )
 
+def test_dashboard_displays_analyst_enabled_resolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystEnabledResolvedCount"' in html
+    assert "payload.analyst_enabled_resolved_count" in html
+
+
+def test_dashboard_binds_analyst_enabled_resolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert "setText(" in html
+    assert '"analystEnabledResolvedCount"' in html
+    assert "payload.analyst_enabled_resolved_count" in html
