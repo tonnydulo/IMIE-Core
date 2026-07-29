@@ -1228,6 +1228,7 @@ def test_dashboard_analyst_average_confidence_reuses_percentage_renderer() -> No
         "payload.analyst_average_confidence"
         in html
     )
+    assert "All-Domain Average Confidence" in html
 
 def test_dashboard_contains_structure_analyst_fields() -> None:
     html = build_dashboard_html()

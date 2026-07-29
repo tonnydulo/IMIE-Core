@@ -1090,7 +1090,7 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
-                    Average Analyst Confidence
+                    All-Domain Average Confidence
                 </div>
 
                 <div
