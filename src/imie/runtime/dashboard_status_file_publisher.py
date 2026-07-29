@@ -471,6 +471,18 @@ class DashboardStatusFilePublisher:
             analyst_enabled_confidences
         )
 
+        analyst_missing_confidence_count = max(
+            0,
+            analyst_domain_count
+            - analyst_confidence_count,
+        )
+
+        analyst_enabled_missing_confidence_count = max(
+            0,
+            analyst_enabled_count
+            - analyst_enabled_confidence_count,
+        )
+
         analyst_average_confidence = (
             sum(
                 analyst_confidences
@@ -1351,6 +1363,12 @@ class DashboardStatusFilePublisher:
             ),
             analyst_enabled_confidence_count=(
                 analyst_enabled_confidence_count
+            ),
+            analyst_missing_confidence_count=(
+                analyst_missing_confidence_count
+            ),
+            analyst_enabled_missing_confidence_count=(
+                analyst_enabled_missing_confidence_count
             ),
             analyst_average_confidence=(
                 analyst_average_confidence

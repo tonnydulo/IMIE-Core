@@ -2268,6 +2268,16 @@ def test_publish_result_calculates_partial_confidence_coverage(
             "enabled analyst domains."
         )
     )
+    assert (
+        payload["analyst_missing_confidence_count"]
+        == 2
+    )
+    assert (
+        payload[
+            "analyst_enabled_missing_confidence_count"
+        ]
+        == 1
+    )
 
 def test_zero_confidence_counts_as_available(
     tmp_path: Path,
@@ -2341,6 +2351,16 @@ def test_zero_confidence_counts_as_available(
             "1 enabled analyst domain."
         )
     )
+    assert (
+        payload["analyst_missing_confidence_count"]
+        == 0
+    )
+    assert (
+        payload[
+            "analyst_enabled_missing_confidence_count"
+        ]
+        == 0
+    )
 
 def test_publish_result_reports_missing_confidence_coverage(
     tmp_path: Path,
@@ -2405,6 +2425,16 @@ def test_publish_result_reports_missing_confidence_coverage(
             "Confidence is unavailable for all "
             "2 enabled analyst domains."
         )
+    )
+    assert (
+        payload["analyst_missing_confidence_count"]
+        == 2
+    )
+    assert (
+        payload[
+            "analyst_enabled_missing_confidence_count"
+        ]
+        == 2
     )
 
 def test_publish_result_reports_disabled_enabled_confidence_coverage(

@@ -165,6 +165,8 @@ def make_status(
     analyst_confidence_coverage_message: str | None = None,
     analyst_enabled_confidence_coverage_state: str | None = None,
     analyst_enabled_confidence_coverage_message: str | None = None,
+    analyst_missing_confidence_count: int | None = None,
+    analyst_enabled_missing_confidence_count: int | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -409,6 +411,12 @@ def make_status(
         ),
         analyst_enabled_confidence_coverage_message=(
             analyst_enabled_confidence_coverage_message
+        ),
+        analyst_missing_confidence_count=(
+            analyst_missing_confidence_count
+        ),
+        analyst_enabled_missing_confidence_count=(
+            analyst_enabled_missing_confidence_count
         ),
     )
 
@@ -2467,21 +2475,39 @@ def test_analyst_coverage_state_accepts_supported_values(
 
     assert status.analyst_coverage_state == value
 
-def test_status_accepts_analyst_confidence_counts() -> None:
+def test_status_accepts_analyst_confidence_counts(
+) -> None:
     status = make_status(
         analyst_confidence_count=6,
         analyst_enabled_confidence_count=4,
+        analyst_missing_confidence_count=2,
+        analyst_enabled_missing_confidence_count=1,
     )
 
     payload = status.to_dict()
 
     assert status.analyst_confidence_count == 6
     assert status.analyst_enabled_confidence_count == 4
+    assert status.analyst_missing_confidence_count == 2
+    assert (
+        status.analyst_enabled_missing_confidence_count
+        == 1
+    )
 
     assert payload["analyst_confidence_count"] == 6
     assert (
         payload["analyst_enabled_confidence_count"]
         == 4
+    )
+    assert (
+        payload["analyst_missing_confidence_count"]
+        == 2
+    )
+    assert (
+        payload[
+            "analyst_enabled_missing_confidence_count"
+        ]
+        == 1
     )
 
 
@@ -2490,6 +2516,8 @@ def test_status_accepts_analyst_confidence_counts() -> None:
     [
         "analyst_confidence_count",
         "analyst_enabled_confidence_count",
+        "analyst_missing_confidence_count",
+        "analyst_enabled_missing_confidence_count",
     ],
 )
 @pytest.mark.parametrize(
@@ -2521,6 +2549,8 @@ def test_analyst_confidence_counts_must_be_integers(
     [
         "analyst_confidence_count",
         "analyst_enabled_confidence_count",
+        "analyst_missing_confidence_count",
+        "analyst_enabled_missing_confidence_count",
     ],
 )
 

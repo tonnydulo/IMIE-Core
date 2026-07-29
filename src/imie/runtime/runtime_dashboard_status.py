@@ -159,8 +159,11 @@ class RuntimeDashboardStatus:
     analyst_resolved_count: int | None = None
     analyst_enabled_resolved_count: int | None = None
     analyst_enabled_unresolved_count: int | None = None
+
     analyst_confidence_count: int | None = None
     analyst_enabled_confidence_count: int | None = None
+    analyst_missing_confidence_count: int | None = None
+    analyst_enabled_missing_confidence_count: int | None = None
     analyst_average_confidence: float | None = None
     analyst_enabled_average_confidence: float | None = None
 
@@ -425,6 +428,8 @@ class RuntimeDashboardStatus:
             "analyst_enabled_unresolved_count",
             "analyst_confidence_count",
             "analyst_enabled_confidence_count",
+            "analyst_missing_confidence_count",
+            "analyst_enabled_missing_confidence_count",
         ):
             value = getattr(
                 self,
@@ -1420,6 +1425,12 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_enabled_confidence_count": (
                     self.analyst_enabled_confidence_count
+                ),
+                "analyst_missing_confidence_count": (
+                    self.analyst_missing_confidence_count
+                ),
+                "analyst_enabled_missing_confidence_count": (
+                    self.analyst_enabled_missing_confidence_count
                 ),
                 "analyst_average_confidence": (
                     self.analyst_average_confidence
