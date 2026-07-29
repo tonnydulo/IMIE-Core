@@ -3154,15 +3154,22 @@ def build_dashboard_html(
                 confidenceValue.className =
                     "analyst-summary-value";
 
-                confidenceValue.textContent =
-                    typeof details?.confidence
+                const confidenceAvailable = (
+                    details?.confidence_available
+                    === true
+                );
+
+                confidenceValue.textContent = (
+                    confidenceAvailable
+                    && typeof details?.confidence
                         === "number"
-                        ? (
-                            details.confidence
-                                .toFixed(1)
-                            + "%"
-                        )
-                        : "—";
+                )
+                    ? (
+                        details.confidence
+                            .toFixed(1)
+                        + "%"
+                    )
+                    : "Unavailable";
 
                 confidenceCell.append(
                     confidenceHeading,

@@ -1147,7 +1147,8 @@ def test_dashboard_contains_analyst_summary_renderer() -> None:
         in html
     )
 
-def test_dashboard_analyst_summary_renders_expected_fields() -> None:
+def test_dashboard_analyst_summary_renders_expected_fields(
+) -> None:
     html = build_dashboard_html()
 
     assert 'analystHeading.textContent =' in html
@@ -1157,6 +1158,7 @@ def test_dashboard_analyst_summary_renders_expected_fields() -> None:
 
     assert "details?.opinion" in html
     assert "details?.confidence" in html
+    assert "details?.confidence_available" in html
     assert "details?.enabled" in html
 
 def test_dashboard_contains_analyst_summary_empty_message() -> None:
@@ -1883,3 +1885,25 @@ def test_dashboard_binds_analyst_confidence_coverage(
         "analyst_enabled_confidence_coverage_percentage"
         in html
     )
+
+def test_dashboard_distinguishes_missing_analyst_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "const confidenceAvailable = ("
+        in html
+    )
+    assert (
+        "details?.confidence_available"
+        in html
+    )
+    assert (
+        '=== true'
+        in html
+    )
+    assert (
+        ': "Unavailable";'
+        in html
+    )
+
