@@ -1140,6 +1140,32 @@ def build_dashboard_html(
                 </div>
             </article>
 
+            <article class="card">
+                <div class="label">
+                    Analyst Confidence Coverage
+                </div>
+
+                <div
+                    id="analystConfidenceCoveragePercentage"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Enabled Confidence Coverage
+                </div>
+
+                <div
+                    id="analystEnabledConfidenceCoveragePercentage"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
             <article class="card wide">
                 <div class="label">
                     Analyst Summary
@@ -3667,6 +3693,16 @@ def build_dashboard_html(
                 updatePercentageMetric(
                     "analystOperationalPercentage",
                     payload.analyst_operational_percentage
+                );
+
+                updateInstitutionalPercentage(
+                    "analystConfidenceCoveragePercentage",
+                    payload.analyst_confidence_coverage_percentage
+                );
+
+                updateInstitutionalPercentage(
+                    "analystEnabledConfidenceCoveragePercentage",
+                    payload.analyst_enabled_confidence_coverage_percentage
                 );
 
                 updateAnalystCoverageState(

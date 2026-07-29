@@ -159,6 +159,8 @@ def make_status(
     analyst_operational_percentage: float | None = None,
     analyst_confidence_count: int | None = None,
     analyst_enabled_confidence_count: int | None = None,
+    analyst_confidence_coverage_percentage: float | None = None,
+    analyst_enabled_confidence_coverage_percentage: float | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -385,6 +387,12 @@ def make_status(
         ),
         analyst_enabled_confidence_count=(
             analyst_enabled_confidence_count
+        ),
+        analyst_confidence_coverage_percentage=(
+            analyst_confidence_coverage_percentage
+        ),
+        analyst_enabled_confidence_coverage_percentage=(
+            analyst_enabled_confidence_coverage_percentage
         ),
     )
 
@@ -2925,5 +2933,93 @@ def test_enabled_resolution_counts_must_equal_enabled_count(
             analyst_enabled_count=4,
             analyst_enabled_resolved_count=2,
             analyst_enabled_unresolved_count=1,
+        )
+
+def test_status_accepts_analyst_confidence_coverage(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_percentage=75.0,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 75.0
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
+    assert (
+        payload["analyst_confidence_coverage_percentage"]
+        == 75.0
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_percentage"
+        ]
+        == 50.0
+    )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+    ],
+)
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        "50.0",
+        object(),
+    ],
+)
+def test_analyst_confidence_coverage_must_be_numeric(
+    field_name: str,
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: value,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+    ],
+)
+@pytest.mark.parametrize(
+    "value",
+    [
+        -0.1,
+        100.1,
+    ],
+)
+def test_analyst_confidence_coverage_must_be_in_range(
+    field_name: str,
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=field_name,
+    ):
+        make_status(
+            **{
+                field_name: value,
+            }
         )
 

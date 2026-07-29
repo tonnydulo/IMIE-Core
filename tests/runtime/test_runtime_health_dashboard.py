@@ -1837,3 +1837,49 @@ def test_dashboard_binds_analyst_confidence_counts(
         "payload.analyst_enabled_confidence_count"
         in html
     )
+
+def test_dashboard_displays_analyst_confidence_coverage(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "Analyst Confidence Coverage"
+        in html
+    )
+
+    assert (
+        'id="analystEnabledConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "Enabled Confidence Coverage"
+        in html
+    )
+
+
+def test_dashboard_binds_analyst_confidence_coverage(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        '"analystConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_percentage"
+        in html
+    )
+
+    assert (
+        '"analystEnabledConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_percentage"
+        in html
+    )

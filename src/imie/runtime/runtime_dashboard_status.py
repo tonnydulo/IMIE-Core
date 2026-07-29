@@ -163,6 +163,8 @@ class RuntimeDashboardStatus:
     analyst_enabled_confidence_count: int | None = None
     analyst_average_confidence: float | None = None
     analyst_enabled_average_confidence: float | None = None
+    analyst_confidence_coverage_percentage: float | None = None
+    analyst_enabled_confidence_coverage_percentage: float | None = None
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
     analyst_coverage_message: str | None = None
@@ -347,6 +349,8 @@ class RuntimeDashboardStatus:
             "value_confidence",
             "analyst_average_confidence",
             "analyst_enabled_average_confidence",
+            "analyst_confidence_coverage_percentage",
+            "analyst_enabled_confidence_coverage_percentage",
             "analyst_coverage_percentage",
             "analyst_operational_percentage",
         ):
@@ -1381,6 +1385,12 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_enabled_average_confidence": (
                     self.analyst_enabled_average_confidence
+                ),
+                "analyst_confidence_coverage_percentage": (
+                    self.analyst_confidence_coverage_percentage
+                ),
+                "analyst_enabled_confidence_coverage_percentage": (
+                    self.analyst_enabled_confidence_coverage_percentage
                 ),
                 "analyst_coverage_percentage": (
                     self.analyst_coverage_percentage

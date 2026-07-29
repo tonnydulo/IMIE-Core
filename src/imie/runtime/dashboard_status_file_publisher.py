@@ -424,44 +424,44 @@ class DashboardStatusFilePublisher:
             - analyst_enabled_resolved_count
         )
 
-        analyst_confidences = [
-            float(confidence)
-            for details in analyst_summary.values()
+        analyst_confidences: list[float] = []
+        analyst_enabled_confidences: list[float] = []
+
+        for details in analyst_summary.values():
+            confidence = details.get(
+                "confidence"
+            )
+
             if (
                 isinstance(
-                    (
-                        confidence := details.get(
-                            "confidence"
-                        )
-                    ),
+                    confidence,
                     int | float,
                 )
                 and not isinstance(
                     confidence,
                     bool,
                 )
-            )
-        ]
+            ):
+                normalized_confidence = float(
+                    confidence
+                )
 
-        analyst_enabled_confidences = [
-            float(confidence)
-            for details in analyst_summary.values()
-            if (
-                details.get("enabled") is True
-                and isinstance(
-                    (
-                        confidence := details.get(
-                            "confidence"
-                        )
-                    ),
-                    int | float,
+                analyst_confidences.append(
+                    normalized_confidence
                 )
-                and not isinstance(
-                    confidence,
-                    bool,
-                )
-            )
-        ]
+
+                if details.get("enabled") is True:
+                    analyst_enabled_confidences.append(
+                        normalized_confidence
+                    )
+
+        analyst_confidence_count = len(
+            analyst_confidences
+        )
+
+        analyst_enabled_confidence_count = len(
+            analyst_enabled_confidences
+        )
 
         analyst_average_confidence = (
             sum(
@@ -472,16 +472,6 @@ class DashboardStatusFilePublisher:
             )
             if analyst_confidences
             else None
-        )
-
-        analyst_coverage_percentage = (
-            (
-                analyst_resolved_count
-                / analyst_domain_count
-            )
-            * 100.0
-            if analyst_domain_count > 0
-            else 0.0
         )
 
         analyst_enabled_average_confidence = (
@@ -495,13 +485,35 @@ class DashboardStatusFilePublisher:
             else None
         )
 
-        analyst_confidence_count = len(
-                analyst_confidences
+        analyst_confidence_coverage_percentage = (
+            (
+                analyst_confidence_count
+                / analyst_domain_count
             )
+            * 100.0
+            if analyst_domain_count > 0
+            else 0.0
+        )
 
-        analyst_enabled_confidence_count = len(
-                analyst_enabled_confidences
+        analyst_enabled_confidence_coverage_percentage = (
+            (
+                analyst_enabled_confidence_count
+                / analyst_enabled_count
             )
+            * 100.0
+            if analyst_enabled_count > 0
+            else 0.0
+        )
+
+        analyst_coverage_percentage = (
+            (
+                analyst_resolved_count
+                / analyst_domain_count
+            )
+            * 100.0
+            if analyst_domain_count > 0
+            else 0.0
+        )
 
         analyst_operational_percentage = (
             (
@@ -1229,6 +1241,12 @@ class DashboardStatusFilePublisher:
             ),
             analyst_average_confidence=(
                 analyst_average_confidence
+            ),
+            analyst_confidence_coverage_percentage=(
+                analyst_confidence_coverage_percentage
+            ),
+            analyst_enabled_confidence_coverage_percentage=(
+                analyst_enabled_confidence_coverage_percentage
             ),
             analyst_coverage_percentage=(
                 analyst_coverage_percentage
