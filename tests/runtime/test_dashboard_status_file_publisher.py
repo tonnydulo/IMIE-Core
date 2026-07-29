@@ -2330,7 +2330,7 @@ def test_zero_confidence_counts_as_available(
     )
     assert (
         payload["analyst_confidence_coverage_message"]
-        == "Confidence is available for all 1 analyst domains."
+        == "Confidence is available for all 1 analyst domain."
     )
     assert (
         payload[
@@ -2338,7 +2338,7 @@ def test_zero_confidence_counts_as_available(
         ]
         == (
             "Confidence is available for all "
-            "1 enabled analyst domains."
+            "1 enabled analyst domain."
         )
     )
 
@@ -2456,5 +2456,56 @@ def test_publish_result_reports_disabled_enabled_confidence_coverage(
             "analyst_enabled_confidence_coverage_message"
         ]
         == "No analyst domains are enabled."
+    )
+
+def test_publish_result_uses_singular_missing_confidence_message(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "Trend is unresolved.",
+                "enabled": True,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_confidence_coverage_message"]
+        == (
+            "Confidence is unavailable for all "
+            "1 analyst domain."
+        )
+    )
+
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == (
+            "Confidence is unavailable for all "
+            "1 enabled analyst domain."
+        )
     )
 

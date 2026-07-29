@@ -513,6 +513,18 @@ class DashboardStatusFilePublisher:
             else 0.0
         )
 
+        analyst_domain_label = (
+            "analyst domain"
+            if analyst_domain_count == 1
+            else "analyst domains"
+        )
+
+        enabled_analyst_domain_label = (
+            "enabled analyst domain"
+            if analyst_enabled_count == 1
+            else "enabled analyst domains"
+        )
+
         if analyst_domain_count == 0:
             analyst_confidence_coverage_state = (
                 "UNAVAILABLE"
@@ -527,7 +539,8 @@ class DashboardStatusFilePublisher:
             )
             analyst_confidence_coverage_message = (
                 "Confidence is unavailable for all "
-                f"{analyst_domain_count} analyst domains."
+                f"{analyst_domain_count} "
+                f"{analyst_domain_label}."
             )
 
         elif (
@@ -540,7 +553,8 @@ class DashboardStatusFilePublisher:
             analyst_confidence_coverage_message = (
                 "Confidence is available for "
                 f"{analyst_confidence_count} of "
-                f"{analyst_domain_count} analyst domains."
+                f"{analyst_domain_count} "
+                f"{analyst_domain_label}."
             )
 
         else:
@@ -549,7 +563,8 @@ class DashboardStatusFilePublisher:
             )
             analyst_confidence_coverage_message = (
                 "Confidence is available for all "
-                f"{analyst_domain_count} analyst domains."
+                f"{analyst_domain_count} "
+                f"{analyst_domain_label}."
             )
 
 
@@ -575,7 +590,8 @@ class DashboardStatusFilePublisher:
             )
             analyst_enabled_confidence_coverage_message = (
                 "Confidence is unavailable for all "
-                f"{analyst_enabled_count} enabled analyst domains."
+                f"{analyst_enabled_count} "
+                f"{enabled_analyst_domain_label}."
             )
 
         elif (
@@ -588,7 +604,8 @@ class DashboardStatusFilePublisher:
             analyst_enabled_confidence_coverage_message = (
                 "Confidence is available for "
                 f"{analyst_enabled_confidence_count} of "
-                f"{analyst_enabled_count} enabled analyst domains."
+                f"{analyst_enabled_count} "
+                f"{enabled_analyst_domain_label}."
             )
 
         else:
@@ -597,7 +614,8 @@ class DashboardStatusFilePublisher:
             )
             analyst_enabled_confidence_coverage_message = (
                 "Confidence is available for all "
-                f"{analyst_enabled_count} enabled analyst domains."
+                f"{analyst_enabled_count} "
+                f"{enabled_analyst_domain_label}."
             )
 
         analyst_coverage_percentage = (
