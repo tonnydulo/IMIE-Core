@@ -65,7 +65,7 @@ class RuntimeDashboardStatus:
     institutional_bias_supporting_domains: tuple[str, ...] = ()
     institutional_bias_opposing_domains: tuple[str, ...] = ()
 
-    
+
     confluence_direction: str | None = None
     confluence_score: float | None = None
     confluence_agreement_count: int | None = None
@@ -515,7 +515,7 @@ class RuntimeDashboardStatus:
                 "confidence counts must equal "
                 "analyst_enabled_count."
             )
-            
+
         if (
             self.analyst_domain_count is not None
             and self.analyst_enabled_count is not None
@@ -912,7 +912,7 @@ class RuntimeDashboardStatus:
             "analyst_operational_message",
 
             "latest_error_type",
-            
+
         ):
             value = getattr(
                 self,
@@ -1068,7 +1068,7 @@ class RuntimeDashboardStatus:
                 "setup_lifecycle_atr_distance cannot "
                 "be negative."
             )
-        
+
 
         if (
             self.latest_cycle_started_at
