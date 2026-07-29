@@ -458,6 +458,64 @@ class RuntimeDashboardStatus:
                 raise ValueError(
                     f"{field_name} cannot be negative."
                 )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_confidence_count is not None
+            and self.analyst_confidence_count
+            > self.analyst_domain_count
+        ):
+            raise ValueError(
+                "analyst_confidence_count cannot exceed "
+                "analyst_domain_count."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_confidence_count
+            is not None
+            and self.analyst_enabled_confidence_count
+            > self.analyst_enabled_count
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_count cannot "
+                "exceed analyst_enabled_count."
+            )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_confidence_count is not None
+            and self.analyst_missing_confidence_count
+            is not None
+            and (
+                self.analyst_confidence_count
+                + self.analyst_missing_confidence_count
+            )
+            != self.analyst_domain_count
+        ):
+            raise ValueError(
+                "analyst confidence and missing confidence "
+                "counts must equal analyst_domain_count."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_confidence_count
+            is not None
+            and self.analyst_enabled_missing_confidence_count
+            is not None
+            and (
+                self.analyst_enabled_confidence_count
+                + self.analyst_enabled_missing_confidence_count
+            )
+            != self.analyst_enabled_count
+        ):
+            raise ValueError(
+                "analyst enabled confidence and missing "
+                "confidence counts must equal "
+                "analyst_enabled_count."
+            )
+            
         if (
             self.analyst_domain_count is not None
             and self.analyst_enabled_count is not None

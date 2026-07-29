@@ -2478,6 +2478,8 @@ def test_analyst_coverage_state_accepts_supported_values(
 def test_status_accepts_analyst_confidence_counts(
 ) -> None:
     status = make_status(
+        analyst_domain_count=8,
+        analyst_enabled_count=5,
         analyst_confidence_count=6,
         analyst_enabled_confidence_count=4,
         analyst_missing_confidence_count=2,
@@ -3128,4 +3130,96 @@ def test_status_rejects_invalid_confidence_coverage_state(
                 field_name: "UNKNOWN",
             }
         )
+
+def test_analyst_confidence_count_cannot_exceed_domain_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_count cannot exceed "
+            "analyst_domain_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=2,
+            analyst_confidence_count=3,
+        )
+
+
+def test_enabled_confidence_count_cannot_exceed_enabled_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_count cannot "
+            "exceed analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=1,
+            analyst_enabled_confidence_count=2,
+        )
+
+
+def test_analyst_confidence_counts_must_equal_domain_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst confidence and missing confidence "
+            "counts must equal analyst_domain_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=8,
+            analyst_confidence_count=6,
+            analyst_missing_confidence_count=1,
+        )
+
+
+def test_enabled_confidence_counts_must_equal_enabled_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst enabled confidence and missing "
+            "confidence counts must equal "
+            "analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=5,
+            analyst_enabled_confidence_count=4,
+            analyst_enabled_missing_confidence_count=2,
+        )
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "analyst_domain_count": 8,
+            "analyst_confidence_count": 6,
+        },
+        {
+            "analyst_domain_count": 8,
+            "analyst_missing_confidence_count": 2,
+        },
+        {
+            "analyst_enabled_count": 5,
+            "analyst_enabled_confidence_count": 4,
+        },
+        {
+            "analyst_enabled_count": 5,
+            "analyst_enabled_missing_confidence_count": 1,
+        },
+    ],
+)
+def test_partial_confidence_count_groups_are_allowed(
+    kwargs: dict[str, int],
+) -> None:
+    status = make_status(
+        **kwargs,
+    )
+
+    assert status is not None
 
