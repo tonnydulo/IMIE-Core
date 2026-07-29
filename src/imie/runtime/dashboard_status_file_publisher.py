@@ -513,6 +513,93 @@ class DashboardStatusFilePublisher:
             else 0.0
         )
 
+        if analyst_domain_count == 0:
+            analyst_confidence_coverage_state = (
+                "UNAVAILABLE"
+            )
+            analyst_confidence_coverage_message = (
+                "No analyst domains are available."
+            )
+
+        elif analyst_confidence_count == 0:
+            analyst_confidence_coverage_state = (
+                "MISSING"
+            )
+            analyst_confidence_coverage_message = (
+                "Confidence is unavailable for all "
+                f"{analyst_domain_count} analyst domains."
+            )
+
+        elif (
+            analyst_confidence_count
+            < analyst_domain_count
+        ):
+            analyst_confidence_coverage_state = (
+                "PARTIAL"
+            )
+            analyst_confidence_coverage_message = (
+                "Confidence is available for "
+                f"{analyst_confidence_count} of "
+                f"{analyst_domain_count} analyst domains."
+            )
+
+        else:
+            analyst_confidence_coverage_state = (
+                "COMPLETE"
+            )
+            analyst_confidence_coverage_message = (
+                "Confidence is available for all "
+                f"{analyst_domain_count} analyst domains."
+            )
+
+
+        if analyst_domain_count == 0:
+            analyst_enabled_confidence_coverage_state = (
+                "UNAVAILABLE"
+            )
+            analyst_enabled_confidence_coverage_message = (
+                "No analyst domains are available."
+            )
+
+        elif analyst_enabled_count == 0:
+            analyst_enabled_confidence_coverage_state = (
+                "DISABLED"
+            )
+            analyst_enabled_confidence_coverage_message = (
+                "No analyst domains are enabled."
+            )
+
+        elif analyst_enabled_confidence_count == 0:
+            analyst_enabled_confidence_coverage_state = (
+                "MISSING"
+            )
+            analyst_enabled_confidence_coverage_message = (
+                "Confidence is unavailable for all "
+                f"{analyst_enabled_count} enabled analyst domains."
+            )
+
+        elif (
+            analyst_enabled_confidence_count
+            < analyst_enabled_count
+        ):
+            analyst_enabled_confidence_coverage_state = (
+                "PARTIAL"
+            )
+            analyst_enabled_confidence_coverage_message = (
+                "Confidence is available for "
+                f"{analyst_enabled_confidence_count} of "
+                f"{analyst_enabled_count} enabled analyst domains."
+            )
+
+        else:
+            analyst_enabled_confidence_coverage_state = (
+                "COMPLETE"
+            )
+            analyst_enabled_confidence_coverage_message = (
+                "Confidence is available for all "
+                f"{analyst_enabled_count} enabled analyst domains."
+            )
+
         analyst_coverage_percentage = (
             (
                 analyst_resolved_count
@@ -1255,6 +1342,18 @@ class DashboardStatusFilePublisher:
             ),
             analyst_enabled_confidence_coverage_percentage=(
                 analyst_enabled_confidence_coverage_percentage
+            ),
+            analyst_confidence_coverage_state=(
+                analyst_confidence_coverage_state
+            ),
+            analyst_confidence_coverage_message=(
+                analyst_confidence_coverage_message
+            ),
+            analyst_enabled_confidence_coverage_state=(
+                analyst_enabled_confidence_coverage_state
+            ),
+            analyst_enabled_confidence_coverage_message=(
+                analyst_enabled_confidence_coverage_message
             ),
             analyst_coverage_percentage=(
                 analyst_coverage_percentage

@@ -163,9 +163,18 @@ class RuntimeDashboardStatus:
     analyst_enabled_confidence_count: int | None = None
     analyst_average_confidence: float | None = None
     analyst_enabled_average_confidence: float | None = None
+
     analyst_confidence_coverage_percentage: float | None = None
     analyst_enabled_confidence_coverage_percentage: float | None = None
+
+    analyst_confidence_coverage_state: str | None = None
+    analyst_confidence_coverage_message: str | None = None
+
+    analyst_enabled_confidence_coverage_state: str | None = None
+    analyst_enabled_confidence_coverage_message: str | None = None
+
     analyst_coverage_percentage: float | None = None
+
     analyst_coverage_state: str | None = None
     analyst_coverage_message: str | None = None
     analyst_operational_status: str | None = None
@@ -664,6 +673,32 @@ class RuntimeDashboardStatus:
             )
 
         for field_name in (
+            "analyst_confidence_coverage_state",
+            "analyst_enabled_confidence_coverage_state",
+        ):
+            value = getattr(
+                self,
+                field_name,
+            )
+
+            if (
+                value is not None
+                and value
+                not in {
+                    "UNAVAILABLE",
+                    "DISABLED",
+                    "MISSING",
+                    "PARTIAL",
+                    "COMPLETE",
+                }
+            ):
+                raise ValueError(
+                    f"{field_name} must be one of: "
+                    "UNAVAILABLE, DISABLED, MISSING, "
+                    "PARTIAL, COMPLETE."
+                )
+
+        for field_name in (
             "trade_entry",
             "trade_stop",
             "trade_target1",
@@ -803,10 +838,16 @@ class RuntimeDashboardStatus:
             "participation_opinion",
             "value_analyst",
             "value_opinion",
+
+            "analyst_confidence_coverage_state",
+            "analyst_confidence_coverage_message",
+            "analyst_enabled_confidence_coverage_state",
+            "analyst_enabled_confidence_coverage_message",
             "analyst_coverage_state",
             "analyst_coverage_message",
             "analyst_operational_status",
             "analyst_operational_message",
+
             "latest_error_type",
             
         ):
@@ -1391,6 +1432,18 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_enabled_confidence_coverage_percentage": (
                     self.analyst_enabled_confidence_coverage_percentage
+                ),
+                "analyst_confidence_coverage_state": (
+                    self.analyst_confidence_coverage_state
+                ),
+                "analyst_confidence_coverage_message": (
+                    self.analyst_confidence_coverage_message
+                ),
+                "analyst_enabled_confidence_coverage_state": (
+                    self.analyst_enabled_confidence_coverage_state
+                ),
+                "analyst_enabled_confidence_coverage_message": (
+                    self.analyst_enabled_confidence_coverage_message
                 ),
                 "analyst_coverage_percentage": (
                     self.analyst_coverage_percentage

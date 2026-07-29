@@ -161,6 +161,10 @@ def make_status(
     analyst_enabled_confidence_count: int | None = None,
     analyst_confidence_coverage_percentage: float | None = None,
     analyst_enabled_confidence_coverage_percentage: float | None = None,
+    analyst_confidence_coverage_state: str | None = None,
+    analyst_confidence_coverage_message: str | None = None,
+    analyst_enabled_confidence_coverage_state: str | None = None,
+    analyst_enabled_confidence_coverage_message: str | None = None,
 
 ) -> RuntimeDashboardStatus:
     return RuntimeDashboardStatus(
@@ -393,6 +397,18 @@ def make_status(
         ),
         analyst_enabled_confidence_coverage_percentage=(
             analyst_enabled_confidence_coverage_percentage
+        ),
+        analyst_confidence_coverage_state=(
+            analyst_confidence_coverage_state
+        ),
+        analyst_confidence_coverage_message=(
+            analyst_confidence_coverage_message
+        ),
+        analyst_enabled_confidence_coverage_state=(
+            analyst_enabled_confidence_coverage_state
+        ),
+        analyst_enabled_confidence_coverage_message=(
+            analyst_enabled_confidence_coverage_message
         ),
     )
 
@@ -3020,6 +3036,66 @@ def test_analyst_confidence_coverage_must_be_in_range(
         make_status(
             **{
                 field_name: value,
+            }
+        )
+
+def test_status_serializes_analyst_confidence_coverage_fields(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state="PARTIAL",
+        analyst_confidence_coverage_message=(
+            "Confidence is available for 2 of 4 analysts."
+        ),
+        analyst_enabled_confidence_coverage_state=(
+            "COMPLETE"
+        ),
+        analyst_enabled_confidence_coverage_message=(
+            "Confidence is available for all enabled analysts."
+        ),
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["analyst_confidence_coverage_state"]
+        == "PARTIAL"
+    )
+    assert (
+        payload["analyst_confidence_coverage_message"]
+        == "Confidence is available for 2 of 4 analysts."
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_state"
+        ]
+        == "COMPLETE"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == "Confidence is available for all enabled analysts."
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "analyst_confidence_coverage_state",
+        "analyst_enabled_confidence_coverage_state",
+    ],
+)
+def test_status_rejects_invalid_confidence_coverage_state(
+    field_name: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"{field_name} must be one of"
+        ),
+    ):
+        make_status(
+            **{
+                field_name: "UNKNOWN",
             }
         )
 

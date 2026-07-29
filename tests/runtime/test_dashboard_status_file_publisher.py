@@ -2244,6 +2244,30 @@ def test_publish_result_calculates_partial_confidence_coverage(
         ]
         == 50.0
     )
+    assert (
+        payload["analyst_confidence_coverage_state"]
+        == "PARTIAL"
+    )
+    assert (
+        payload["analyst_confidence_coverage_message"]
+        == "Confidence is available for 2 of 4 analyst domains."
+    )
+
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_state"
+        ]
+        == "PARTIAL"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == (
+            "Confidence is available for 1 of 2 "
+            "enabled analyst domains."
+        )
+    )
 
 def test_zero_confidence_counts_as_available(
     tmp_path: Path,
@@ -2294,3 +2318,143 @@ def test_zero_confidence_counts_as_available(
         ]
         == 100.0
     )
+    assert (
+        payload["analyst_confidence_coverage_state"]
+        == "COMPLETE"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_state"
+        ]
+        == "COMPLETE"
+    )
+    assert (
+        payload["analyst_confidence_coverage_message"]
+        == "Confidence is available for all 1 analyst domains."
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == (
+            "Confidence is available for all "
+            "1 enabled analyst domains."
+        )
+    )
+
+def test_publish_result_reports_missing_confidence_coverage(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "Trend is unresolved.",
+                "enabled": True,
+            },
+            "STRUCTURE": {
+                "opinion": "Structure is unresolved.",
+                "enabled": True,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_confidence_coverage_state"]
+        == "MISSING"
+    )
+    assert (
+        payload["analyst_confidence_coverage_message"]
+        == (
+            "Confidence is unavailable for all "
+            "2 analyst domains."
+        )
+    )
+
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_state"
+        ]
+        == "MISSING"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == (
+            "Confidence is unavailable for all "
+            "2 enabled analyst domains."
+        )
+    )
+
+def test_publish_result_reports_disabled_enabled_confidence_coverage(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "Trend is disabled.",
+                "confidence": 70.0,
+                "enabled": False,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["analyst_confidence_coverage_state"]
+        == "COMPLETE"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_state"
+        ]
+        == "DISABLED"
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_message"
+        ]
+        == "No analyst domains are enabled."
+    )
+
