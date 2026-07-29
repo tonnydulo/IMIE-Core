@@ -158,6 +158,7 @@ class RuntimeDashboardStatus:
     analyst_enabled_count: int | None = None
     analyst_resolved_count: int | None = None
     analyst_enabled_resolved_count: int | None = None
+    analyst_enabled_unresolved_count: int | None = None
     analyst_average_confidence: float | None = None
     analyst_coverage_percentage: float | None = None
     analyst_coverage_state: str | None = None
@@ -404,6 +405,7 @@ class RuntimeDashboardStatus:
             "analyst_enabled_count",
             "analyst_resolved_count",
             "analyst_enabled_resolved_count",
+            "analyst_enabled_unresolved_count",
         ):
             value = getattr(
                 self,
@@ -432,7 +434,6 @@ class RuntimeDashboardStatus:
                 raise ValueError(
                     f"{field_name} cannot be negative."
                 )
-
         if (
             self.analyst_domain_count is not None
             and self.analyst_enabled_count is not None
@@ -477,6 +478,35 @@ class RuntimeDashboardStatus:
             raise ValueError(
                 "analyst_enabled_resolved_count cannot "
                 "exceed analyst_resolved_count."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_unresolved_count
+            is not None
+            and self.analyst_enabled_unresolved_count
+            > self.analyst_enabled_count
+        ):
+            raise ValueError(
+                "analyst_enabled_unresolved_count cannot "
+                "exceed analyst_enabled_count."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_resolved_count
+            is not None
+            and self.analyst_enabled_unresolved_count
+            is not None
+            and (
+                self.analyst_enabled_resolved_count
+                + self.analyst_enabled_unresolved_count
+            )
+            != self.analyst_enabled_count
+        ):
+            raise ValueError(
+                "analyst enabled resolved and unresolved "
+                "counts must equal analyst_enabled_count."
             )
 
         if (
@@ -1330,6 +1360,9 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_enabled_resolved_count": (
                     self.analyst_enabled_resolved_count
+                ),
+                "analyst_enabled_unresolved_count": (
+                    self.analyst_enabled_unresolved_count
                 ),
                 "analyst_average_confidence": (
                     self.analyst_average_confidence

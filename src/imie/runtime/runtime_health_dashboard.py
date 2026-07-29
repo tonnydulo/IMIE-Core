@@ -1077,6 +1077,19 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
+                    Enabled Analysts Unresolved
+                </div>
+
+                <div
+                    id="analystEnabledUnresolvedCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
                     Average Analyst Confidence
                 </div>
 
@@ -3590,6 +3603,11 @@ def build_dashboard_html(
                 setText(
                     "analystEnabledResolvedCount",
                     payload.analyst_enabled_resolved_count
+                );
+
+                updateInstitutionalCount(
+                    "analystEnabledUnresolvedCount",
+                    payload.analyst_enabled_unresolved_count
                 );
 
                 updatePercentageMetric(

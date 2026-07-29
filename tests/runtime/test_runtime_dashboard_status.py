@@ -148,6 +148,7 @@ def make_status(
     analyst_enabled_count: int | None = None,
     analyst_resolved_count: int | None = None,
     analyst_enabled_resolved_count: int | None = None,
+    analyst_enabled_unresolved_count: int | None = None,
     analyst_average_confidence: float | None = None,
     analyst_coverage_percentage: float | None = None,
     analyst_coverage_state: str | None = None,
@@ -369,6 +370,9 @@ def make_status(
         ),
         analyst_enabled_resolved_count=(
             analyst_enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            analyst_enabled_unresolved_count
         ),
     )
 
@@ -2697,5 +2701,87 @@ def test_enabled_resolved_count_cannot_exceed_resolved_count(
         make_status(
             analyst_resolved_count=1,
             analyst_enabled_resolved_count=2,
+        )
+
+def test_runtime_dashboard_status_accepts_enabled_unresolved_count(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=6,
+        analyst_enabled_resolved_count=4,
+        analyst_enabled_unresolved_count=2,
+    )
+
+    assert (
+        status.analyst_enabled_unresolved_count
+        == 2
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["analyst_enabled_unresolved_count"]
+        == 2
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        1.5,
+        "1",
+        object(),
+    ],
+)
+def test_runtime_dashboard_status_rejects_invalid_enabled_unresolved_count(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="analyst_enabled_unresolved_count",
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=value,  # type: ignore[arg-type]
+        )
+
+def test_runtime_dashboard_status_rejects_negative_enabled_unresolved_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_unresolved_count "
+            "cannot be negative"
+        ),
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=-1
+        )
+
+def test_enabled_unresolved_count_cannot_exceed_enabled_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_unresolved_count cannot "
+            "exceed analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=1,
+            analyst_enabled_unresolved_count=2,
+        )
+
+def test_enabled_resolution_counts_must_equal_enabled_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "resolved and unresolved counts must equal "
+            "analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=4,
+            analyst_enabled_resolved_count=2,
+            analyst_enabled_unresolved_count=1,
         )
 

@@ -419,6 +419,11 @@ class DashboardStatusFilePublisher:
             )
         )
 
+        analyst_enabled_unresolved_count = (
+            analyst_enabled_count
+            - analyst_enabled_resolved_count
+        )
+
         analyst_confidences = [
             float(confidence)
             for details in analyst_summary.values()
@@ -1173,6 +1178,9 @@ class DashboardStatusFilePublisher:
             ),
             analyst_enabled_resolved_count=(
                 analyst_enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                analyst_enabled_unresolved_count
             ),
             analyst_average_confidence=(
                 analyst_average_confidence
