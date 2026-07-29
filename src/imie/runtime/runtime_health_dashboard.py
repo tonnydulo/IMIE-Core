@@ -1116,6 +1116,32 @@ def build_dashboard_html(
 
             <article class="card">
                 <div class="label">
+                    Missing Confidence
+                </div>
+
+                <div
+                    id="analystMissingConfidenceCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
+                    Enabled Missing Confidence
+                </div>
+
+                <div
+                    id="analystEnabledMissingConfidenceCount"
+                    class="value"
+                >
+                    —
+                </div>
+            </article>
+
+            <article class="card">
+                <div class="label">
                     All-Domain Average Confidence
                 </div>
 
@@ -4008,6 +4034,15 @@ def build_dashboard_html(
                 updateInstitutionalCount(
                     "analystEnabledConfidenceCount",
                     payload.analyst_enabled_confidence_count
+                );
+                updateInstitutionalCount(
+                    "analystMissingConfidenceCount",
+                    payload.analyst_missing_confidence_count
+                );
+
+                updateInstitutionalCount(
+                    "analystEnabledMissingConfidenceCount",
+                    payload.analyst_enabled_missing_confidence_count
                 );
 
                 //====================================================

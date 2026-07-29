@@ -1886,6 +1886,21 @@ def test_dashboard_displays_analyst_confidence_counts(
         in html
     )
 
+    assert (
+        'id="analystMissingConfidenceCount"'
+        in html
+    )
+    assert "Missing Confidence" in html
+
+    assert (
+        'id="analystEnabledMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "Enabled Missing Confidence"
+        in html
+    )
+
 
 def test_dashboard_binds_analyst_confidence_counts(
 ) -> None:
@@ -1906,6 +1921,25 @@ def test_dashboard_binds_analyst_confidence_counts(
     )
     assert (
         "payload.analyst_enabled_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_missing_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystEnabledMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_missing_confidence_count"
         in html
     )
 
