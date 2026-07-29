@@ -723,7 +723,7 @@ def test_confluence_renderers_support_missing_values() -> None:
     assert "supported === false" in html
     assert "value === null" in html
     assert "value === undefined" in html
-    assert 'element.textContent = "â€”"' in html
+    assert 'element.textContent = "—"' in html
 
 
 def test_dashboard_confluence_detail_uses_correct_renderers() -> None:
@@ -1622,8 +1622,10 @@ def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
 
     assert 'id="analystCoveragePercentage"' in html
     assert 'id="analystCoverageState"' in html
-    assert "Analyst Coverage" in html
-    assert "Coverage State" in html
+    assert "All-Domain Coverage" in html
+    assert "All-Domain Coverage State" in html
+    assert "Enabled Analyst Operation" in html
+    assert "Enabled Analyst Status" in html
 
 def test_dashboard_wires_analyst_coverage_readiness_fields() -> None:
     html = build_dashboard_html()
@@ -1647,7 +1649,7 @@ def test_dashboard_contains_analyst_coverage_message_card() -> None:
     html = build_dashboard_html()
 
     assert 'id="analystCoverageMessage"' in html
-    assert "Analyst Coverage Message" in html
+    assert "All-Domain Coverage Message" in html
     assert "metric-message" in html
 
 def test_dashboard_wires_analyst_coverage_message() -> None:
