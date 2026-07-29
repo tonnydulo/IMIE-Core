@@ -432,8 +432,16 @@ class DashboardStatusFilePublisher:
                 "confidence"
             )
 
+            confidence_available = (
+                details.get(
+                    "confidence_available"
+                )
+                is True
+            )
+
             if (
-                isinstance(
+                confidence_available
+                and isinstance(
                     confidence,
                     int | float,
                 )

@@ -2177,3 +2177,120 @@ def test_publish_result_calculates_enabled_average_confidence(
         ]
         == 100.0
     )
+
+def test_publish_result_calculates_partial_confidence_coverage(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "Bullish.",
+                "confidence": 80.0,
+                "enabled": True,
+            },
+            "STRUCTURE": {
+                "opinion": "Bullish continuation.",
+                "enabled": True,
+            },
+            "LIQUIDITY": {
+                "opinion": "Balanced.",
+                "confidence": 60.0,
+                "enabled": False,
+            },
+            "VALUE": {
+                "opinion": "Neutral.",
+                "enabled": False,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["analyst_domain_count"] == 4
+    assert payload["analyst_confidence_count"] == 2
+
+    assert payload["analyst_enabled_count"] == 2
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 1
+    )
+
+    assert (
+        payload["analyst_confidence_coverage_percentage"]
+        == 50.0
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_percentage"
+        ]
+        == 50.0
+    )
+
+def test_zero_confidence_counts_as_available(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    result = make_completed_result_with_analyst_summary(
+        {
+            "TREND": {
+                "opinion": "No directional confidence.",
+                "confidence": 0.0,
+                "enabled": True,
+            },
+        }
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+    publisher.publish_result(
+        result
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["analyst_confidence_count"] == 1
+    assert (
+        payload["analyst_enabled_confidence_count"]
+        == 1
+    )
+    assert (
+        payload["analyst_confidence_coverage_percentage"]
+        == 100.0
+    )
+    assert (
+        payload[
+            "analyst_enabled_confidence_coverage_percentage"
+        ]
+        == 100.0
+    )

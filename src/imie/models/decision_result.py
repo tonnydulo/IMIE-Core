@@ -185,11 +185,24 @@ class DecisionResult:
                 details.get("opinion", "")
             ).strip()
 
+            raw_confidence = details.get(
+                "confidence"
+            )
+
+            confidence_available = (
+                "confidence" in details
+                and raw_confidence is not None
+            )
+
             confidence = max(
                 0.0,
                 min(
                     100.0,
-                    float(details.get("confidence", 0.0)),
+                    float(
+                        raw_confidence
+                        if confidence_available
+                        else 0.0
+                    ),
                 ),
             )
 
@@ -201,6 +214,9 @@ class DecisionResult:
                 {
                     "opinion": opinion,
                     "confidence": confidence,
+                    "confidence_available": (
+                        confidence_available
+                    ),
                     "enabled": enabled,
                 }
             )
