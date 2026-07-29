@@ -1849,12 +1849,28 @@ def test_dashboard_displays_analyst_confidence_coverage(
         in html
     )
     assert (
+        'id="analystConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        'id="analystConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
         "Analyst Confidence Coverage"
         in html
     )
 
     assert (
         'id="analystEnabledConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        'id="analystEnabledConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        'id="analystEnabledConfidenceCoverageMessage"'
         in html
     )
     assert (
@@ -1875,6 +1891,22 @@ def test_dashboard_binds_analyst_confidence_coverage(
         "payload.analyst_confidence_coverage_percentage"
         in html
     )
+    assert (
+        '"analystConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_state"
+        in html
+    )
+    assert (
+        '"analystConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_message"
+        in html
+    )
 
     assert (
         '"analystEnabledConfidenceCoveragePercentage"'
@@ -1883,6 +1915,24 @@ def test_dashboard_binds_analyst_confidence_coverage(
     assert (
         "payload."
         "analyst_enabled_confidence_coverage_percentage"
+        in html
+    )
+    assert (
+        '"analystEnabledConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_state"
+        in html
+    )
+    assert (
+        '"analystEnabledConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_message"
         in html
     )
 
@@ -1904,6 +1954,19 @@ def test_dashboard_distinguishes_missing_analyst_confidence(
     )
     assert (
         ': "Unavailable";'
+        in html
+    )
+
+def test_dashboard_contains_confidence_coverage_fallback_messages(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "No analyst confidence coverage message available."
+        in html
+    )
+    assert (
+        "No enabled analyst confidence coverage message available."
         in html
     )
 

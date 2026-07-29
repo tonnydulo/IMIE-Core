@@ -1146,10 +1146,24 @@ def build_dashboard_html(
                 </div>
 
                 <div
+                    id="analystConfidenceCoverageState"
+                    class="status-value"
+                >
+                    —
+                </div>
+
+                <div
                     id="analystConfidenceCoveragePercentage"
                     class="value"
                 >
                     —
+                </div>
+
+                <div
+                    id="analystConfidenceCoverageMessage"
+                    class="message"
+                >
+                    No analyst confidence coverage message available.
                 </div>
             </article>
 
@@ -1159,10 +1173,24 @@ def build_dashboard_html(
                 </div>
 
                 <div
+                    id="analystEnabledConfidenceCoverageState"
+                    class="status-value"
+                >
+                    —
+                </div>
+
+                <div
                     id="analystEnabledConfidenceCoveragePercentage"
                     class="value"
                 >
                     —
+                </div>
+
+                <div
+                    id="analystEnabledConfidenceCoverageMessage"
+                    class="message"
+                >
+                    No enabled analyst confidence coverage message available.
                 </div>
             </article>
 
@@ -3710,6 +3738,33 @@ def build_dashboard_html(
                 updateInstitutionalPercentage(
                     "analystEnabledConfidenceCoveragePercentage",
                     payload.analyst_enabled_confidence_coverage_percentage
+                );
+
+                setText(
+                    "analystConfidenceCoverageState",
+                    payload.analyst_confidence_coverage_state
+                        ?? "UNAVAILABLE"
+                );
+
+                setText(
+                    "analystConfidenceCoverageMessage",
+                    payload.analyst_confidence_coverage_message
+                        ?? "No analyst confidence coverage message available."
+                );
+
+                setText(
+                    "analystEnabledConfidenceCoverageState",
+                    payload.analyst_enabled_confidence_coverage_state
+                        ?? "UNAVAILABLE"
+                );
+
+                setText(
+                    "analystEnabledConfidenceCoverageMessage",
+                    payload.analyst_enabled_confidence_coverage_message
+                        ?? (
+                            "No enabled analyst confidence "
+                            + "coverage message available."
+                        )
                 );
 
                 updateAnalystCoverageState(
