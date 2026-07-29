@@ -1620,6 +1620,75 @@ def test_dashboard_styles_analyst_operational_statuses() -> None:
     assert "analystEnabledUnresolvedCount" in html
     assert "payload.analyst_enabled_unresolved_count" in html
 
+def test_dashboard_styles_confidence_coverage_states(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateConfidenceCoverageState("
+        in html
+    )
+
+    assert 'case "COMPLETE":' in html
+    assert 'case "PARTIAL":' in html
+    assert 'case "MISSING":' in html
+    assert 'case "DISABLED":' in html
+    assert 'case "UNAVAILABLE":' in html
+
+    assert (
+        'element.textContent = "Complete";'
+        in html
+    )
+    assert (
+        'element.textContent = "Partial";'
+        in html
+    )
+    assert (
+        'element.textContent = "Missing";'
+        in html
+    )
+    assert (
+        'element.textContent = "Disabled";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unavailable";'
+        in html
+    )
+
+    assert '"status-good"' in html
+    assert '"status-warning"' in html
+    assert '"status-bad"' in html
+    assert '"status-neutral"' in html
+
+def test_dashboard_uses_confidence_coverage_state_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateConfidenceCoverageState(\n'
+        '                    "analystConfidenceCoverageState",'
+        in html
+    )
+    assert (
+        'updateConfidenceCoverageState(\n'
+        '                    '
+        '"analystEnabledConfidenceCoverageState",'
+        in html
+    )
+
+    assert (
+        "payload.analyst_confidence_coverage_state"
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_state"
+        in html
+    )
+
+
+
 def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
     html = build_dashboard_html()
 

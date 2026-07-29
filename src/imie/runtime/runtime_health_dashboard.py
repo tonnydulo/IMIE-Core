@@ -1147,7 +1147,7 @@ def build_dashboard_html(
 
                 <div
                     id="analystConfidenceCoverageState"
-                    class="status-value"
+                    class="status-neutral"
                 >
                     —
                 </div>
@@ -1174,7 +1174,7 @@ def build_dashboard_html(
 
                 <div
                     id="analystEnabledConfidenceCoverageState"
-                    class="status-value"
+                    class="status-neutral"
                 >
                     —
                 </div>
@@ -3455,6 +3455,71 @@ def build_dashboard_html(
             }}
         }}
 
+        function updateConfidenceCoverageState(
+            id,
+            value
+        ) {{
+            const element = document.getElementById(
+                id
+            );
+
+            if (!element) {{
+                return;
+            }}
+
+            const normalized = (
+                typeof value === "string"
+                && value.trim()
+            )
+                ? value.trim().toUpperCase()
+                : "UNAVAILABLE";
+
+            element.classList.remove(
+                "status-good",
+                "status-warning",
+                "status-bad",
+                "status-neutral"
+            );
+
+            switch (normalized) {{
+                case "COMPLETE":
+                    element.textContent = "Complete";
+                    element.classList.add(
+                        "status-good"
+                    );
+                    break;
+
+                case "PARTIAL":
+                    element.textContent = "Partial";
+                    element.classList.add(
+                        "status-warning"
+                    );
+                    break;
+
+                case "MISSING":
+                    element.textContent = "Missing";
+                    element.classList.add(
+                        "status-bad"
+                    );
+                    break;
+
+                case "DISABLED":
+                    element.textContent = "Disabled";
+                    element.classList.add(
+                        "status-neutral"
+                    );
+                    break;
+
+                case "UNAVAILABLE":
+                default:
+                    element.textContent = "Unavailable";
+                    element.classList.add(
+                        "status-neutral"
+                    );
+                    break;
+            }}
+        }}
+
         function updateAnalystOperationalStatus(
     value
 ) {{
@@ -3740,10 +3805,9 @@ def build_dashboard_html(
                     payload.analyst_enabled_confidence_coverage_percentage
                 );
 
-                setText(
+                updateConfidenceCoverageState(
                     "analystConfidenceCoverageState",
                     payload.analyst_confidence_coverage_state
-                        ?? "UNAVAILABLE"
                 );
 
                 setText(
@@ -3752,10 +3816,9 @@ def build_dashboard_html(
                         ?? "No analyst confidence coverage message available."
                 );
 
-                setText(
+                updateConfidenceCoverageState(
                     "analystEnabledConfidenceCoverageState",
                     payload.analyst_enabled_confidence_coverage_state
-                        ?? "UNAVAILABLE"
                 );
 
                 setText(
