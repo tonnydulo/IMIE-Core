@@ -4198,5 +4198,3 @@ def test_positive_confidence_counts_allow_partial_coverage_percentages(
         status.analyst_enabled_confidence_coverage_percentage
         == 50.0
     )
-
-
