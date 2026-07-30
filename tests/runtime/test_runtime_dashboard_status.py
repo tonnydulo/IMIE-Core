@@ -6092,3 +6092,85 @@ def test_enabled_resolved_count_allows_missing_operational_status(
         positive_resolved.analyst_operational_status
         is None
     )
+
+def test_zero_enabled_count_rejects_nonzero_operational_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be zero "
+            "when analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=0,
+            analyst_operational_percentage=50.0,
+        )
+
+def test_zero_enabled_resolved_count_rejects_nonzero_operational_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be zero "
+            "when analyst_enabled_resolved_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_resolved_count=0,
+            analyst_operational_percentage=25.0,
+        )
+
+def test_zero_enabled_count_allows_zero_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=0,
+        analyst_operational_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == 0.0
+    )
+
+def test_zero_enabled_resolved_count_allows_zero_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=0,
+        analyst_operational_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == 0.0
+    )
+
+def test_positive_enabled_count_allows_zero_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=3,
+        analyst_operational_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == 0.0
+    )
+
+def test_zero_operational_counts_allow_missing_percentage(
+) -> None:
+    enabled_total = make_status(
+        analyst_enabled_count=0,
+    )
+    enabled_resolved = make_status(
+        analyst_enabled_resolved_count=0,
+    )
+
+    assert (
+        enabled_total.analyst_operational_percentage
+        is None
+    )
+    assert (
+        enabled_resolved.analyst_operational_percentage
+        is None
+    )
