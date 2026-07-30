@@ -4454,4 +4454,3 @@ def test_contributing_coverage_states_allow_missing_confidence_counts(
         status.analyst_enabled_confidence_coverage_state
         == "COMPLETE"
     )
-
