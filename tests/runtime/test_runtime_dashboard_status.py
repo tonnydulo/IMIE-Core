@@ -3631,4 +3631,3 @@ def test_enabled_missing_confidence_count_may_equal_all_domain_missing_count(
         status.analyst_enabled_missing_confidence_count
         == 2
     )
-
