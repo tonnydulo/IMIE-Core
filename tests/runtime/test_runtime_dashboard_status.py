@@ -5380,3 +5380,136 @@ def test_analyst_coverage_state_allows_missing_count_inputs(
         resolved_only.analyst_coverage_state
         == "PARTIAL"
     )
+
+@pytest.mark.parametrize(
+    (
+        "operational_status",
+        "operational_percentage",
+    ),
+    (
+        (
+            "UNAVAILABLE",
+            0.0,
+        ),
+        (
+            "DISABLED",
+            0.0,
+        ),
+        (
+            "UNRESOLVED",
+            0.0,
+        ),
+        (
+            "DEGRADED",
+            25.0,
+        ),
+        (
+            "DEGRADED",
+            75.0,
+        ),
+        (
+            "OPERATIONAL",
+            100.0,
+        ),
+    ),
+)
+def test_analyst_operational_status_accepts_consistent_percentage(
+    operational_status: str,
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_operational_status=operational_status,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "UNRESOLVED",
+    ),
+)
+def test_inactive_operational_status_rejects_nonzero_percentage(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be zero "
+            "when analyst_operational_status is "
+            "UNAVAILABLE, DISABLED, or UNRESOLVED"
+        ),
+    ):
+        make_status(
+            analyst_operational_status=operational_status,
+            analyst_operational_percentage=25.0,
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        100.0,
+    ),
+)
+def test_degraded_operational_status_rejects_boundary_percentage(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be greater "
+            "than zero and less than 100 when "
+            "analyst_operational_status is DEGRADED"
+        ),
+    ):
+        make_status(
+            analyst_operational_status="DEGRADED",
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+def test_operational_status_rejects_incomplete_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be 100 "
+            "when analyst_operational_status is OPERATIONAL"
+        ),
+    ):
+        make_status(
+            analyst_operational_status="OPERATIONAL",
+            analyst_operational_percentage=75.0,
+        )
+
+def test_operational_status_and_percentage_allow_partial_construction(
+) -> None:
+    status_only = make_status(
+        analyst_operational_status="DEGRADED",
+    )
+    percentage_only = make_status(
+        analyst_operational_percentage=50.0,
+    )
+
+    assert (
+        status_only.analyst_operational_percentage
+        is None
+    )
+    assert (
+        percentage_only.analyst_operational_status
+        is None
+    )

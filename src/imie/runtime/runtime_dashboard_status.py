@@ -1714,6 +1714,65 @@ class RuntimeDashboardStatus:
                 "DEGRADED, OPERATIONAL."
             )
 
+        if (
+            self.analyst_operational_status is not None
+            and self.analyst_operational_percentage is not None
+        ):
+            operational_status = (
+                self.analyst_operational_status
+            )
+            operational_percentage = (
+                self.analyst_operational_percentage
+            )
+
+            if (
+                operational_status
+                in {
+                    "UNAVAILABLE",
+                    "DISABLED",
+                    "UNRESOLVED",
+                }
+                and not isclose(
+                    operational_percentage,
+                    0.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_operational_percentage must be zero "
+                    "when analyst_operational_status is "
+                    "UNAVAILABLE, DISABLED, or UNRESOLVED."
+                )
+
+            if (
+                operational_status == "DEGRADED"
+                and not (
+                    0.0
+                    < operational_percentage
+                    < 100.0
+                )
+            ):
+                raise ValueError(
+                    "analyst_operational_percentage must be greater "
+                    "than zero and less than 100 when "
+                    "analyst_operational_status is DEGRADED."
+                )
+
+            if (
+                operational_status == "OPERATIONAL"
+                and not isclose(
+                    operational_percentage,
+                    100.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_operational_percentage must be 100 "
+                    "when analyst_operational_status is OPERATIONAL."
+                )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",
