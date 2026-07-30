@@ -4345,3 +4345,113 @@ def test_positive_confidence_counts_allow_contributing_coverage_states(
         status.analyst_enabled_confidence_coverage_state
         == "COMPLETE"
     )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "MISSING",
+    ),
+)
+def test_positive_confidence_count_rejects_noncontributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_state must be "
+            "PARTIAL or COMPLETE when "
+            "analyst_confidence_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=2,
+            analyst_confidence_coverage_state=coverage_state,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "MISSING",
+    ),
+)
+def test_positive_enabled_confidence_count_rejects_noncontributing_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "must be PARTIAL or COMPLETE when "
+            "analyst_enabled_confidence_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_count=1,
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_confidence_count_allows_contributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_confidence_count=2,
+        analyst_confidence_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_enabled_confidence_count_allows_contributing_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_count=1,
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == coverage_state
+    )
+
+def test_contributing_coverage_states_allow_missing_confidence_counts(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state="PARTIAL",
+        analyst_enabled_confidence_coverage_state=(
+            "COMPLETE"
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == "PARTIAL"
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == "COMPLETE"
+    )
+

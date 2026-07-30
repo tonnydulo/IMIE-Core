@@ -920,6 +920,40 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_count is not None
+            and self.analyst_confidence_count > 0
+            and self.analyst_confidence_coverage_state
+            is not None
+            and self.analyst_confidence_coverage_state
+            not in {
+                "PARTIAL",
+                "COMPLETE",
+            }
+        ):
+            raise ValueError(
+                "analyst_confidence_coverage_state must be "
+                "PARTIAL or COMPLETE when "
+                "analyst_confidence_count is positive."
+            )
+
+        if (
+            self.analyst_enabled_confidence_count is not None
+            and self.analyst_enabled_confidence_count > 0
+            and self.analyst_enabled_confidence_coverage_state
+            is not None
+            and self.analyst_enabled_confidence_coverage_state
+            not in {
+                "PARTIAL",
+                "COMPLETE",
+            }
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_coverage_state "
+                "must be PARTIAL or COMPLETE when "
+                "analyst_enabled_confidence_count is positive."
+            )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None
