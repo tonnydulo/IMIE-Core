@@ -4126,3 +4126,77 @@ def test_positive_analyst_totals_allow_partial_confidence_coverage_percentage(
         status.analyst_enabled_confidence_coverage_percentage
         == 50.0
     )
+
+def test_zero_confidence_count_rejects_nonzero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must be zero when analyst_confidence_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=0,
+            analyst_confidence_coverage_percentage=40.0,
+        )
+
+def test_zero_enabled_confidence_count_rejects_nonzero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must be zero when "
+            "analyst_enabled_confidence_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_count=0,
+            analyst_enabled_confidence_coverage_percentage=40.0,
+        )
+
+def test_zero_confidence_count_allows_zero_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=0,
+        analyst_confidence_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 0.0
+    )
+
+def test_zero_enabled_confidence_count_allows_zero_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_count=0,
+        analyst_enabled_confidence_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 0.0
+    )
+
+def test_positive_confidence_counts_allow_partial_coverage_percentages(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=2,
+        analyst_confidence_coverage_percentage=40.0,
+        analyst_enabled_confidence_count=1,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 40.0
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
+
