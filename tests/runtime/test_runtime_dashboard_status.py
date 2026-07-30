@@ -3631,3 +3631,67 @@ def test_enabled_missing_confidence_count_may_equal_all_domain_missing_count(
         status.analyst_enabled_missing_confidence_count
         == 2
     )
+
+def test_average_confidence_requires_contributor(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_average_confidence must be None "
+            "when analyst_confidence_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=0,
+            analyst_average_confidence=75.0,
+        )
+
+def test_enabled_average_confidence_requires_contributor(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_average_confidence must be "
+            "None when "
+            "analyst_enabled_confidence_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_count=0,
+            analyst_enabled_average_confidence=75.0,
+        )
+
+def test_zero_confidence_contributors_allow_missing_average(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=0,
+        analyst_average_confidence=None,
+    )
+
+    assert status.analyst_average_confidence is None
+
+def test_zero_enabled_confidence_contributors_allow_missing_average(
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_count=0,
+        analyst_enabled_average_confidence=None,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        is None
+    )
+
+def test_average_confidence_without_contributor_count_is_allowed(
+) -> None:
+    status = make_status(
+        analyst_average_confidence=75.0,
+        analyst_enabled_average_confidence=80.0,
+    )
+
+    assert status.analyst_average_confidence == 75.0
+    assert (
+        status.analyst_enabled_average_confidence
+        == 80.0
+    )
+
