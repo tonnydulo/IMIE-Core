@@ -3398,34 +3398,56 @@ def test_confidence_coverage_state_agrees_with_counts(
     (
         "domain_count",
         "confidence_count",
-        "invalid_state",
+        "coverage_state",
+        "expected_message",
     ),
-    [
-        (0, 0, "COMPLETE"),
-        (4, 0, "PARTIAL"),
-        (4, 2, "COMPLETE"),
-        (4, 4, "MISSING"),
-    ],
+    (
+        (
+            0,
+            0,
+            "COMPLETE",
+            (
+                "analyst_confidence_coverage_state must be "
+                "UNAVAILABLE or MISSING when "
+                "analyst_confidence_count is zero"
+            ),
+        ),
+        (
+            4,
+            0,
+            "PARTIAL",
+            (
+                "analyst_confidence_coverage_state must be "
+                "UNAVAILABLE or MISSING when "
+                "analyst_confidence_count is zero"
+            ),
+        ),
+        (
+            4,
+            2,
+            "COMPLETE",
+            (
+                "analyst_confidence_coverage_state "
+                "must agree with analyst_domain_count "
+                "and analyst_confidence_count"
+            ),
+        ),
+    ),
 )
-
 def test_confidence_coverage_state_rejects_inconsistent_counts(
     domain_count: int,
     confidence_count: int,
-    invalid_state: str,
+    coverage_state: str,
+    expected_message: str,
 ) -> None:
     with pytest.raises(
         ValueError,
-        match=(
-            "analyst_confidence_coverage_state "
-            "must agree"
-        ),
+        match=expected_message,
     ):
         make_status(
             analyst_domain_count=domain_count,
             analyst_confidence_count=confidence_count,
-            analyst_confidence_coverage_state=(
-                invalid_state
-            ),
+            analyst_confidence_coverage_state=coverage_state,
         )
 
 @pytest.mark.parametrize(
@@ -3472,28 +3494,42 @@ def test_enabled_confidence_coverage_state_agrees_with_counts(
         "enabled_count",
         "enabled_confidence_count",
         "invalid_state",
+        "expected_message",
     ),
-    [
-        (0, 0, 0, "DISABLED"),
-        (4, 0, 0, "UNAVAILABLE"),
-        (4, 3, 0, "PARTIAL"),
-        (4, 3, 1, "COMPLETE"),
-        (4, 3, 3, "MISSING"),
-    ],
+    (
+        (
+            4,
+            3,
+            0,
+            "PARTIAL",
+            (
+                "analyst_enabled_confidence_coverage_state "
+                "must be UNAVAILABLE, DISABLED, or MISSING "
+                "when analyst_enabled_confidence_count is zero"
+            ),
+        ),
+        (
+            4,
+            3,
+            1,
+            "COMPLETE",
+            (
+                "analyst_enabled_confidence_coverage_state "
+                "must agree"
+            ),
+        ),
+    ),
 )
-
 def test_enabled_confidence_coverage_state_rejects_inconsistent_counts(
     domain_count: int,
     enabled_count: int,
     enabled_confidence_count: int,
     invalid_state: str,
+    expected_message: str,
 ) -> None:
     with pytest.raises(
         ValueError,
-        match=(
-            "analyst_enabled_confidence_coverage_state "
-            "must agree"
-        ),
+        match=expected_message,
     ):
         make_status(
             analyst_domain_count=domain_count,
@@ -4198,3 +4234,115 @@ def test_positive_confidence_counts_allow_partial_coverage_percentages(
         status.analyst_enabled_confidence_coverage_percentage
         == 50.0
     )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_confidence_count_rejects_contributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_state must be "
+            "UNAVAILABLE or MISSING when "
+            "analyst_confidence_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=0,
+            analyst_confidence_coverage_state=coverage_state,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_enabled_confidence_count_rejects_contributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "must be UNAVAILABLE, DISABLED, or MISSING "
+            "when analyst_enabled_confidence_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_count=0,
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "MISSING",
+    ),
+)
+def test_zero_confidence_count_allows_noncontributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_confidence_count=0,
+        analyst_confidence_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "MISSING",
+    ),
+)
+def test_zero_enabled_confidence_count_allows_noncontributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_count=0,
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == coverage_state
+    )
+
+def test_positive_confidence_counts_allow_contributing_coverage_states(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=2,
+        analyst_confidence_coverage_state="PARTIAL",
+        analyst_enabled_confidence_count=1,
+        analyst_enabled_confidence_coverage_state=(
+            "COMPLETE"
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == "PARTIAL"
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == "COMPLETE"
+    )
+
