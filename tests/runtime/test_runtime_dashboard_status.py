@@ -3973,3 +3973,68 @@ def test_confidence_coverage_state_or_percentage_alone_is_allowed(
         percentage_only.analyst_confidence_coverage_percentage
         == 50.0
     )
+
+def test_average_confidence_rejected_when_domain_count_is_zero(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_average_confidence must be None "
+            "when analyst_domain_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_average_confidence=75.0,
+        )
+
+def test_enabled_average_confidence_rejected_when_enabled_count_is_zero(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_average_confidence must be "
+            "None when analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=0,
+            analyst_enabled_average_confidence=75.0,
+        )
+
+def test_zero_domain_count_allows_missing_average_confidence(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_average_confidence=None,
+    )
+
+    assert status.analyst_average_confidence is None
+
+def test_zero_enabled_count_allows_missing_enabled_average_confidence(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=0,
+        analyst_enabled_average_confidence=None,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        is None
+    )
+
+def test_positive_analyst_totals_allow_average_confidence(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_average_confidence=75.0,
+        analyst_enabled_count=2,
+        analyst_enabled_average_confidence=80.0,
+    )
+
+    assert status.analyst_average_confidence == 75.0
+    assert (
+        status.analyst_enabled_average_confidence
+        == 80.0
+    )
+
