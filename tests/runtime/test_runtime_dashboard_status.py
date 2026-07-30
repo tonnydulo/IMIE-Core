@@ -5257,3 +5257,126 @@ def test_analyst_coverage_percentage_allows_missing_count_inputs(
         resolved_only.analyst_coverage_percentage
         == 50.0
     )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "resolved_count",
+        "coverage_state",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            0,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            1,
+            "PARTIAL",
+        ),
+        (
+            4,
+            3,
+            "PARTIAL",
+        ),
+        (
+            4,
+            4,
+            "COMPLETE",
+        ),
+    ),
+)
+def test_analyst_coverage_state_accepts_consistent_counts(
+    domain_count: int,
+    resolved_count: int,
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_resolved_count=resolved_count,
+        analyst_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "resolved_count",
+        "invalid_state",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            0,
+            "PARTIAL",
+        ),
+        (
+            4,
+            1,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            2,
+            "COMPLETE",
+        ),
+        (
+            4,
+            4,
+            "PARTIAL",
+        ),
+    ),
+)
+def test_analyst_coverage_state_rejects_inconsistent_counts(
+    domain_count: int,
+    resolved_count: int,
+    invalid_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_state must agree "
+            "with analyst_domain_count and "
+            "analyst_resolved_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_resolved_count=resolved_count,
+            analyst_coverage_state=invalid_state,
+        )
+
+def test_analyst_coverage_state_allows_missing_count_inputs(
+) -> None:
+    domain_only = make_status(
+        analyst_domain_count=4,
+        analyst_coverage_state="PARTIAL",
+    )
+    resolved_only = make_status(
+        analyst_resolved_count=2,
+        analyst_coverage_state="PARTIAL",
+    )
+
+    assert (
+        domain_only.analyst_coverage_state
+        == "PARTIAL"
+    )
+    assert (
+        resolved_only.analyst_coverage_state
+        == "PARTIAL"
+    )

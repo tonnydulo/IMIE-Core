@@ -1357,6 +1357,44 @@ class RuntimeDashboardStatus:
                 )
 
         if (
+            self.analyst_coverage_state is not None
+            and self.analyst_domain_count is not None
+            and self.analyst_resolved_count is not None
+        ):
+            if self.analyst_domain_count == 0:
+                expected_coverage_state = (
+                    "UNAVAILABLE"
+                )
+
+            elif self.analyst_resolved_count == 0:
+                expected_coverage_state = (
+                    "UNRESOLVED"
+                )
+
+            elif (
+                self.analyst_resolved_count
+                < self.analyst_domain_count
+            ):
+                expected_coverage_state = (
+                    "PARTIAL"
+                )
+
+            else:
+                expected_coverage_state = (
+                    "COMPLETE"
+                )
+
+            if (
+                self.analyst_coverage_state
+                != expected_coverage_state
+            ):
+                raise ValueError(
+                    "analyst_coverage_state must agree "
+                    "with analyst_domain_count and "
+                    "analyst_resolved_count."
+                )
+
+        if (
             self.analyst_domain_count is not None
             and self.analyst_confidence_count is not None
             and self.analyst_confidence_coverage_percentage
