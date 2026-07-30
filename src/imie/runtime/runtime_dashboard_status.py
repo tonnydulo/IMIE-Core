@@ -1272,6 +1272,64 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_coverage_state is not None
+            and self.analyst_coverage_percentage is not None
+        ):
+            coverage_state = (
+                self.analyst_coverage_state
+            )
+            coverage_percentage = (
+                self.analyst_coverage_percentage
+            )
+
+            if (
+                coverage_state
+                in {
+                    "UNAVAILABLE",
+                    "UNRESOLVED",
+                }
+                and not isclose(
+                    coverage_percentage,
+                    0.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_coverage_percentage must be zero "
+                    "when analyst_coverage_state is "
+                    "UNAVAILABLE or UNRESOLVED."
+                )
+
+            if (
+                coverage_state == "PARTIAL"
+                and not (
+                    0.0
+                    < coverage_percentage
+                    < 100.0
+                )
+            ):
+                raise ValueError(
+                    "analyst_coverage_percentage must be greater "
+                    "than zero and less than 100 when "
+                    "analyst_coverage_state is PARTIAL."
+                )
+
+            if (
+                coverage_state == "COMPLETE"
+                and not isclose(
+                    coverage_percentage,
+                    100.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_coverage_percentage must be 100 "
+                    "when analyst_coverage_state is COMPLETE."
+                )
+
+        if (
             self.analyst_domain_count is not None
             and self.analyst_confidence_count is not None
             and self.analyst_confidence_coverage_percentage

@@ -5006,3 +5006,131 @@ def test_blank_analyst_status_messages_normalize_to_none(
 
     assert status.analyst_coverage_message is None
     assert status.analyst_operational_message is None
+
+@pytest.mark.parametrize(
+    (
+        "coverage_state",
+        "coverage_percentage",
+    ),
+    (
+        (
+            "UNAVAILABLE",
+            0.0,
+        ),
+        (
+            "UNRESOLVED",
+            0.0,
+        ),
+        (
+            "PARTIAL",
+            25.0,
+        ),
+        (
+            "PARTIAL",
+            75.0,
+        ),
+        (
+            "COMPLETE",
+            100.0,
+        ),
+    ),
+)
+def test_analyst_coverage_state_accepts_consistent_percentage(
+    coverage_state: str,
+    coverage_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_coverage_state=coverage_state,
+        analyst_coverage_percentage=(
+            coverage_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == coverage_state
+    )
+    assert (
+        status.analyst_coverage_percentage
+        == coverage_percentage
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "UNRESOLVED",
+    ),
+)
+def test_noncontributing_analyst_coverage_state_rejects_nonzero_percentage(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_percentage must be zero "
+            "when analyst_coverage_state is "
+            "UNAVAILABLE or UNRESOLVED"
+        ),
+    ):
+        make_status(
+            analyst_coverage_state=coverage_state,
+            analyst_coverage_percentage=25.0,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_percentage",
+    (
+        0.0,
+        100.0,
+    ),
+)
+def test_partial_analyst_coverage_state_rejects_boundary_percentage(
+    coverage_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_percentage must be greater "
+            "than zero and less than 100 when "
+            "analyst_coverage_state is PARTIAL"
+        ),
+    ):
+        make_status(
+            analyst_coverage_state="PARTIAL",
+            analyst_coverage_percentage=(
+                coverage_percentage
+            ),
+        )
+
+def test_complete_analyst_coverage_state_rejects_incomplete_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_percentage must be 100 "
+            "when analyst_coverage_state is COMPLETE"
+        ),
+    ):
+        make_status(
+            analyst_coverage_state="COMPLETE",
+            analyst_coverage_percentage=75.0,
+        )
+
+def test_analyst_coverage_state_and_percentage_allow_partial_construction(
+) -> None:
+    state_only = make_status(
+        analyst_coverage_state="PARTIAL",
+    )
+    percentage_only = make_status(
+        analyst_coverage_percentage=50.0,
+    )
+
+    assert (
+        state_only.analyst_coverage_percentage
+        is None
+    )
+    assert (
+        percentage_only.analyst_coverage_state
+        is None
+    )
