@@ -589,6 +589,32 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_count is not None
+            and self.analyst_enabled_confidence_count
+            is not None
+            and self.analyst_enabled_confidence_count
+            > self.analyst_confidence_count
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_count cannot "
+                "exceed analyst_confidence_count."
+            )
+
+        if (
+            self.analyst_missing_confidence_count
+            is not None
+            and self.analyst_enabled_missing_confidence_count
+            is not None
+            and self.analyst_enabled_missing_confidence_count
+            > self.analyst_missing_confidence_count
+        ):
+            raise ValueError(
+                "analyst_enabled_missing_confidence_count "
+                "cannot exceed "
+                "analyst_missing_confidence_count."
+            )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None

@@ -3578,3 +3578,57 @@ def test_enabled_missing_confidence_count_may_equal_enabled_count(
         status.analyst_enabled_missing_confidence_count
         == 3
     )
+
+def test_enabled_confidence_count_cannot_exceed_all_domain_confidence_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_count cannot "
+            "exceed analyst_confidence_count"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=3,
+            analyst_enabled_confidence_count=4,
+        )
+
+def test_enabled_missing_confidence_count_cannot_exceed_all_domain_missing_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_missing_confidence_count "
+            "cannot exceed "
+            "analyst_missing_confidence_count"
+        ),
+    ):
+        make_status(
+            analyst_missing_confidence_count=1,
+            analyst_enabled_missing_confidence_count=2,
+        )
+
+def test_enabled_confidence_count_may_equal_all_domain_confidence_count(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=3,
+        analyst_enabled_confidence_count=3,
+    )
+
+    assert (
+        status.analyst_enabled_confidence_count
+        == 3
+    )
+
+def test_enabled_missing_confidence_count_may_equal_all_domain_missing_count(
+) -> None:
+    status = make_status(
+        analyst_missing_confidence_count=2,
+        analyst_enabled_missing_confidence_count=2,
+    )
+
+    assert (
+        status.analyst_enabled_missing_confidence_count
+        == 2
+    )
+
