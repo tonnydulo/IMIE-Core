@@ -5976,3 +5976,119 @@ def test_positive_enabled_count_allows_active_operational_status(
         status.analyst_operational_status
         == operational_status
     )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_zero_enabled_resolved_count_rejects_resolved_operational_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "UNAVAILABLE, DISABLED, or UNRESOLVED "
+            "when analyst_enabled_resolved_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_resolved_count=0,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "UNRESOLVED",
+    ),
+)
+def test_zero_enabled_resolved_count_allows_unresolved_operational_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=0,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "UNRESOLVED",
+    ),
+)
+def test_positive_enabled_resolved_count_rejects_unresolved_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "DEGRADED or OPERATIONAL when "
+            "analyst_enabled_resolved_count "
+            "is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_resolved_count=2,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_positive_enabled_resolved_count_allows_resolved_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=2,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+def test_enabled_resolved_count_allows_missing_operational_status(
+) -> None:
+    zero_resolved = make_status(
+        analyst_enabled_resolved_count=0,
+    )
+    positive_resolved = make_status(
+        analyst_enabled_resolved_count=2,
+    )
+
+    assert (
+        zero_resolved.analyst_operational_status
+        is None
+    )
+    assert (
+        positive_resolved.analyst_operational_status
+        is None
+    )
