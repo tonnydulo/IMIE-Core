@@ -6174,3 +6174,63 @@ def test_zero_operational_counts_allow_missing_percentage(
         enabled_resolved.analyst_operational_percentage
         is None
     )
+
+def test_positive_enabled_resolved_count_rejects_zero_operational_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be "
+            "greater than zero when "
+            "analyst_enabled_resolved_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_resolved_count=2,
+            analyst_operational_percentage=0.0,
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        25.0,
+        50.0,
+        100.0,
+    ),
+)
+def test_positive_enabled_resolved_count_allows_positive_percentage(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=2,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+def test_positive_enabled_resolved_count_allows_missing_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=2,
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        is None
+    )
+
+def test_positive_operational_percentage_allows_missing_resolved_count(
+) -> None:
+    status = make_status(
+        analyst_operational_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_enabled_resolved_count
+        is None
+    )
