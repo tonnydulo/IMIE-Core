@@ -2099,6 +2099,43 @@ class RuntimeDashboardStatus:
                 "analyst_resolved_count is positive."
             )
 
+        if (
+            self.analyst_enabled_unresolved_count == 0
+            and self.analyst_operational_status
+            is not None
+            and self.analyst_operational_status
+            not in {
+                "UNAVAILABLE",
+                "DISABLED",
+                "OPERATIONAL",
+            }
+        ):
+            raise ValueError(
+                "analyst_operational_status must be "
+                "UNAVAILABLE, DISABLED, or OPERATIONAL "
+                "when analyst_enabled_unresolved_count "
+                "is zero."
+            )
+
+        if (
+            self.analyst_enabled_unresolved_count
+            is not None
+            and self.analyst_enabled_unresolved_count > 0
+            and self.analyst_operational_status
+            is not None
+            and self.analyst_operational_status
+            not in {
+                "UNRESOLVED",
+                "DEGRADED",
+            }
+        ):
+            raise ValueError(
+                "analyst_operational_status must be "
+                "UNRESOLVED or DEGRADED when "
+                "analyst_enabled_unresolved_count "
+                "is positive."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",

@@ -6539,3 +6539,120 @@ def test_analyst_coverage_counts_allow_missing_state(
     assert positive_domain.analyst_coverage_state is None
     assert zero_resolved.analyst_coverage_state is None
     assert positive_resolved.analyst_coverage_state is None
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNRESOLVED",
+        "DEGRADED",
+    ),
+)
+def test_zero_enabled_unresolved_count_rejects_unresolved_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "UNAVAILABLE, DISABLED, or OPERATIONAL "
+            "when analyst_enabled_unresolved_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=0,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "OPERATIONAL",
+    ),
+)
+def test_zero_enabled_unresolved_count_allows_resolved_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_unresolved_count=0,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+        "OPERATIONAL",
+    ),
+)
+def test_positive_enabled_unresolved_count_rejects_resolved_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "UNRESOLVED or DEGRADED when "
+            "analyst_enabled_unresolved_count "
+            "is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=2,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNRESOLVED",
+        "DEGRADED",
+    ),
+)
+def test_positive_enabled_unresolved_count_allows_unresolved_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_unresolved_count=2,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+def test_enabled_unresolved_count_allows_missing_operational_status(
+) -> None:
+    zero_unresolved = make_status(
+        analyst_enabled_unresolved_count=0,
+    )
+    positive_unresolved = make_status(
+        analyst_enabled_unresolved_count=2,
+    )
+
+    assert (
+        zero_unresolved.analyst_operational_status
+        is None
+    )
+    assert (
+        positive_unresolved.analyst_operational_status
+        is None
+    )
+    
