@@ -1354,7 +1354,7 @@ class RuntimeDashboardStatus:
                     "analyst_coverage_percentage must agree "
                     "with analyst_resolved_count and "
                     "analyst_domain_count."
-                )    
+                )
 
         if (
             self.analyst_domain_count is not None
