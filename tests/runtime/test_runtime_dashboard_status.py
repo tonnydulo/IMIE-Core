@@ -5812,4 +5812,3 @@ def test_analyst_operational_status_allows_missing_count_inputs(
         resolved_only.analyst_operational_status
         == "DEGRADED"
     )
-
