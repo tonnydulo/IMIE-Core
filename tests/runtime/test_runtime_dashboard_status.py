@@ -3578,4 +3578,3 @@ def test_enabled_missing_confidence_count_may_equal_enabled_count(
         status.analyst_enabled_missing_confidence_count
         == 3
     )
-
