@@ -6928,3 +6928,164 @@ def test_enabled_unresolved_count_allows_missing_operational_percentage(
         positive_unresolved.analyst_operational_percentage
         is None
     )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_unresolved_count",
+        "operational_status",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            4,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            3,
+            "DEGRADED",
+        ),
+        (
+            4,
+            1,
+            "DEGRADED",
+        ),
+        (
+            4,
+            0,
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_operational_status_accepts_consistent_unresolved_counts(
+    enabled_count: int,
+    enabled_unresolved_count: int,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_unresolved_count",
+        "invalid_status",
+        "expected_message",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNRESOLVED",
+            (
+                "analyst_operational_status must be "
+                "UNAVAILABLE or DISABLED when "
+                "analyst_enabled_count is zero"
+            ),
+        ),
+        (
+            4,
+            4,
+            "DEGRADED",
+            (
+                "analyst_operational_status must agree "
+                "with analyst_enabled_count and "
+                "analyst_enabled_unresolved_count"
+            ),
+        ),
+        (
+            4,
+            3,
+            "UNRESOLVED",
+            (
+                "analyst_operational_status must agree "
+                "with analyst_enabled_count and "
+                "analyst_enabled_unresolved_count"
+            ),
+        ),
+        (
+            4,
+            1,
+            "OPERATIONAL",
+            (
+                "analyst_operational_status must be "
+                "UNRESOLVED or DEGRADED when "
+                "analyst_enabled_unresolved_count "
+                "is positive"
+            ),
+        ),
+        (
+            4,
+            0,
+            "DEGRADED",
+            (
+                "analyst_operational_status must be "
+                "UNAVAILABLE, DISABLED, or OPERATIONAL "
+                "when analyst_enabled_unresolved_count "
+                "is zero"
+            ),
+        ),
+    ),
+)
+def test_operational_status_rejects_inconsistent_unresolved_counts(
+    enabled_count: int,
+    enabled_unresolved_count: int,
+    invalid_status: str,
+    expected_message: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=expected_message,
+    ):
+        make_status(
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+            analyst_operational_status=(
+                invalid_status
+            ),
+        )
+
+def test_operational_status_allows_missing_unresolved_count_inputs(
+) -> None:
+    enabled_only = make_status(
+        analyst_enabled_count=4,
+        analyst_operational_status="DEGRADED",
+    )
+    unresolved_only = make_status(
+        analyst_enabled_unresolved_count=2,
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        enabled_only.analyst_operational_status
+        == "DEGRADED"
+    )
+    assert (
+        unresolved_only.analyst_operational_status
+        == "DEGRADED"
+    )
