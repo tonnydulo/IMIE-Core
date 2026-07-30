@@ -4524,3 +4524,120 @@ def test_positive_confidence_counts_allow_missing_coverage_percentages(
         status.analyst_enabled_confidence_coverage_percentage
         is None
     )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "MISSING",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_domain_count_rejects_nonunavailable_confidence_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_state must be "
+            "UNAVAILABLE when analyst_domain_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_confidence_coverage_state=coverage_state,
+        )
+
+def test_zero_domain_count_allows_unavailable_confidence_state(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_confidence_coverage_state="UNAVAILABLE",
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == "UNAVAILABLE"
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "MISSING",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_enabled_count_rejects_nonzero_total_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "must be UNAVAILABLE or DISABLED when "
+            "analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=0,
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+    ),
+)
+def test_zero_enabled_count_allows_zero_total_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=0,
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == coverage_state
+    )
+
+def test_positive_domain_and_zero_enabled_count_require_disabled_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "must be DISABLED when analyst_domain_count "
+            "is positive and analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_enabled_count=0,
+            analyst_enabled_confidence_coverage_state=(
+                "UNAVAILABLE"
+            ),
+        )
+
+def test_positive_domain_and_zero_enabled_count_allow_disabled_state(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=0,
+        analyst_enabled_confidence_coverage_state=(
+            "DISABLED"
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == "DISABLED"
+    )
+    
