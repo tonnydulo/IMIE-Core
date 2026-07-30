@@ -7396,3 +7396,203 @@ def test_operational_status_allows_missing_component_count(
         unresolved_only.analyst_operational_status
         == "DEGRADED"
     )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+        ),
+        (
+            1,
+            1,
+            0,
+        ),
+        (
+            1,
+            0,
+            1,
+        ),
+        (
+            4,
+            4,
+            0,
+        ),
+        (
+            4,
+            3,
+            1,
+        ),
+        (
+            4,
+            2,
+            2,
+        ),
+        (
+            4,
+            0,
+            4,
+        ),
+    ),
+)
+def test_enabled_count_accepts_consistent_component_counts(
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+    )
+
+    assert status.analyst_enabled_count == enabled_count
+    assert (
+        status.analyst_enabled_resolved_count
+        == enabled_resolved_count
+    )
+    assert (
+        status.analyst_enabled_unresolved_count
+        == enabled_unresolved_count
+    )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            0,
+            1,
+            0,
+        ),
+        (
+            0,
+            0,
+            1,
+        ),
+        (
+            1,
+            1,
+            1,
+        ),
+        (
+            4,
+            2,
+            1,
+        ),
+        (
+            4,
+            3,
+            2,
+        ),
+        (
+            4,
+            0,
+            3,
+        ),
+        (
+            4,
+            5,
+            0,
+        ),
+    ),
+)
+def test_enabled_count_rejects_inconsistent_component_counts(
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_count|"
+            "analyst_enabled_resolved_count|"
+            "analyst_enabled_unresolved_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+        )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            4,
+            3,
+            None,
+        ),
+        (
+            4,
+            None,
+            1,
+        ),
+        (
+            None,
+            3,
+            1,
+        ),
+        (
+            4,
+            None,
+            None,
+        ),
+        (
+            None,
+            3,
+            None,
+        ),
+        (
+            None,
+            None,
+            1,
+        ),
+    ),
+)
+def test_enabled_count_composition_allows_missing_count(
+    enabled_count: int | None,
+    enabled_resolved_count: int | None,
+    enabled_unresolved_count: int | None,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+    )
+
+    assert status.analyst_enabled_count == enabled_count
+    assert (
+        status.analyst_enabled_resolved_count
+        == enabled_resolved_count
+    )
+    assert (
+        status.analyst_enabled_unresolved_count
+        == enabled_unresolved_count
+    )
