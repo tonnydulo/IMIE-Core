@@ -816,7 +816,7 @@ class RuntimeDashboardStatus:
             raise ValueError(
                 "analyst_enabled_average_confidence must be "
                 "None when analyst_enabled_count is zero."
-            )    
+            )
 
         if (
             self.analyst_enabled_count is not None

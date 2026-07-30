@@ -68,7 +68,7 @@ def make_status(
     institutional_bias_supporting_domains: tuple[str, ...] = (),
     institutional_bias_opposing_domains: tuple[str, ...] = (),
 
-    
+
     confluence_direction: str | None = None,
     confluence_score: float | None = None,
     confluence_agreement_count: int | None = None,
@@ -1571,7 +1571,7 @@ def test_enabled_average_confidence_must_be_in_range(
         make_status(
             analyst_enabled_average_confidence=value,
         )
-        
+
 def test_status_accepts_structure_analyst_detail() -> None:
     status = make_status(
         structure_analyst="STRUCTURE",
@@ -4037,4 +4037,3 @@ def test_positive_analyst_totals_allow_average_confidence(
         status.analyst_enabled_average_confidence
         == 80.0
     )
-
