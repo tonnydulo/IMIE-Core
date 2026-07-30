@@ -1097,7 +1097,7 @@ class RuntimeDashboardStatus:
                 "analyst_enabled_count is positive."
             )
 
-    
+
         if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
