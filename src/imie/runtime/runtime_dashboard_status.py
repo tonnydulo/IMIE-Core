@@ -1068,6 +1068,36 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_domain_count is not None
+            and self.analyst_domain_count > 0
+            and self.analyst_confidence_coverage_state
+            is not None
+            and self.analyst_confidence_coverage_state
+            == "UNAVAILABLE"
+        ):
+            raise ValueError(
+                "analyst_confidence_coverage_state cannot be "
+                "UNAVAILABLE when analyst_domain_count is positive."
+            )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_count > 0
+            and self.analyst_enabled_confidence_coverage_state
+            is not None
+            and self.analyst_enabled_confidence_coverage_state
+            in {
+                "UNAVAILABLE",
+                "DISABLED",
+            }
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_coverage_state "
+                "cannot be UNAVAILABLE or DISABLED when "
+                "analyst_enabled_count is positive."
+            )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None

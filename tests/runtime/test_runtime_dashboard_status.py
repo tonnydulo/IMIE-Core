@@ -4712,3 +4712,103 @@ def test_reported_average_confidence_allows_missing_coverage_percentage(
         status.analyst_enabled_average_confidence
         == 76.0
     )
+
+def test_positive_domain_count_rejects_unavailable_confidence_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_state cannot be "
+            "UNAVAILABLE when analyst_domain_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_confidence_coverage_state="UNAVAILABLE",
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "MISSING",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_domain_count_allows_available_confidence_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_confidence_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+    ),
+)
+def test_positive_enabled_count_rejects_inactive_confidence_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "cannot be UNAVAILABLE or DISABLED when "
+            "analyst_enabled_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=3,
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "MISSING",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_enabled_count_allows_active_confidence_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=3,
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == coverage_state
+    )
+
+def test_positive_analyst_totals_allow_missing_coverage_states(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=3,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        is None
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        is None
+    )
+    
