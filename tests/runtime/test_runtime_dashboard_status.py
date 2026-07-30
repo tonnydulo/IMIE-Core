@@ -7973,3 +7973,108 @@ def test_domain_component_status_validation_allows_missing_count(
         status.analyst_operational_status
         == operational_status
     )
+
+def test_zero_domain_count_allows_zero_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_operational_percentage=0.0,
+    )
+
+    assert status.analyst_domain_count == 0
+    assert status.analyst_operational_percentage == 0.0
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0001,
+        25.0,
+        50.0,
+        75.0,
+        100.0,
+    ),
+)
+def test_zero_domain_count_rejects_positive_operational_percentage(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be zero "
+            "when analyst_domain_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        1e-7,
+        5e-7,
+        1e-6,
+    ),
+)
+def test_zero_domain_count_accepts_effectively_zero_percentage(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        25.0,
+        50.0,
+        75.0,
+        100.0,
+    ),
+)
+def test_positive_domain_count_allows_partial_operational_percentage(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert status.analyst_domain_count == 4
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    "domain_count",
+    (
+        0,
+        1,
+        4,
+    ),
+)
+def test_domain_count_allows_missing_operational_percentage(
+    domain_count: int,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+    )
+
+    assert status.analyst_domain_count == domain_count
+    assert status.analyst_operational_percentage is None

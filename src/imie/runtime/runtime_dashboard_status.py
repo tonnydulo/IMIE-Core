@@ -2396,6 +2396,21 @@ class RuntimeDashboardStatus:
                     "analyst_enabled_unresolved_count."
                 )
 
+        if (
+            self.analyst_domain_count == 0
+            and self.analyst_operational_percentage is not None
+            and not isclose(
+                self.analyst_operational_percentage,
+                0.0,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError(
+                "analyst_operational_percentage must be zero "
+                "when analyst_domain_count is zero."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",
