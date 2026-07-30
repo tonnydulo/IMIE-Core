@@ -4640,4 +4640,3 @@ def test_positive_domain_and_zero_enabled_count_allow_disabled_state(
         status.analyst_enabled_confidence_coverage_state
         == "DISABLED"
     )
-    
