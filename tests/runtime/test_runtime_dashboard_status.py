@@ -3826,3 +3826,151 @@ def test_enabled_contributing_state_allows_average(
         status.analyst_enabled_average_confidence
         == 80.0
     )
+
+@pytest.mark.parametrize(
+    (
+        "coverage_state",
+        "coverage_percentage",
+    ),
+    [
+        ("UNAVAILABLE", 0.0),
+        ("MISSING", 0.0),
+        ("PARTIAL", 25.0),
+        ("PARTIAL", 99.9),
+        ("COMPLETE", 100.0),
+    ],
+)
+def test_confidence_coverage_state_agrees_with_percentage(
+    coverage_state: str,
+    coverage_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_confidence_coverage_percentage=(
+            coverage_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == coverage_percentage
+    )
+
+@pytest.mark.parametrize(
+    (
+        "coverage_state",
+        "coverage_percentage",
+    ),
+    [
+        ("UNAVAILABLE", 10.0),
+        ("MISSING", 10.0),
+        ("PARTIAL", 0.0),
+        ("PARTIAL", 100.0),
+        ("COMPLETE", 75.0),
+    ],
+)
+def test_confidence_coverage_state_rejects_inconsistent_percentage(
+    coverage_state: str,
+    coverage_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must be"
+        ),
+    ):
+        make_status(
+            analyst_confidence_coverage_state=(
+                coverage_state
+            ),
+            analyst_confidence_coverage_percentage=(
+                coverage_percentage
+            ),
+        )
+
+@pytest.mark.parametrize(
+    (
+        "coverage_state",
+        "coverage_percentage",
+    ),
+    [
+        ("UNAVAILABLE", 0.0),
+        ("DISABLED", 0.0),
+        ("MISSING", 0.0),
+        ("PARTIAL", 50.0),
+        ("COMPLETE", 100.0),
+    ],
+)
+def test_enabled_confidence_coverage_state_agrees_with_percentage(
+    coverage_state: str,
+    coverage_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_enabled_confidence_coverage_percentage=(
+            coverage_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == coverage_percentage
+    )
+
+@pytest.mark.parametrize(
+    (
+        "coverage_state",
+        "coverage_percentage",
+    ),
+    [
+        ("UNAVAILABLE", 10.0),
+        ("DISABLED", 10.0),
+        ("MISSING", 10.0),
+        ("PARTIAL", 0.0),
+        ("PARTIAL", 100.0),
+        ("COMPLETE", 75.0),
+    ],
+)
+def test_enabled_confidence_coverage_state_rejects_inconsistent_percentage(
+    coverage_state: str,
+    coverage_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must be"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+            analyst_enabled_confidence_coverage_percentage=(
+                coverage_percentage
+            ),
+        )
+
+def test_confidence_coverage_state_or_percentage_alone_is_allowed(
+) -> None:
+    state_only = make_status(
+        analyst_confidence_coverage_state="PARTIAL",
+    )
+    percentage_only = make_status(
+        analyst_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        state_only.analyst_confidence_coverage_state
+        == "PARTIAL"
+    )
+    assert (
+        percentage_only.analyst_confidence_coverage_percentage
+        == 50.0
+    )
+

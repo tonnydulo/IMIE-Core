@@ -668,6 +668,137 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_coverage_state
+            is not None
+            and self.analyst_confidence_coverage_percentage
+            is not None
+        ):
+            coverage_state = (
+                self.analyst_confidence_coverage_state
+            )
+            coverage_percentage = (
+                self.analyst_confidence_coverage_percentage
+            )
+
+            if (
+                coverage_state
+                in {
+                    "UNAVAILABLE",
+                    "MISSING",
+                }
+                and not isclose(
+                    coverage_percentage,
+                    0.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_confidence_coverage_percentage "
+                    "must be zero when "
+                    "analyst_confidence_coverage_state is "
+                    "UNAVAILABLE or MISSING."
+                )
+
+            if (
+                coverage_state == "PARTIAL"
+                and not (
+                    0.0
+                    < coverage_percentage
+                    < 100.0
+                )
+            ):
+                raise ValueError(
+                    "analyst_confidence_coverage_percentage "
+                    "must be greater than zero and less than "
+                    "100 when "
+                    "analyst_confidence_coverage_state is "
+                    "PARTIAL."
+                )
+
+            if (
+                coverage_state == "COMPLETE"
+                and not isclose(
+                    coverage_percentage,
+                    100.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_confidence_coverage_percentage "
+                    "must be 100 when "
+                    "analyst_confidence_coverage_state is "
+                    "COMPLETE."
+                )
+
+        if (
+            self.analyst_enabled_confidence_coverage_state
+            is not None
+            and self.analyst_enabled_confidence_coverage_percentage
+            is not None
+        ):
+            enabled_coverage_state = (
+                self.analyst_enabled_confidence_coverage_state
+            )
+            enabled_coverage_percentage = (
+                self.analyst_enabled_confidence_coverage_percentage
+            )
+
+            if (
+                enabled_coverage_state
+                in {
+                    "UNAVAILABLE",
+                    "DISABLED",
+                    "MISSING",
+                }
+                and not isclose(
+                    enabled_coverage_percentage,
+                    0.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_enabled_confidence_coverage_percentage "
+                    "must be zero when "
+                    "analyst_enabled_confidence_coverage_state "
+                    "is UNAVAILABLE, DISABLED, or MISSING."
+                )
+
+            if (
+                enabled_coverage_state == "PARTIAL"
+                and not (
+                    0.0
+                    < enabled_coverage_percentage
+                    < 100.0
+                )
+            ):
+                raise ValueError(
+                    "analyst_enabled_confidence_coverage_percentage "
+                    "must be greater than zero and less than "
+                    "100 when "
+                    "analyst_enabled_confidence_coverage_state "
+                    "is PARTIAL."
+                )
+
+            if (
+                enabled_coverage_state == "COMPLETE"
+                and not isclose(
+                    enabled_coverage_percentage,
+                    100.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            ):
+                raise ValueError(
+                    "analyst_enabled_confidence_coverage_percentage "
+                    "must be 100 when "
+                    "analyst_enabled_confidence_coverage_state "
+                    "is COMPLETE."
+                )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None
