@@ -6316,3 +6316,48 @@ def test_zero_analyst_coverage_counts_allow_missing_percentage(
         resolved_total.analyst_coverage_percentage
         is None
     )
+
+@pytest.mark.parametrize(
+    "coverage_percentage",
+    (
+        25.0,
+        50.0,
+        100.0,
+    ),
+)
+def test_positive_resolved_count_allows_positive_coverage_percentage(
+    coverage_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_resolved_count=2,
+        analyst_coverage_percentage=(
+            coverage_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_coverage_percentage
+        == coverage_percentage
+    )
+
+def test_positive_resolved_count_allows_missing_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_resolved_count=2,
+    )
+
+    assert (
+        status.analyst_coverage_percentage
+        is None
+    )
+
+def test_positive_coverage_percentage_allows_missing_resolved_count(
+) -> None:
+    status = make_status(
+        analyst_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_resolved_count
+        is None
+    )

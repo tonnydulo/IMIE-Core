@@ -2027,6 +2027,23 @@ class RuntimeDashboardStatus:
                 "when analyst_resolved_count is zero."
             )
 
+        if (
+            self.analyst_resolved_count is not None
+            and self.analyst_resolved_count > 0
+            and self.analyst_coverage_percentage is not None
+            and isclose(
+                self.analyst_coverage_percentage,
+                0.0,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError(
+                "analyst_coverage_percentage must be "
+                "greater than zero when "
+                "analyst_resolved_count is positive."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",
