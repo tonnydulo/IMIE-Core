@@ -1097,6 +1097,7 @@ class RuntimeDashboardStatus:
                 "analyst_enabled_count is positive."
             )
 
+    
         if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
@@ -1553,6 +1554,24 @@ class RuntimeDashboardStatus:
                 "analyst_enabled_confidence_coverage_message "
                 "requires "
                 "analyst_enabled_confidence_coverage_state."
+            )
+
+        if (
+            self.analyst_coverage_message is not None
+            and self.analyst_coverage_state is None
+        ):
+            raise ValueError(
+                "analyst_coverage_message requires "
+                "analyst_coverage_state."
+            )
+
+        if (
+            self.analyst_operational_message is not None
+            and self.analyst_operational_status is None
+        ):
+            raise ValueError(
+                "analyst_operational_message requires "
+                "analyst_operational_status."
             )
 
         if (

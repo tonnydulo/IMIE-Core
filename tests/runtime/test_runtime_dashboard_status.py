@@ -2569,26 +2569,40 @@ def test_analyst_confidence_counts_cannot_be_negative(
             }
         )
 
-def test_status_accepts_analyst_coverage_message() -> None:
+def test_status_accepts_analyst_coverage_message(
+    ) -> None:
+        status = make_status(
+            analyst_coverage_state="PARTIAL",
+            analyst_coverage_message=(
+                "Analyst coverage is partial."
+            ),
+        )
+
+        assert (
+            status.analyst_coverage_state
+            == "PARTIAL"
+        )
+        assert (
+            status.analyst_coverage_message
+            == "Analyst coverage is partial."
+        )
+
+def test_status_normalizes_analyst_coverage_message(
+) -> None:
     status = make_status(
+        analyst_coverage_state="PARTIAL",
         analyst_coverage_message=(
-            "6 of 8 analyst domains have produced an opinion."
+            "  Analyst coverage is partial.  "
         ),
     )
 
-    assert status.analyst_coverage_message == (
-        "6 of 8 analyst domains have produced an opinion."
+    assert (
+        status.analyst_coverage_state
+        == "PARTIAL"
     )
-
-def test_status_normalizes_analyst_coverage_message() -> None:
-    status = make_status(
-        analyst_coverage_message=(
-            "  All analyst domains are resolved.  "
-        ),
-    )
-
-    assert status.analyst_coverage_message == (
-        "All analyst domains are resolved."
+    assert (
+        status.analyst_coverage_message
+        == "Analyst coverage is partial."
     )
 
 def test_status_converts_empty_analyst_coverage_message_to_none() -> None:
@@ -2617,17 +2631,24 @@ def test_analyst_coverage_message_must_be_string(
             analyst_coverage_message=value,  # type: ignore[arg-type]
         )
 
-def test_status_serializes_analyst_coverage_message() -> None:
+def test_status_serializes_analyst_coverage_message(
+) -> None:
     status = make_status(
+        analyst_coverage_state="PARTIAL",
         analyst_coverage_message=(
-            "All 8 analyst domains have produced an opinion."
+            "Analyst coverage is partial."
         ),
     )
 
     payload = status.to_dict()
 
-    assert payload["analyst_coverage_message"] == (
-        "All 8 analyst domains have produced an opinion."
+    assert (
+        payload["analyst_coverage_state"]
+        == "PARTIAL"
+    )
+    assert (
+        payload["analyst_coverage_message"]
+        == "Analyst coverage is partial."
     )
 
 def test_runtime_dashboard_status_normalizes_analyst_operational_status() -> None:
@@ -2677,18 +2698,19 @@ def test_runtime_dashboard_status_rejects_invalid_analyst_operational_status(
 def test_runtime_dashboard_status_normalizes_analyst_operational_message(
 ) -> None:
     status = make_status(
+        analyst_operational_status="DEGRADED",
         analyst_operational_message=(
-            "  All enabled analyst domains "
-            "have produced an opinion.  "
-        )
+            "  Analyst operations are degraded.  "
+        ),
     )
 
     assert (
+        status.analyst_operational_status
+        == "DEGRADED"
+    )
+    assert (
         status.analyst_operational_message
-        == (
-            "All enabled analyst domains "
-            "have produced an opinion."
-        )
+        == "Analyst operations are degraded."
     )
 
 def test_runtime_dashboard_status_normalizes_empty_analyst_operational_message(
@@ -4906,3 +4928,81 @@ def test_blank_confidence_coverage_messages_normalize_to_none(
         status.analyst_enabled_confidence_coverage_message
         is None
     )
+
+def test_analyst_coverage_message_requires_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_message requires "
+            "analyst_coverage_state"
+        ),
+    ):
+        make_status(
+            analyst_coverage_message=(
+                "Analyst coverage is partial."
+            ),
+        )
+
+def test_analyst_operational_message_requires_status(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_message requires "
+            "analyst_operational_status"
+        ),
+    ):
+        make_status(
+            analyst_operational_message=(
+                "Analyst operations are degraded."
+            ),
+        )
+
+def test_analyst_coverage_state_allows_message(
+) -> None:
+    status = make_status(
+        analyst_coverage_state="PARTIAL",
+        analyst_coverage_message=(
+            "Analyst coverage is partial."
+        ),
+    )
+
+    assert (
+        status.analyst_coverage_message
+        == "Analyst coverage is partial."
+    )
+
+def test_analyst_operational_status_allows_message(
+) -> None:
+    status = make_status(
+        analyst_operational_status="DEGRADED",
+        analyst_operational_message=(
+            "Analyst operations are degraded."
+        ),
+    )
+
+    assert (
+        status.analyst_operational_message
+        == "Analyst operations are degraded."
+    )
+
+def test_analyst_states_allow_missing_messages(
+) -> None:
+    status = make_status(
+        analyst_coverage_state="PARTIAL",
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert status.analyst_coverage_message is None
+    assert status.analyst_operational_message is None
+
+def test_blank_analyst_status_messages_normalize_to_none(
+) -> None:
+    status = make_status(
+        analyst_coverage_message="   ",
+        analyst_operational_message="\t",
+    )
+
+    assert status.analyst_coverage_message is None
+    assert status.analyst_operational_message is None
