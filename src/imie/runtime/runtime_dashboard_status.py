@@ -636,6 +636,38 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_coverage_state
+            in {
+                "UNAVAILABLE",
+                "MISSING",
+            }
+            and self.analyst_average_confidence
+            is not None
+        ):
+            raise ValueError(
+                "analyst_average_confidence must be None "
+                "when analyst_confidence_coverage_state is "
+                "UNAVAILABLE or MISSING."
+            )
+
+        if (
+            self.analyst_enabled_confidence_coverage_state
+            in {
+                "UNAVAILABLE",
+                "DISABLED",
+                "MISSING",
+            }
+            and self.analyst_enabled_average_confidence
+            is not None
+        ):
+            raise ValueError(
+                "analyst_enabled_average_confidence must be "
+                "None when "
+                "analyst_enabled_confidence_coverage_state "
+                "is UNAVAILABLE, DISABLED, or MISSING."
+            )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None

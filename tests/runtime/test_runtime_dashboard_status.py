@@ -3694,3 +3694,136 @@ def test_average_confidence_without_contributor_count_is_allowed(
         status.analyst_enabled_average_confidence
         == 80.0
     )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "UNAVAILABLE",
+        "MISSING",
+    ],
+)
+def test_average_confidence_rejected_for_noncontributing_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_average_confidence must be None "
+            "when analyst_confidence_coverage_state"
+        ),
+    ):
+        make_status(
+            analyst_confidence_coverage_state=(
+                coverage_state
+            ),
+            analyst_average_confidence=75.0,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "UNAVAILABLE",
+        "DISABLED",
+        "MISSING",
+    ],
+)
+def test_enabled_average_confidence_rejected_for_noncontributing_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_average_confidence must be "
+            "None when"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_coverage_state=(
+                coverage_state
+            ),
+            analyst_enabled_average_confidence=75.0,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "UNAVAILABLE",
+        "MISSING",
+    ],
+)
+def test_noncontributing_coverage_state_allows_missing_average(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_average_confidence=None,
+    )
+
+    assert status.analyst_average_confidence is None
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "UNAVAILABLE",
+        "DISABLED",
+        "MISSING",
+    ],
+)
+def test_enabled_noncontributing_state_allows_missing_average(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_enabled_average_confidence=None,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        is None
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "PARTIAL",
+        "COMPLETE",
+    ],
+)
+def test_contributing_coverage_state_allows_average(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_average_confidence=75.0,
+    )
+
+    assert status.analyst_average_confidence == 75.0
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    [
+        "PARTIAL",
+        "COMPLETE",
+    ],
+)
+def test_enabled_contributing_state_allows_average(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_coverage_state=(
+            coverage_state
+        ),
+        analyst_enabled_average_confidence=80.0,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        == 80.0
+    )
+
