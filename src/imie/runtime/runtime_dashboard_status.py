@@ -1331,6 +1331,33 @@ class RuntimeDashboardStatus:
 
         if (
             self.analyst_domain_count is not None
+            and self.analyst_resolved_count is not None
+            and self.analyst_coverage_percentage is not None
+        ):
+            expected_coverage_percentage = (
+                (
+                    self.analyst_resolved_count
+                    / self.analyst_domain_count
+                )
+                * 100.0
+                if self.analyst_domain_count > 0
+                else 0.0
+            )
+
+            if not isclose(
+                self.analyst_coverage_percentage,
+                expected_coverage_percentage,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            ):
+                raise ValueError(
+                    "analyst_coverage_percentage must agree "
+                    "with analyst_resolved_count and "
+                    "analyst_domain_count."
+                )    
+
+        if (
+            self.analyst_domain_count is not None
             and self.analyst_confidence_count is not None
             and self.analyst_confidence_coverage_percentage
             is not None
