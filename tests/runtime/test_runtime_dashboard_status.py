@@ -6234,3 +6234,85 @@ def test_positive_operational_percentage_allows_missing_resolved_count(
         status.analyst_enabled_resolved_count
         is None
     )
+
+def test_zero_domain_count_rejects_nonzero_analyst_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_percentage must be zero "
+            "when analyst_domain_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_coverage_percentage=50.0,
+        )
+
+def test_zero_resolved_count_rejects_nonzero_analyst_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_percentage must be zero "
+            "when analyst_resolved_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_resolved_count=0,
+            analyst_coverage_percentage=25.0,
+        )
+
+def test_zero_domain_count_allows_zero_analyst_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_coverage_percentage
+        == 0.0
+    )
+
+def test_zero_resolved_count_allows_zero_analyst_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_resolved_count=0,
+        analyst_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_coverage_percentage
+        == 0.0
+    )
+
+def test_positive_domain_count_allows_zero_analyst_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_coverage_percentage
+        == 0.0
+    )
+
+def test_zero_analyst_coverage_counts_allow_missing_percentage(
+) -> None:
+    domain_total = make_status(
+        analyst_domain_count=0,
+    )
+    resolved_total = make_status(
+        analyst_resolved_count=0,
+    )
+
+    assert (
+        domain_total.analyst_coverage_percentage
+        is None
+    )
+    assert (
+        resolved_total.analyst_coverage_percentage
+        is None
+    )
