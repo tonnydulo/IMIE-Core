@@ -3826,4 +3826,3 @@ def test_enabled_contributing_state_allows_average(
         status.analyst_enabled_average_confidence
         == 80.0
     )
-
