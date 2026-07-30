@@ -4345,4 +4345,3 @@ def test_positive_confidence_counts_allow_contributing_coverage_states(
         status.analyst_enabled_confidence_coverage_state
         == "COMPLETE"
     )
-
