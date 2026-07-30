@@ -6928,4 +6928,3 @@ def test_enabled_unresolved_count_allows_missing_operational_percentage(
         positive_unresolved.analyst_operational_percentage
         is None
     )
-    
