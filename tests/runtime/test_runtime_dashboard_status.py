@@ -3291,6 +3291,7 @@ def test_enabled_confidence_coverage_percentage_must_match_counts(
         },
     ],
 )
+
 def test_zero_confidence_denominator_requires_zero_percentage(
     kwargs: dict[str, int | float],
 ) -> None:
@@ -3315,6 +3316,7 @@ def test_zero_confidence_denominator_requires_zero_percentage(
         },
     ],
 )
+
 def test_zero_confidence_denominator_rejects_nonzero_percentage(
     kwargs: dict[str, int | float],
 ) -> None:
@@ -3356,6 +3358,7 @@ def test_confidence_coverage_percentage_allows_float_tolerance(
         (4, 4, "COMPLETE"),
     ],
 )
+
 def test_confidence_coverage_state_agrees_with_counts(
     domain_count: int,
     confidence_count: int,
@@ -3387,6 +3390,7 @@ def test_confidence_coverage_state_agrees_with_counts(
         (4, 4, "MISSING"),
     ],
 )
+
 def test_confidence_coverage_state_rejects_inconsistent_counts(
     domain_count: int,
     confidence_count: int,
@@ -3422,6 +3426,7 @@ def test_confidence_coverage_state_rejects_inconsistent_counts(
         (4, 3, 3, "COMPLETE"),
     ],
 )
+
 def test_enabled_confidence_coverage_state_agrees_with_counts(
     domain_count: int,
     enabled_count: int,
@@ -3459,6 +3464,7 @@ def test_enabled_confidence_coverage_state_agrees_with_counts(
         (4, 3, 3, "MISSING"),
     ],
 )
+
 def test_enabled_confidence_coverage_state_rejects_inconsistent_counts(
     domain_count: int,
     enabled_count: int,
@@ -3511,6 +3517,7 @@ def test_enabled_confidence_coverage_state_rejects_inconsistent_counts(
         },
     ],
 )
+
 def test_partial_confidence_coverage_state_groups_are_allowed(
     kwargs: dict[str, int | str],
 ) -> None:
@@ -3519,3 +3526,56 @@ def test_partial_confidence_coverage_state_groups_are_allowed(
     )
 
     assert status is not None
+
+def test_missing_confidence_count_cannot_exceed_domain_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_missing_confidence_count cannot "
+            "exceed analyst_domain_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_missing_confidence_count=5,
+        )
+
+def test_enabled_missing_confidence_count_cannot_exceed_enabled_count(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_missing_confidence_count "
+            "cannot exceed analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=3,
+            analyst_enabled_missing_confidence_count=4,
+        )
+
+def test_missing_confidence_count_may_equal_domain_count(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_missing_confidence_count=4,
+    )
+
+    assert (
+        status.analyst_missing_confidence_count
+        == 4
+    )
+
+def test_enabled_missing_confidence_count_may_equal_enabled_count(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=3,
+        analyst_enabled_missing_confidence_count=3,
+    )
+
+    assert (
+        status.analyst_enabled_missing_confidence_count
+        == 3
+    )
+
