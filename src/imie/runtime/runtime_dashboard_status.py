@@ -2136,6 +2136,38 @@ class RuntimeDashboardStatus:
                 "is positive."
             )
 
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_unresolved_count
+            is not None
+            and self.analyst_operational_percentage
+            is not None
+        ):
+            expected_operational_percentage = (
+                (
+                    (
+                        self.analyst_enabled_count
+                        - self.analyst_enabled_unresolved_count
+                    )
+                    / self.analyst_enabled_count
+                )
+                * 100.0
+                if self.analyst_enabled_count > 0
+                else 0.0
+            )
+
+            if not isclose(
+                self.analyst_operational_percentage,
+                expected_operational_percentage,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            ):
+                raise ValueError(
+                    "analyst_operational_percentage must agree "
+                    "with analyst_enabled_unresolved_count and "
+                    "analyst_enabled_count."
+                )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",

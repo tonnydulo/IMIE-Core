@@ -6655,3 +6655,171 @@ def test_enabled_unresolved_count_allows_missing_operational_status(
         positive_unresolved.analyst_operational_status
         is None
     )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            0,
+            0,
+            0.0,
+        ),
+        (
+            4,
+            4,
+            0.0,
+        ),
+        (
+            4,
+            3,
+            25.0,
+        ),
+        (
+            4,
+            2,
+            50.0,
+        ),
+        (
+            4,
+            1,
+            75.0,
+        ),
+        (
+            4,
+            0,
+            100.0,
+        ),
+    ),
+)
+def test_operational_percentage_accepts_consistent_unresolved_counts(
+    enabled_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+        "expected_message",
+    ),
+    (
+        (
+            0,
+            0,
+            25.0,
+            (
+                "analyst_operational_percentage must be zero "
+                "when analyst_enabled_count is zero"
+            ),
+        ),
+        (
+            4,
+            4,
+            25.0,
+            (
+                "analyst_operational_percentage must agree "
+                "with analyst_enabled_unresolved_count and "
+                "analyst_enabled_count"
+            ),
+        ),
+        (
+            4,
+            3,
+            50.0,
+            (
+                "analyst_operational_percentage must agree "
+                "with analyst_enabled_unresolved_count and "
+                "analyst_enabled_count"
+            ),
+        ),
+        (
+            4,
+            2,
+            75.0,
+            (
+                "analyst_operational_percentage must agree "
+                "with analyst_enabled_unresolved_count and "
+                "analyst_enabled_count"
+            ),
+        ),
+        (
+            4,
+            1,
+            50.0,
+            (
+                "analyst_operational_percentage must agree "
+                "with analyst_enabled_unresolved_count and "
+                "analyst_enabled_count"
+            ),
+        ),
+        (
+            4,
+            0,
+            75.0,
+            (
+                "analyst_operational_percentage must agree "
+                "with analyst_enabled_unresolved_count and "
+                "analyst_enabled_count"
+            ),
+        ),
+    ),
+)
+def test_operational_percentage_rejects_inconsistent_unresolved_counts(
+    enabled_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+    expected_message: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=expected_message,
+    ):
+        make_status(
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+def test_operational_percentage_allows_missing_unresolved_count_inputs(
+) -> None:
+    enabled_only = make_status(
+        analyst_enabled_count=4,
+        analyst_operational_percentage=75.0,
+    )
+    unresolved_only = make_status(
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75.0,
+    )
+
+    assert (
+        enabled_only.analyst_operational_percentage
+        == 75.0
+    )
+    assert (
+        unresolved_only.analyst_operational_percentage
+        == 75.0
+    )
