@@ -5812,3 +5812,167 @@ def test_analyst_operational_status_allows_missing_count_inputs(
         resolved_only.analyst_operational_status
         == "DEGRADED"
     )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "DISABLED",
+        "UNRESOLVED",
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_zero_domain_count_rejects_available_operational_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "UNAVAILABLE when analyst_domain_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+def test_zero_domain_count_allows_unavailable_operational_status(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_operational_status="UNAVAILABLE",
+    )
+
+    assert (
+        status.analyst_operational_status
+        == "UNAVAILABLE"
+    )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNRESOLVED",
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_zero_enabled_count_rejects_active_operational_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "UNAVAILABLE or DISABLED when "
+            "analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=0,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+    ),
+)
+def test_zero_enabled_count_allows_inactive_operational_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=0,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+def test_positive_domain_and_zero_enabled_count_require_disabled_status(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must be "
+            "DISABLED when analyst_domain_count is "
+            "positive and analyst_enabled_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_enabled_count=0,
+            analyst_operational_status="UNAVAILABLE",
+        )
+
+def test_positive_domain_and_zero_enabled_count_allow_disabled_status(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=0,
+        analyst_operational_status="DISABLED",
+    )
+
+    assert (
+        status.analyst_operational_status
+        == "DISABLED"
+    )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNAVAILABLE",
+        "DISABLED",
+    ),
+)
+def test_positive_enabled_count_rejects_inactive_operational_status(
+    operational_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status cannot be "
+            "UNAVAILABLE or DISABLED when "
+            "analyst_enabled_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=3,
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "UNRESOLVED",
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_positive_enabled_count_allows_active_operational_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=3,
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
