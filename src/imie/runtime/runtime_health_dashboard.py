@@ -3437,6 +3437,48 @@ def build_dashboard_html(
             }}
         }}
 
+        function updateMissingConfidenceCount(
+            id,
+            value
+        ) {{
+            const element = document.getElementById(
+                id
+            );
+
+            if (!element) {{
+                return;
+            }}
+
+            element.className = "value";
+
+            if (
+                value === null
+                || value === undefined
+                || Number.isNaN(
+                    Number(value)
+                )
+            ) {{
+                element.textContent = "—";
+                element.classList.add(
+                    "status-neutral"
+                );
+
+                return;
+            }}
+
+            const normalized = Number(value);
+
+            element.textContent = (
+                normalized.toFixed(0)
+            );
+
+            element.classList.add(
+                normalized === 0
+                    ? "status-good"
+                    : "status-warning"
+            );
+        }}
+
         function updateAnalystCoverageState(value) {{
             const element = document.getElementById(
                 "analystCoverageState"
@@ -4035,12 +4077,12 @@ def build_dashboard_html(
                     "analystEnabledConfidenceCount",
                     payload.analyst_enabled_confidence_count
                 );
-                updateInstitutionalCount(
+                updateMissingConfidenceCount(
                     "analystMissingConfidenceCount",
                     payload.analyst_missing_confidence_count
                 );
 
-                updateInstitutionalCount(
+                updateMissingConfidenceCount(
                     "analystEnabledMissingConfidenceCount",
                     payload.analyst_enabled_missing_confidence_count
                 );

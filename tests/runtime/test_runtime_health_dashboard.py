@@ -2073,3 +2073,79 @@ def test_dashboard_contains_confidence_coverage_fallback_messages(
         in html
     )
 
+def test_dashboard_defines_missing_confidence_count_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateMissingConfidenceCount("
+        in html
+    )
+
+    assert (
+        'normalized === 0'
+        in html
+    )
+
+    assert (
+        '"status-good"'
+        in html
+    )
+
+    assert (
+        '"status-warning"'
+        in html
+    )
+
+    assert (
+        '"status-neutral"'
+        in html
+    )
+
+def test_dashboard_uses_missing_confidence_count_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateMissingConfidenceCount(\n'
+        '                    '
+        '"analystMissingConfidenceCount",'
+        in html
+    )
+
+    assert (
+        'updateMissingConfidenceCount(\n'
+        '                    '
+        '"analystEnabledMissingConfidenceCount",'
+        in html
+    )
+
+    assert (
+        "payload.analyst_missing_confidence_count"
+        in html
+    )
+
+    assert (
+        "payload."
+        "analyst_enabled_missing_confidence_count"
+        in html
+    )
+
+def test_dashboard_does_not_use_generic_count_renderer_for_missing_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    '
+        '"analystMissingConfidenceCount",'
+        not in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    '
+        '"analystEnabledMissingConfidenceCount",'
+        not in html
+    )
+
