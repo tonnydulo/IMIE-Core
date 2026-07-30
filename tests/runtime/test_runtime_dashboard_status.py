@@ -3302,27 +3302,44 @@ def test_zero_confidence_denominator_requires_zero_percentage(
     assert status is not None
 
 @pytest.mark.parametrize(
-    "kwargs",
-    [
-        {
-            "analyst_domain_count": 0,
-            "analyst_confidence_count": 0,
-            "analyst_confidence_coverage_percentage": 10.0,
-        },
-        {
-            "analyst_enabled_count": 0,
-            "analyst_enabled_confidence_count": 0,
-            "analyst_enabled_confidence_coverage_percentage": 10.0,
-        },
-    ],
+    (
+        "kwargs",
+        "expected_message",
+    ),
+    (
+        (
+            {
+                "analyst_domain_count": 0,
+                "analyst_confidence_count": 0,
+                "analyst_confidence_coverage_percentage": 75.0,
+            },
+            (
+                "analyst_confidence_coverage_percentage "
+                "must be zero when analyst_domain_count "
+                "is zero"
+            ),
+        ),
+        (
+            {
+                "analyst_enabled_count": 0,
+                "analyst_enabled_confidence_count": 0,
+                "analyst_enabled_confidence_coverage_percentage": 75.0,
+            },
+            (
+                "analyst_enabled_confidence_coverage_percentage "
+                "must be zero when analyst_enabled_count "
+                "is zero"
+            ),
+        ),
+    ),
 )
-
 def test_zero_confidence_denominator_rejects_nonzero_percentage(
-    kwargs: dict[str, int | float],
+    kwargs: dict[str, object],
+    expected_message: str,
 ) -> None:
     with pytest.raises(
         ValueError,
-        match="must agree",
+        match=expected_message,
     ):
         make_status(
             **kwargs,
@@ -4037,3 +4054,76 @@ def test_positive_analyst_totals_allow_average_confidence(
         status.analyst_enabled_average_confidence
         == 80.0
     )
+
+def test_confidence_coverage_percentage_rejected_when_domain_count_is_zero(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must be zero when analyst_domain_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_confidence_coverage_percentage=75.0,
+        )
+
+def test_enabled_confidence_coverage_percentage_rejected_when_enabled_count_is_zero(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must be zero when analyst_enabled_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=0,
+            analyst_enabled_confidence_coverage_percentage=75.0,
+        )
+
+def test_zero_domain_count_allows_zero_confidence_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_confidence_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 0.0
+    )
+
+def test_zero_enabled_count_allows_zero_enabled_confidence_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_count=0,
+        analyst_enabled_confidence_coverage_percentage=0.0,
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 0.0
+    )
+
+def test_positive_analyst_totals_allow_partial_confidence_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_confidence_coverage_percentage=75.0,
+        analyst_enabled_count=2,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 75.0
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
