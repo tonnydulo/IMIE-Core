@@ -4640,3 +4640,75 @@ def test_positive_domain_and_zero_enabled_count_allow_disabled_state(
         status.analyst_enabled_confidence_coverage_state
         == "DISABLED"
     )
+
+def test_reported_average_confidence_rejects_zero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must be greater than zero when "
+            "analyst_average_confidence is reported"
+        ),
+    ):
+        make_status(
+            analyst_average_confidence=72.0,
+            analyst_confidence_coverage_percentage=0.0,
+        )
+
+def test_reported_enabled_average_rejects_zero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must be greater than zero when "
+            "analyst_enabled_average_confidence is reported"
+        ),
+    ):
+        make_status(
+            analyst_enabled_average_confidence=76.0,
+            analyst_enabled_confidence_coverage_percentage=0.0,
+        )
+
+def test_reported_average_confidence_allows_positive_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_average_confidence=72.0,
+        analyst_confidence_coverage_percentage=25.0,
+    )
+
+    assert status.analyst_average_confidence == 72.0
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 25.0
+    )
+
+def test_reported_enabled_average_allows_positive_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_average_confidence=76.0,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_enabled_average_confidence
+        == 76.0
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
+def test_reported_average_confidence_allows_missing_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_average_confidence=72.0,
+        analyst_enabled_average_confidence=76.0,
+    )
+
+    assert status.analyst_average_confidence == 72.0
+    assert (
+        status.analyst_enabled_average_confidence
+        == 76.0
+    )
