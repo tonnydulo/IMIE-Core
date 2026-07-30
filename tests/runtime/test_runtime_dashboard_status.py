@@ -7596,3 +7596,183 @@ def test_enabled_count_composition_allows_missing_count(
         status.analyst_enabled_unresolved_count
         == enabled_unresolved_count
     )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+        ),
+        (
+            1,
+            1,
+            0,
+        ),
+        (
+            1,
+            0,
+            1,
+        ),
+        (
+            4,
+            2,
+            1,
+        ),
+        (
+            4,
+            3,
+            1,
+        ),
+        (
+            10,
+            4,
+            2,
+        ),
+    ),
+)
+def test_domain_count_accepts_enabled_component_total(
+    domain_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+    )
+
+    assert status.analyst_domain_count == domain_count
+    assert (
+        status.analyst_enabled_resolved_count
+        == enabled_resolved_count
+    )
+    assert (
+        status.analyst_enabled_unresolved_count
+        == enabled_unresolved_count
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            0,
+            1,
+            0,
+        ),
+        (
+            0,
+            0,
+            1,
+        ),
+        (
+            1,
+            1,
+            1,
+        ),
+        (
+            4,
+            3,
+            2,
+        ),
+        (
+            4,
+            5,
+            0,
+        ),
+        (
+            4,
+            0,
+            5,
+        ),
+    ),
+)
+def test_domain_count_rejects_excess_enabled_component_total(
+    domain_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_domain_count|"
+            "analyst_enabled_resolved_count|"
+            "analyst_enabled_unresolved_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+        )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+    ),
+    (
+        (
+            4,
+            3,
+            None,
+        ),
+        (
+            4,
+            None,
+            1,
+        ),
+        (
+            None,
+            3,
+            1,
+        ),
+        (
+            4,
+            None,
+            None,
+        ),
+    ),
+)
+def test_domain_component_validation_allows_missing_count(
+    domain_count: int | None,
+    enabled_resolved_count: int | None,
+    enabled_unresolved_count: int | None,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+    )
+
+    assert status.analyst_domain_count == domain_count
+    assert (
+        status.analyst_enabled_resolved_count
+        == enabled_resolved_count
+    )
+    assert (
+        status.analyst_enabled_unresolved_count
+        == enabled_unresolved_count
+    )

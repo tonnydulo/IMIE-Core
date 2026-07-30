@@ -2342,6 +2342,22 @@ class RuntimeDashboardStatus:
                 "analyst_enabled_unresolved_count."
             )
 
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_enabled_resolved_count is not None
+            and self.analyst_enabled_unresolved_count is not None
+            and (
+                self.analyst_enabled_resolved_count
+                + self.analyst_enabled_unresolved_count
+            )
+            > self.analyst_domain_count
+        ):
+            raise ValueError(
+                "analyst_enabled_resolved_count plus "
+                "analyst_enabled_unresolved_count must not "
+                "exceed analyst_domain_count."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",
