@@ -3973,4 +3973,3 @@ def test_confidence_coverage_state_or_percentage_alone_is_allowed(
         percentage_only.analyst_confidence_coverage_percentage
         == 50.0
     )
-
