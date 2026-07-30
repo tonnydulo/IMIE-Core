@@ -7776,3 +7776,200 @@ def test_domain_component_validation_allows_missing_count(
         status.analyst_enabled_unresolved_count
         == enabled_unresolved_count
     )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_status",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            0,
+            4,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            1,
+            3,
+            "DEGRADED",
+        ),
+        (
+            4,
+            3,
+            1,
+            "DEGRADED",
+        ),
+        (
+            4,
+            4,
+            0,
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_operational_status_accepts_consistent_domain_component_counts(
+    domain_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "invalid_status",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            0,
+            4,
+            "DEGRADED",
+        ),
+        (
+            4,
+            1,
+            3,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            3,
+            1,
+            "OPERATIONAL",
+        ),
+        (
+            4,
+            4,
+            0,
+            "DEGRADED",
+        ),
+    ),
+)
+def test_operational_status_rejects_inconsistent_domain_component_counts(
+    domain_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    invalid_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_operational_status",
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+            analyst_operational_status=(
+                invalid_status
+            ),
+        )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_status",
+    ),
+    (
+        (
+            None,
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            None,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            0,
+            None,
+            "DISABLED",
+        ),
+        (
+            None,
+            1,
+            1,
+            "DEGRADED",
+        ),
+    ),
+)
+def test_domain_component_status_validation_allows_missing_count(
+    domain_count: int | None,
+    enabled_resolved_count: int | None,
+    enabled_unresolved_count: int | None,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )

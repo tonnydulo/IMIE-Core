@@ -2358,6 +2358,44 @@ class RuntimeDashboardStatus:
                 "exceed analyst_domain_count."
             )
 
+        if (
+            self.analyst_operational_status is not None
+            and self.analyst_domain_count is not None
+            and self.analyst_enabled_resolved_count
+            is not None
+            and self.analyst_enabled_unresolved_count
+            is not None
+        ):
+            if (
+                self.analyst_enabled_resolved_count == 0
+                and self.analyst_enabled_unresolved_count == 0
+            ):
+                expected_operational_status = (
+                    "UNAVAILABLE"
+                    if self.analyst_domain_count == 0
+                    else "DISABLED"
+                )
+
+            elif self.analyst_enabled_resolved_count == 0:
+                expected_operational_status = "UNRESOLVED"
+
+            elif self.analyst_enabled_unresolved_count > 0:
+                expected_operational_status = "DEGRADED"
+
+            else:
+                expected_operational_status = "OPERATIONAL"
+
+            if (
+                self.analyst_operational_status
+                != expected_operational_status
+            ):
+                raise ValueError(
+                    "analyst_operational_status must agree "
+                    "with analyst_domain_count, "
+                    "analyst_enabled_resolved_count, and "
+                    "analyst_enabled_unresolved_count."
+                )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",
