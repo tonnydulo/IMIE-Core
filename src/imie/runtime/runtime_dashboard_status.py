@@ -2168,6 +2168,50 @@ class RuntimeDashboardStatus:
                     "analyst_enabled_count."
                 )
 
+        if (
+            self.analyst_enabled_unresolved_count == 0
+            and self.analyst_operational_percentage
+            is not None
+            and not (
+                isclose(
+                    self.analyst_operational_percentage,
+                    0.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+                or isclose(
+                    self.analyst_operational_percentage,
+                    100.0,
+                    rel_tol=1e-9,
+                    abs_tol=1e-6,
+                )
+            )
+        ):
+            raise ValueError(
+                "analyst_operational_percentage must be "
+                "zero or 100 when "
+                "analyst_enabled_unresolved_count is zero."
+            )
+
+        if (
+            self.analyst_enabled_unresolved_count
+            is not None
+            and self.analyst_enabled_unresolved_count > 0
+            and self.analyst_operational_percentage
+            is not None
+            and isclose(
+                self.analyst_operational_percentage,
+                100.0,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError(
+                "analyst_operational_percentage must be "
+                "less than 100 when "
+                "analyst_enabled_unresolved_count is positive."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",

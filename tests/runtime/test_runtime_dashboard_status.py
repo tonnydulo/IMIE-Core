@@ -6823,3 +6823,109 @@ def test_operational_percentage_allows_missing_unresolved_count_inputs(
         unresolved_only.analyst_operational_percentage
         == 75.0
     )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        25.0,
+        50.0,
+        75.0,
+    ),
+)
+def test_zero_enabled_unresolved_count_rejects_partial_percentage(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be "
+            "zero or 100 when "
+            "analyst_enabled_unresolved_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=0,
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        100.0,
+    ),
+)
+def test_zero_enabled_unresolved_count_allows_boundary_percentage(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_unresolved_count=0,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+def test_positive_enabled_unresolved_count_rejects_complete_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be "
+            "less than 100 when "
+            "analyst_enabled_unresolved_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_unresolved_count=2,
+            analyst_operational_percentage=100.0,
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        25.0,
+        50.0,
+        75.0,
+    ),
+)
+def test_positive_enabled_unresolved_count_allows_incomplete_percentage(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_unresolved_count=2,
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+def test_enabled_unresolved_count_allows_missing_operational_percentage(
+) -> None:
+    zero_unresolved = make_status(
+        analyst_enabled_unresolved_count=0,
+    )
+    positive_unresolved = make_status(
+        analyst_enabled_unresolved_count=2,
+    )
+
+    assert (
+        zero_unresolved.analyst_operational_percentage
+        is None
+    )
+    assert (
+        positive_unresolved.analyst_operational_percentage
+        is None
+    )
+    
