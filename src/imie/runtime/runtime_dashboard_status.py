@@ -2044,6 +2044,61 @@ class RuntimeDashboardStatus:
                 "analyst_resolved_count is positive."
             )
 
+        if (
+            self.analyst_domain_count == 0
+            and self.analyst_coverage_state is not None
+            and self.analyst_coverage_state
+            != "UNAVAILABLE"
+        ):
+            raise ValueError(
+                "analyst_coverage_state must be "
+                "UNAVAILABLE when analyst_domain_count "
+                "is zero."
+            )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_domain_count > 0
+            and self.analyst_coverage_state
+            == "UNAVAILABLE"
+        ):
+            raise ValueError(
+                "analyst_coverage_state cannot be "
+                "UNAVAILABLE when analyst_domain_count "
+                "is positive."
+            )
+
+        if (
+            self.analyst_resolved_count == 0
+            and self.analyst_coverage_state is not None
+            and self.analyst_coverage_state
+            not in {
+                "UNAVAILABLE",
+                "UNRESOLVED",
+            }
+        ):
+            raise ValueError(
+                "analyst_coverage_state must be "
+                "UNAVAILABLE or UNRESOLVED when "
+                "analyst_resolved_count is zero."
+            )
+
+        if (
+            self.analyst_resolved_count is not None
+            and self.analyst_resolved_count > 0
+            and self.analyst_coverage_state is not None
+            and self.analyst_coverage_state
+            not in {
+                "PARTIAL",
+                "COMPLETE",
+            }
+        ):
+            raise ValueError(
+                "analyst_coverage_state must be "
+                "PARTIAL or COMPLETE when "
+                "analyst_resolved_count is positive."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",

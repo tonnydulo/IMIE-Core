@@ -6361,3 +6361,181 @@ def test_positive_coverage_percentage_allows_missing_resolved_count(
         status.analyst_resolved_count
         is None
     )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNRESOLVED",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_domain_count_rejects_available_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_state must be "
+            "UNAVAILABLE when analyst_domain_count "
+            "is zero"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=0,
+            analyst_coverage_state=coverage_state,
+        )
+
+def test_zero_domain_count_allows_unavailable_coverage_state(
+) -> None:
+    status = make_status(
+        analyst_domain_count=0,
+        analyst_coverage_state="UNAVAILABLE",
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == "UNAVAILABLE"
+    )
+
+def test_positive_domain_count_rejects_unavailable_coverage_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_state cannot be "
+            "UNAVAILABLE when analyst_domain_count "
+            "is positive"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_coverage_state="UNAVAILABLE",
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNRESOLVED",
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_domain_count_allows_available_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_zero_resolved_count_rejects_resolved_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_state must be "
+            "UNAVAILABLE or UNRESOLVED when "
+            "analyst_resolved_count is zero"
+        ),
+    ):
+        make_status(
+            analyst_resolved_count=0,
+            analyst_coverage_state=coverage_state,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "UNRESOLVED",
+    ),
+)
+def test_zero_resolved_count_allows_unresolved_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_resolved_count=0,
+        analyst_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == coverage_state
+    )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "UNAVAILABLE",
+        "UNRESOLVED",
+    ),
+)
+def test_positive_resolved_count_rejects_unresolved_coverage_state(
+    coverage_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_coverage_state must be "
+            "PARTIAL or COMPLETE when "
+            "analyst_resolved_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_resolved_count=2,
+            analyst_coverage_state=coverage_state,
+        )
+
+@pytest.mark.parametrize(
+    "coverage_state",
+    (
+        "PARTIAL",
+        "COMPLETE",
+    ),
+)
+def test_positive_resolved_count_allows_resolved_coverage_state(
+    coverage_state: str,
+) -> None:
+    status = make_status(
+        analyst_resolved_count=2,
+        analyst_coverage_state=coverage_state,
+    )
+
+    assert (
+        status.analyst_coverage_state
+        == coverage_state
+    )
+
+def test_analyst_coverage_counts_allow_missing_state(
+) -> None:
+    zero_domain = make_status(
+        analyst_domain_count=0,
+    )
+    positive_domain = make_status(
+        analyst_domain_count=4,
+    )
+    zero_resolved = make_status(
+        analyst_resolved_count=0,
+    )
+    positive_resolved = make_status(
+        analyst_resolved_count=2,
+    )
+
+    assert zero_domain.analyst_coverage_state is None
+    assert positive_domain.analyst_coverage_state is None
+    assert zero_resolved.analyst_coverage_state is None
+    assert positive_resolved.analyst_coverage_state is None
