@@ -3116,6 +3116,7 @@ def test_status_serializes_analyst_confidence_coverage_fields(
         "analyst_enabled_confidence_coverage_state",
     ],
 )
+
 def test_status_rejects_invalid_confidence_coverage_state(
     field_name: str,
 ) -> None:
@@ -3342,3 +3343,179 @@ def test_confidence_coverage_percentage_allows_float_tolerance(
         )
     )
 
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "confidence_count",
+        "expected_state",
+    ),
+    [
+        (0, 0, "UNAVAILABLE"),
+        (4, 0, "MISSING"),
+        (4, 2, "PARTIAL"),
+        (4, 4, "COMPLETE"),
+    ],
+)
+def test_confidence_coverage_state_agrees_with_counts(
+    domain_count: int,
+    confidence_count: int,
+    expected_state: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_confidence_count=confidence_count,
+        analyst_confidence_coverage_state=(
+            expected_state
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_state
+        == expected_state
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "confidence_count",
+        "invalid_state",
+    ),
+    [
+        (0, 0, "COMPLETE"),
+        (4, 0, "PARTIAL"),
+        (4, 2, "COMPLETE"),
+        (4, 4, "MISSING"),
+    ],
+)
+def test_confidence_coverage_state_rejects_inconsistent_counts(
+    domain_count: int,
+    confidence_count: int,
+    invalid_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_state "
+            "must agree"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_confidence_count=confidence_count,
+            analyst_confidence_coverage_state=(
+                invalid_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_confidence_count",
+        "expected_state",
+    ),
+    [
+        (0, 0, 0, "UNAVAILABLE"),
+        (4, 0, 0, "DISABLED"),
+        (4, 3, 0, "MISSING"),
+        (4, 3, 1, "PARTIAL"),
+        (4, 3, 3, "COMPLETE"),
+    ],
+)
+def test_enabled_confidence_coverage_state_agrees_with_counts(
+    domain_count: int,
+    enabled_count: int,
+    enabled_confidence_count: int,
+    expected_state: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_confidence_count=(
+            enabled_confidence_count
+        ),
+        analyst_enabled_confidence_coverage_state=(
+            expected_state
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_state
+        == expected_state
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_confidence_count",
+        "invalid_state",
+    ),
+    [
+        (0, 0, 0, "DISABLED"),
+        (4, 0, 0, "UNAVAILABLE"),
+        (4, 3, 0, "PARTIAL"),
+        (4, 3, 1, "COMPLETE"),
+        (4, 3, 3, "MISSING"),
+    ],
+)
+def test_enabled_confidence_coverage_state_rejects_inconsistent_counts(
+    domain_count: int,
+    enabled_count: int,
+    enabled_confidence_count: int,
+    invalid_state: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_state "
+            "must agree"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_confidence_count=(
+                enabled_confidence_count
+            ),
+            analyst_enabled_confidence_coverage_state=(
+                invalid_state
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "analyst_confidence_coverage_state": (
+                "PARTIAL"
+            ),
+        },
+        {
+            "analyst_domain_count": 4,
+            "analyst_confidence_coverage_state": (
+                "PARTIAL"
+            ),
+        },
+        {
+            "analyst_enabled_confidence_coverage_state": (
+                "COMPLETE"
+            ),
+        },
+        {
+            "analyst_domain_count": 4,
+            "analyst_enabled_count": 2,
+            "analyst_enabled_confidence_coverage_state": (
+                "COMPLETE"
+            ),
+        },
+    ],
+)
+def test_partial_confidence_coverage_state_groups_are_allowed(
+    kwargs: dict[str, int | str],
+) -> None:
+    status = make_status(
+        **kwargs,
+    )
+
+    assert status is not None

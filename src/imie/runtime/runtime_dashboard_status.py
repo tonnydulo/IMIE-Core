@@ -1143,6 +1143,96 @@ class RuntimeDashboardStatus:
                 "before latest_cycle_started_at."
             )
 
+        if (
+            self.analyst_confidence_coverage_state
+            is not None
+            and self.analyst_domain_count is not None
+            and self.analyst_confidence_count is not None
+        ):
+            if self.analyst_domain_count == 0:
+                expected_confidence_coverage_state = (
+                    "UNAVAILABLE"
+                )
+
+            elif self.analyst_confidence_count == 0:
+                expected_confidence_coverage_state = (
+                    "MISSING"
+                )
+
+            elif (
+                self.analyst_confidence_count
+                < self.analyst_domain_count
+            ):
+                expected_confidence_coverage_state = (
+                    "PARTIAL"
+                )
+
+            else:
+                expected_confidence_coverage_state = (
+                    "COMPLETE"
+                )
+
+            if (
+                self.analyst_confidence_coverage_state
+                != expected_confidence_coverage_state
+            ):
+                raise ValueError(
+                    "analyst_confidence_coverage_state "
+                    "must agree with analyst_domain_count "
+                    "and analyst_confidence_count."
+                )
+
+
+        if (
+            self.analyst_enabled_confidence_coverage_state
+            is not None
+            and self.analyst_domain_count is not None
+            and self.analyst_enabled_count is not None
+            and self.analyst_enabled_confidence_count
+            is not None
+        ):
+            if self.analyst_domain_count == 0:
+                expected_enabled_confidence_coverage_state = (
+                    "UNAVAILABLE"
+                )
+
+            elif self.analyst_enabled_count == 0:
+                expected_enabled_confidence_coverage_state = (
+                    "DISABLED"
+                )
+
+            elif (
+                self.analyst_enabled_confidence_count
+                == 0
+            ):
+                expected_enabled_confidence_coverage_state = (
+                    "MISSING"
+                )
+
+            elif (
+                self.analyst_enabled_confidence_count
+                < self.analyst_enabled_count
+            ):
+                expected_enabled_confidence_coverage_state = (
+                    "PARTIAL"
+                )
+
+            else:
+                expected_enabled_confidence_coverage_state = (
+                    "COMPLETE"
+                )
+
+            if (
+                self.analyst_enabled_confidence_coverage_state
+                != expected_enabled_confidence_coverage_state
+            ):
+                raise ValueError(
+                    "analyst_enabled_confidence_coverage_state "
+                    "must agree with analyst_domain_count, "
+                    "analyst_enabled_count, and "
+                    "analyst_enabled_confidence_count."
+                )
+
     @property
     def has_cycle(
         self,
