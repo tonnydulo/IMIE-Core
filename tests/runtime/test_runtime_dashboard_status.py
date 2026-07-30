@@ -4126,4 +4126,3 @@ def test_positive_analyst_totals_allow_partial_confidence_coverage_percentage(
         status.analyst_enabled_confidence_coverage_percentage
         == 50.0
     )
-
