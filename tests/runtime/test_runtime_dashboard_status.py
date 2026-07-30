@@ -3223,3 +3223,122 @@ def test_partial_confidence_count_groups_are_allowed(
 
     assert status is not None
 
+def test_status_accepts_consistent_confidence_coverage_percentages(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_confidence_count=3,
+        analyst_missing_confidence_count=1,
+        analyst_confidence_coverage_percentage=75.0,
+        analyst_enabled_count=2,
+        analyst_enabled_confidence_count=1,
+        analyst_enabled_missing_confidence_count=1,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 75.0
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
+def test_confidence_coverage_percentage_must_match_counts(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must agree"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_confidence_count=2,
+            analyst_confidence_coverage_percentage=75.0,
+        )
+
+def test_enabled_confidence_coverage_percentage_must_match_counts(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must agree"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=4,
+            analyst_enabled_confidence_count=2,
+            analyst_enabled_confidence_coverage_percentage=75.0,
+        )
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "analyst_domain_count": 0,
+            "analyst_confidence_count": 0,
+            "analyst_confidence_coverage_percentage": 0.0,
+        },
+        {
+            "analyst_enabled_count": 0,
+            "analyst_enabled_confidence_count": 0,
+            "analyst_enabled_confidence_coverage_percentage": 0.0,
+        },
+    ],
+)
+def test_zero_confidence_denominator_requires_zero_percentage(
+    kwargs: dict[str, int | float],
+) -> None:
+    status = make_status(
+        **kwargs,
+    )
+
+    assert status is not None
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "analyst_domain_count": 0,
+            "analyst_confidence_count": 0,
+            "analyst_confidence_coverage_percentage": 10.0,
+        },
+        {
+            "analyst_enabled_count": 0,
+            "analyst_enabled_confidence_count": 0,
+            "analyst_enabled_confidence_coverage_percentage": 10.0,
+        },
+    ],
+)
+def test_zero_confidence_denominator_rejects_nonzero_percentage(
+    kwargs: dict[str, int | float],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="must agree",
+    ):
+        make_status(
+            **kwargs,
+        )
+
+def test_confidence_coverage_percentage_allows_float_tolerance(
+) -> None:
+    status = make_status(
+        analyst_domain_count=3,
+        analyst_confidence_count=1,
+        analyst_confidence_coverage_percentage=(
+            33.3333333333
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == pytest.approx(
+            33.3333333333
+        )
+    )
+

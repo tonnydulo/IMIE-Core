@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+from math import isclose
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -734,6 +736,64 @@ class RuntimeDashboardStatus:
                 "analyst_coverage_state must be one of: "
                 "UNAVAILABLE, UNRESOLVED, PARTIAL, COMPLETE."
             )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_confidence_count is not None
+            and self.analyst_confidence_coverage_percentage
+            is not None
+        ):
+            expected_percentage = (
+                (
+                    self.analyst_confidence_count
+                    / self.analyst_domain_count
+                )
+                * 100.0
+                if self.analyst_domain_count > 0
+                else 0.0
+            )
+
+            if not isclose(
+                self.analyst_confidence_coverage_percentage,
+                expected_percentage,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            ):
+                raise ValueError(
+                    "analyst_confidence_coverage_percentage "
+                    "must agree with analyst_confidence_count "
+                    "and analyst_domain_count."
+                )
+
+        if (
+            self.analyst_enabled_count is not None
+            and self.analyst_enabled_confidence_count
+            is not None
+            and self.analyst_enabled_confidence_coverage_percentage
+            is not None
+        ):
+            expected_enabled_percentage = (
+                (
+                    self.analyst_enabled_confidence_count
+                    / self.analyst_enabled_count
+                )
+                * 100.0
+                if self.analyst_enabled_count > 0
+                else 0.0
+            )
+
+            if not isclose(
+                self.analyst_enabled_confidence_coverage_percentage,
+                expected_enabled_percentage,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            ):
+                raise ValueError(
+                    "analyst_enabled_confidence_coverage_percentage "
+                    "must agree with "
+                    "analyst_enabled_confidence_count and "
+                    "analyst_enabled_count."
+                )
 
         for field_name in (
             "analyst_confidence_coverage_state",
