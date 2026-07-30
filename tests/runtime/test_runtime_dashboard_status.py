@@ -7260,3 +7260,139 @@ def test_operational_percentage_allows_missing_component_count(
         unresolved_only.analyst_operational_percentage
         == 75.0
     )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_status",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            0,
+            4,
+            "UNRESOLVED",
+        ),
+        (
+            1,
+            3,
+            "DEGRADED",
+        ),
+        (
+            3,
+            1,
+            "DEGRADED",
+        ),
+        (
+            4,
+            0,
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_operational_status_accepts_consistent_component_counts(
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "invalid_status",
+    ),
+    (
+        (
+            0,
+            0,
+            "UNRESOLVED",
+        ),
+        (
+            0,
+            4,
+            "DEGRADED",
+        ),
+        (
+            1,
+            3,
+            "UNRESOLVED",
+        ),
+        (
+            3,
+            1,
+            "OPERATIONAL",
+        ),
+        (
+            4,
+            0,
+            "DEGRADED",
+        ),
+    ),
+)
+def test_operational_status_rejects_inconsistent_component_counts(
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    invalid_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="analyst_operational_status",
+    ):
+        make_status(
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+            analyst_operational_status=(
+                invalid_status
+            ),
+        )
+
+def test_operational_status_allows_missing_component_count(
+) -> None:
+    resolved_only = make_status(
+        analyst_enabled_resolved_count=3,
+        analyst_operational_status="DEGRADED",
+    )
+    unresolved_only = make_status(
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        resolved_only.analyst_operational_status
+        == "DEGRADED"
+    )
+    assert (
+        unresolved_only.analyst_operational_status
+        == "DEGRADED"
+    )
