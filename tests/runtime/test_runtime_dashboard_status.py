@@ -4454,3 +4454,73 @@ def test_contributing_coverage_states_allow_missing_confidence_counts(
         status.analyst_enabled_confidence_coverage_state
         == "COMPLETE"
     )
+
+def test_positive_confidence_count_rejects_zero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_percentage "
+            "must be greater than zero when "
+            "analyst_confidence_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_confidence_count=2,
+            analyst_confidence_coverage_percentage=0.0,
+        )
+
+def test_positive_enabled_confidence_count_rejects_zero_coverage_percentage(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_percentage "
+            "must be greater than zero when "
+            "analyst_enabled_confidence_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_count=1,
+            analyst_enabled_confidence_coverage_percentage=0.0,
+        )
+
+def test_positive_confidence_count_allows_positive_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=2,
+        analyst_confidence_coverage_percentage=25.0,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        == 25.0
+    )
+
+def test_positive_enabled_confidence_count_allows_positive_coverage_percentage(
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_count=1,
+        analyst_enabled_confidence_coverage_percentage=50.0,
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        == 50.0
+    )
+
+def test_positive_confidence_counts_allow_missing_coverage_percentages(
+) -> None:
+    status = make_status(
+        analyst_confidence_count=2,
+        analyst_enabled_confidence_count=1,
+    )
+
+    assert (
+        status.analyst_confidence_coverage_percentage
+        is None
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_percentage
+        is None
+    )

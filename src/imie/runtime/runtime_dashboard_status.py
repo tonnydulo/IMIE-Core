@@ -954,6 +954,42 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_count is not None
+            and self.analyst_confidence_count > 0
+            and self.analyst_confidence_coverage_percentage
+            is not None
+            and isclose(
+                self.analyst_confidence_coverage_percentage,
+                0.0,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError(
+                "analyst_confidence_coverage_percentage "
+                "must be greater than zero when "
+                "analyst_confidence_count is positive."
+            )
+
+        if (
+            self.analyst_enabled_confidence_count is not None
+            and self.analyst_enabled_confidence_count > 0
+            and self.analyst_enabled_confidence_coverage_percentage
+            is not None
+            and isclose(
+                self.analyst_enabled_confidence_coverage_percentage,
+                0.0,
+                rel_tol=1e-9,
+                abs_tol=1e-6,
+            )
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_coverage_percentage "
+                "must be greater than zero when "
+                "analyst_enabled_confidence_count is positive."
+            )
+
+        if (
             self.analyst_enabled_count is not None
             and self.analyst_enabled_unresolved_count
             is not None
