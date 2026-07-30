@@ -1533,6 +1533,29 @@ class RuntimeDashboardStatus:
             )
 
         if (
+            self.analyst_confidence_coverage_message
+            is not None
+            and self.analyst_confidence_coverage_state
+            is None
+        ):
+            raise ValueError(
+                "analyst_confidence_coverage_message "
+                "requires analyst_confidence_coverage_state."
+            )
+
+        if (
+            self.analyst_enabled_confidence_coverage_message
+            is not None
+            and self.analyst_enabled_confidence_coverage_state
+            is None
+        ):
+            raise ValueError(
+                "analyst_enabled_confidence_coverage_message "
+                "requires "
+                "analyst_enabled_confidence_coverage_state."
+            )
+
+        if (
             self.analyst_operational_status is not None
             and self.analyst_operational_status
             not in {

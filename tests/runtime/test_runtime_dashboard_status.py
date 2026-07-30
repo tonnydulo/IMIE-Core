@@ -4811,3 +4811,98 @@ def test_positive_analyst_totals_allow_missing_coverage_states(
         status.analyst_enabled_confidence_coverage_state
         is None
     )
+
+def test_confidence_coverage_message_requires_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_confidence_coverage_message "
+            "requires analyst_confidence_coverage_state"
+        ),
+    ):
+        make_status(
+            analyst_confidence_coverage_message=(
+                "Confidence coverage is partial."
+            ),
+        )
+
+def test_enabled_confidence_coverage_message_requires_state(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_enabled_confidence_coverage_message "
+            "requires "
+            "analyst_enabled_confidence_coverage_state"
+        ),
+    ):
+        make_status(
+            analyst_enabled_confidence_coverage_message=(
+                "Enabled confidence coverage is partial."
+            ),
+        )
+
+def test_confidence_coverage_state_allows_message(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state="PARTIAL",
+        analyst_confidence_coverage_message=(
+            "Confidence coverage is partial."
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_message
+        == "Confidence coverage is partial."
+    )
+
+def test_enabled_confidence_coverage_state_allows_message(
+) -> None:
+    status = make_status(
+        analyst_enabled_confidence_coverage_state=(
+            "COMPLETE"
+        ),
+        analyst_enabled_confidence_coverage_message=(
+            "Enabled confidence coverage is complete."
+        ),
+    )
+
+    assert (
+        status.analyst_enabled_confidence_coverage_message
+        == "Enabled confidence coverage is complete."
+    )
+
+def test_confidence_coverage_states_allow_missing_messages(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_state="PARTIAL",
+        analyst_enabled_confidence_coverage_state=(
+            "COMPLETE"
+        ),
+    )
+
+    assert (
+        status.analyst_confidence_coverage_message
+        is None
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_message
+        is None
+    )
+
+def test_blank_confidence_coverage_messages_normalize_to_none(
+) -> None:
+    status = make_status(
+        analyst_confidence_coverage_message="   ",
+        analyst_enabled_confidence_coverage_message="\t",
+    )
+
+    assert (
+        status.analyst_confidence_coverage_message
+        is None
+    )
+    assert (
+        status.analyst_enabled_confidence_coverage_message
+        is None
+    )
