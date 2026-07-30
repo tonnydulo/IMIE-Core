@@ -3694,4 +3694,3 @@ def test_average_confidence_without_contributor_count_is_allowed(
         status.analyst_enabled_average_confidence
         == 80.0
     )
-
