@@ -5644,3 +5644,172 @@ def test_analyst_operational_percentage_allows_missing_count_inputs(
         enabled_resolved_only.analyst_operational_percentage
         == 50.0
     )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_resolved_count",
+        "operational_status",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            3,
+            0,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            3,
+            1,
+            "DEGRADED",
+        ),
+        (
+            4,
+            3,
+            2,
+            "DEGRADED",
+        ),
+        (
+            4,
+            3,
+            3,
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_analyst_operational_status_accepts_consistent_counts(
+    domain_count: int,
+    enabled_count: int,
+    enabled_resolved_count: int,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_resolved_count",
+        "invalid_status",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+            "DISABLED",
+        ),
+        (
+            4,
+            0,
+            0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            3,
+            0,
+            "DEGRADED",
+        ),
+        (
+            4,
+            3,
+            1,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            3,
+            2,
+            "OPERATIONAL",
+        ),
+        (
+            4,
+            3,
+            3,
+            "DEGRADED",
+        ),
+    ),
+)
+def test_analyst_operational_status_rejects_inconsistent_counts(
+    domain_count: int,
+    enabled_count: int,
+    enabled_resolved_count: int,
+    invalid_status: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must agree "
+            "with analyst_domain_count, "
+            "analyst_enabled_count, and "
+            "analyst_enabled_resolved_count"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_operational_status=(
+                invalid_status
+            ),
+        )
+
+def test_analyst_operational_status_allows_missing_count_inputs(
+) -> None:
+    domain_only = make_status(
+        analyst_domain_count=4,
+        analyst_operational_status="DEGRADED",
+    )
+    enabled_only = make_status(
+        analyst_enabled_count=3,
+        analyst_operational_status="DEGRADED",
+    )
+    resolved_only = make_status(
+        analyst_enabled_resolved_count=2,
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        domain_only.analyst_operational_status
+        == "DEGRADED"
+    )
+    assert (
+        enabled_only.analyst_operational_status
+        == "DEGRADED"
+    )
+    assert (
+        resolved_only.analyst_operational_status
+        == "DEGRADED"
+    )
+
