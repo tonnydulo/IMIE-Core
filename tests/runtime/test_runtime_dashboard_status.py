@@ -5513,3 +5513,134 @@ def test_operational_status_and_percentage_allow_partial_construction(
         percentage_only.analyst_operational_status
         is None
     )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            0,
+            0,
+            0.0,
+        ),
+        (
+            4,
+            0,
+            0.0,
+        ),
+        (
+            4,
+            1,
+            25.0,
+        ),
+        (
+            4,
+            2,
+            50.0,
+        ),
+        (
+            4,
+            4,
+            100.0,
+        ),
+    ),
+)
+def test_analyst_operational_percentage_accepts_consistent_counts(
+    enabled_count: int,
+    enabled_resolved_count: int,
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            0,
+            0,
+            25.0,
+        ),
+        (
+            4,
+            0,
+            25.0,
+        ),
+        (
+            4,
+            1,
+            50.0,
+        ),
+        (
+            4,
+            2,
+            75.0,
+        ),
+        (
+            4,
+            4,
+            75.0,
+        ),
+    ),
+)
+def test_analyst_operational_percentage_rejects_inconsistent_counts(
+    enabled_count: int,
+    enabled_resolved_count: int,
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must agree "
+            "with analyst_enabled_resolved_count and "
+            "analyst_enabled_count"
+        ),
+    ):
+        make_status(
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+def test_analyst_operational_percentage_allows_missing_count_inputs(
+) -> None:
+    enabled_total_only = make_status(
+        analyst_enabled_count=4,
+        analyst_operational_percentage=50.0,
+    )
+    enabled_resolved_only = make_status(
+        analyst_enabled_resolved_count=2,
+        analyst_operational_percentage=50.0,
+    )
+
+    assert (
+        enabled_total_only.analyst_operational_percentage
+        == 50.0
+    )
+    assert (
+        enabled_resolved_only.analyst_operational_percentage
+        == 50.0
+    )
