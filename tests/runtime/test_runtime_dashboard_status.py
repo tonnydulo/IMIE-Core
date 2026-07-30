@@ -4811,4 +4811,3 @@ def test_positive_analyst_totals_allow_missing_coverage_states(
         status.analyst_enabled_confidence_coverage_state
         is None
     )
-    
