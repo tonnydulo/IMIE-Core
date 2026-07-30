@@ -2411,6 +2411,26 @@ class RuntimeDashboardStatus:
                 "when analyst_domain_count is zero."
             )
 
+        if (
+            self.analyst_domain_count == 0
+            and self.analyst_operational_status is not None
+            and self.analyst_operational_status != "UNAVAILABLE"
+        ):
+            raise ValueError(
+                "analyst_operational_status must be "
+                "UNAVAILABLE when analyst_domain_count is zero."
+            )
+
+        if (
+            self.analyst_domain_count is not None
+            and self.analyst_domain_count > 0
+            and self.analyst_operational_status == "UNAVAILABLE"
+        ):
+            raise ValueError(
+                "analyst_operational_status must not be "
+                "UNAVAILABLE when analyst_domain_count is positive."
+            )
+
         for field_name in (
             "decision_reasons",
             "decision_warnings",

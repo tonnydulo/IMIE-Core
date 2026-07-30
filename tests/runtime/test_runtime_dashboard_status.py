@@ -5829,15 +5829,12 @@ def test_zero_domain_count_rejects_available_operational_status(
         ValueError,
         match=(
             "analyst_operational_status must be "
-            "UNAVAILABLE when analyst_domain_count "
-            "is zero"
+            "UNAVAILABLE when analyst_domain_count is zero"
         ),
     ):
         make_status(
             analyst_domain_count=0,
-            analyst_operational_status=(
-                operational_status
-            ),
+            analyst_operational_status=operational_status,
         )
 
 def test_zero_domain_count_allows_unavailable_operational_status(
@@ -5847,6 +5844,7 @@ def test_zero_domain_count_allows_unavailable_operational_status(
         analyst_operational_status="UNAVAILABLE",
     )
 
+    assert status.analyst_domain_count == 0
     assert (
         status.analyst_operational_status
         == "UNAVAILABLE"
@@ -8078,3 +8076,58 @@ def test_domain_count_allows_missing_operational_percentage(
 
     assert status.analyst_domain_count == domain_count
     assert status.analyst_operational_percentage is None
+
+@pytest.mark.parametrize(
+    "operational_status",
+    (
+        "DISABLED",
+        "UNRESOLVED",
+        "DEGRADED",
+        "OPERATIONAL",
+    ),
+)
+def test_positive_domain_count_allows_available_operational_status(
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_operational_status=operational_status,
+    )
+
+    assert status.analyst_domain_count == 4
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+def test_positive_domain_count_rejects_unavailable_operational_status(
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_status must not be "
+            "UNAVAILABLE when analyst_domain_count is positive"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_operational_status="UNAVAILABLE",
+        )
+
+def test_operational_status_allows_missing_domain_count(
+) -> None:
+    unavailable = make_status(
+        analyst_operational_status="UNAVAILABLE",
+    )
+    operational = make_status(
+        analyst_operational_status="OPERATIONAL",
+    )
+
+    assert (
+        unavailable.analyst_operational_status
+        == "UNAVAILABLE"
+    )
+    assert (
+        operational.analyst_operational_status
+        == "OPERATIONAL"
+    )
