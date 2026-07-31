@@ -10893,3 +10893,155 @@ def test_to_dict_remains_plain_payload_after_validation_bypass(
     assert math.isnan(
         payload["trend_confidence"]
     )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_to_json_rejects_non_finite_values_for_all_indent_modes(
+    indent: int | None,
+    non_finite_value: float,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+    )
+
+    object.__setattr__(
+        status,
+        "trend_confidence",
+        non_finite_value,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        status.to_json(
+            indent=indent,
+        )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_indented_json_rejects_non_finite_operational_percentage(
+    indent: int,
+    non_finite_value: float,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    object.__setattr__(
+        status,
+        "analyst_operational_percentage",
+        non_finite_value,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        status.to_json(
+            indent=indent,
+        )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+def test_to_json_indent_modes_preserve_payload(
+    indent: int | None,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+    payload = json.loads(
+        serialized
+    )
+
+    assert payload == status.to_dict()
+
+def test_to_json_without_indent_uses_compact_format(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json()
+
+    assert "\n" not in serialized
+    assert ": " not in serialized
+    assert ", " not in serialized
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+def test_to_json_with_indent_uses_multiline_format(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+
+    assert "\n" in serialized
+    assert json.loads(
+        serialized
+    ) == status.to_dict()
