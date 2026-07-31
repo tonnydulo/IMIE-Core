@@ -8387,3 +8387,350 @@ def test_complete_operational_payload_rejects_inconsistent_state(
                 operational_status
             ),
         )
+
+def make_complete_operational_status(
+    *,
+    domain_count: int,
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+    operational_status: str,
+):
+    return make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {
+            "domain_count": 0,
+            "enabled_count": 0,
+            "enabled_resolved_count": 0,
+            "enabled_unresolved_count": 0,
+            "operational_percentage": 0.0,
+            "operational_status": "UNAVAILABLE",
+        },
+        {
+            "domain_count": 4,
+            "enabled_count": 0,
+            "enabled_resolved_count": 0,
+            "enabled_unresolved_count": 0,
+            "operational_percentage": 0.0,
+            "operational_status": "DISABLED",
+        },
+        {
+            "domain_count": 4,
+            "enabled_count": 4,
+            "enabled_resolved_count": 0,
+            "enabled_unresolved_count": 4,
+            "operational_percentage": 0.0,
+            "operational_status": "UNRESOLVED",
+        },
+        {
+            "domain_count": 4,
+            "enabled_count": 4,
+            "enabled_resolved_count": 2,
+            "enabled_unresolved_count": 2,
+            "operational_percentage": 50.0,
+            "operational_status": "DEGRADED",
+        },
+        {
+            "domain_count": 4,
+            "enabled_count": 4,
+            "enabled_resolved_count": 4,
+            "enabled_unresolved_count": 0,
+            "operational_percentage": 100.0,
+            "operational_status": "OPERATIONAL",
+        },
+    ),
+)
+def test_complete_operational_baselines_are_valid(
+    payload: dict[str, int | float | str],
+) -> None:
+    status = make_complete_operational_status(
+        **payload,
+    )
+
+    assert (
+        status.analyst_operational_status
+        == payload["operational_status"]
+    )
+    assert (
+        status.analyst_operational_percentage
+        == payload["operational_percentage"]
+    )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "invalid_value",
+    ),
+    (
+        (
+            "domain_count",
+            1,
+        ),
+        (
+            "enabled_count",
+            1,
+        ),
+        (
+            "enabled_resolved_count",
+            1,
+        ),
+        (
+            "enabled_unresolved_count",
+            1,
+        ),
+        (
+            "operational_percentage",
+            25.0,
+        ),
+        (
+            "operational_status",
+            "DISABLED",
+        ),
+    ),
+)
+def test_unavailable_state_rejects_single_field_mutation(
+    field_name: str,
+    invalid_value: float | str,
+) -> None:
+    payload = {
+        "domain_count": 0,
+        "enabled_count": 0,
+        "enabled_resolved_count": 0,
+        "enabled_unresolved_count": 0,
+        "operational_percentage": 0.0,
+        "operational_status": "UNAVAILABLE",
+    }
+
+    payload[field_name] = invalid_value
+
+    with pytest.raises(ValueError):
+        make_complete_operational_status(
+            **payload,
+        )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "invalid_value",
+    ),
+    (
+        (
+            "domain_count",
+            0,
+        ),
+        (
+            "enabled_count",
+            1,
+        ),
+        (
+            "enabled_resolved_count",
+            1,
+        ),
+        (
+            "enabled_unresolved_count",
+            1,
+        ),
+        (
+            "operational_percentage",
+            25.0,
+        ),
+        (
+            "operational_status",
+            "UNAVAILABLE",
+        ),
+    ),
+)
+def test_disabled_state_rejects_single_field_mutation(
+    field_name: str,
+    invalid_value: float | str,
+) -> None:
+    payload = {
+        "domain_count": 4,
+        "enabled_count": 0,
+        "enabled_resolved_count": 0,
+        "enabled_unresolved_count": 0,
+        "operational_percentage": 0.0,
+        "operational_status": "DISABLED",
+    }
+
+    payload[field_name] = invalid_value
+
+    with pytest.raises(ValueError):
+        make_complete_operational_status(
+            **payload,
+        )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "invalid_value",
+    ),
+    (
+        (
+            "domain_count",
+            3,
+        ),
+        (
+            "enabled_count",
+            3,
+        ),
+        (
+            "enabled_resolved_count",
+            1,
+        ),
+        (
+            "enabled_unresolved_count",
+            3,
+        ),
+        (
+            "operational_percentage",
+            25.0,
+        ),
+        (
+            "operational_status",
+            "DEGRADED",
+        ),
+    ),
+)
+def test_unresolved_state_rejects_single_field_mutation(
+    field_name: str,
+    invalid_value: float | str,
+) -> None:
+    payload = {
+        "domain_count": 4,
+        "enabled_count": 4,
+        "enabled_resolved_count": 0,
+        "enabled_unresolved_count": 4,
+        "operational_percentage": 0.0,
+        "operational_status": "UNRESOLVED",
+    }
+
+    payload[field_name] = invalid_value
+
+    with pytest.raises(ValueError):
+        make_complete_operational_status(
+            **payload,
+        )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "invalid_value",
+    ),
+    (
+        (
+            "domain_count",
+            3,
+        ),
+        (
+            "enabled_count",
+            3,
+        ),
+        (
+            "enabled_resolved_count",
+            3,
+        ),
+        (
+            "enabled_unresolved_count",
+            1,
+        ),
+        (
+            "operational_percentage",
+            75.0,
+        ),
+        (
+            "operational_status",
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_degraded_state_rejects_single_field_mutation(
+    field_name: str,
+    invalid_value: float | str,
+) -> None:
+    payload = {
+        "domain_count": 4,
+        "enabled_count": 4,
+        "enabled_resolved_count": 2,
+        "enabled_unresolved_count": 2,
+        "operational_percentage": 50.0,
+        "operational_status": "DEGRADED",
+    }
+
+    payload[field_name] = invalid_value
+
+    with pytest.raises(ValueError):
+        make_complete_operational_status(
+            **payload,
+        )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "invalid_value",
+    ),
+    (
+        (
+            "domain_count",
+            3,
+        ),
+        (
+            "enabled_count",
+            3,
+        ),
+        (
+            "enabled_resolved_count",
+            3,
+        ),
+        (
+            "enabled_unresolved_count",
+            1,
+        ),
+        (
+            "operational_percentage",
+            75.0,
+        ),
+        (
+            "operational_status",
+            "DEGRADED",
+        ),
+    ),
+)
+def test_operational_state_rejects_single_field_mutation(
+    field_name: str,
+    invalid_value: float | str,
+) -> None:
+    payload = {
+        "domain_count": 4,
+        "enabled_count": 4,
+        "enabled_resolved_count": 4,
+        "enabled_unresolved_count": 0,
+        "operational_percentage": 100.0,
+        "operational_status": "OPERATIONAL",
+    }
+
+    payload[field_name] = invalid_value
+
+    with pytest.raises(ValueError):
+        make_complete_operational_status(
+            **payload,
+        )
