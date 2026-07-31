@@ -102,6 +102,8 @@ def make_status(
     setup_lifecycle_action: str | None = None,
     setup_lifecycle_reason: str | None = None,
 
+    acceptance_confidence: float | None = None,
+
     trend_analyst: str | None = None,
     trend_opinion: str | None = None,
     trend_confidence: float | None = None,
@@ -322,6 +324,7 @@ def make_status(
         trend_enabled=trend_enabled,
         trend_evidence=trend_evidence,
         trend_warnings=trend_warnings,
+        acceptance_confidence=acceptance_confidence,
         analyst_summary=(
         analyst_summary
         if analyst_summary is not None
@@ -9071,6 +9074,7 @@ def test_normalized_confidence_fields_reject_non_finite_values(
         "pressure_confidence",
         "participation_confidence",
         "value_confidence",
+        "acceptance_confidence",
         "analyst_average_confidence",
         "analyst_enabled_average_confidence",
         "analyst_confidence_coverage_percentage",
@@ -9121,6 +9125,7 @@ def test_normalized_confidence_fields_accept_finite_boundaries(
         "participation_confidence",
         "value_confidence",
         "analyst_average_confidence",
+        "acceptance_confidence",
         "analyst_enabled_average_confidence",
         "analyst_confidence_coverage_percentage",
         "analyst_enabled_confidence_coverage_percentage",
@@ -9141,3 +9146,91 @@ def test_normalized_confidence_fields_accept_finite_zero(
         status,
         field_name,
     ) == 0.0
+
+@pytest.mark.parametrize(
+    (
+        "supplied_value",
+        "expected_value",
+    ),
+    (
+        (
+            0,
+            0.0,
+        ),
+        (
+            25,
+            25.0,
+        ),
+        (
+            50.5,
+            50.5,
+        ),
+        (
+            100,
+            100.0,
+        ),
+    ),
+)
+def test_acceptance_confidence_normalizes_finite_numeric_values(
+    supplied_value: float,
+    expected_value: float,
+) -> None:
+    status = make_status(
+        acceptance_confidence=supplied_value,
+    )
+
+    assert (
+        status.acceptance_confidence
+        == expected_value
+    )
+    assert isinstance(
+        status.acceptance_confidence,
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    (
+        True,
+        False,
+        "50",
+        object(),
+    ),
+)
+def test_acceptance_confidence_rejects_non_numeric_values(
+    invalid_value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "acceptance_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            acceptance_confidence=invalid_value,
+        )
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    (
+        -0.0001,
+        -1.0,
+        100.0001,
+        101.0,
+    ),
+)
+def test_acceptance_confidence_rejects_out_of_range_values(
+    invalid_value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "acceptance_confidence must be "
+            "between 0 and 100"
+        ),
+    ):
+        make_status(
+            acceptance_confidence=invalid_value,
+        )
+    
