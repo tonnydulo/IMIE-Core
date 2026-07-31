@@ -34,6 +34,7 @@ class DashboardStatusFilePublisher:
 
     _REPLACE_MAX_ATTEMPTS = 3
     _REPLACE_RETRY_DELAY_SECONDS = 0.01
+    _TEMPORARY_PATH_MAX_ATTEMPTS = 3
     _TRANSIENT_REPLACE_WINERRORS = frozenset(
         {
             5,
@@ -1452,7 +1453,9 @@ class DashboardStatusFilePublisher:
             indent=self.indent
         )
 
-        temporary_path = self._build_temporary_path()
+        temporary_path = (
+            self._reserve_temporary_path()
+        )
 
         try:
             temporary_path.write_text(
@@ -1505,6 +1508,37 @@ class DashboardStatusFilePublisher:
                 sleep(
                     self._REPLACE_RETRY_DELAY_SECONDS
                 )
+
+    def _reserve_temporary_path(
+        self,
+    ) -> Path:
+        for attempt in range(
+            1,
+            self._TEMPORARY_PATH_MAX_ATTEMPTS + 1,
+        ):
+            temporary_path = (
+                self._build_temporary_path()
+            )
+
+            try:
+                temporary_path.touch(
+                    exist_ok=False
+                )
+
+            except FileExistsError:
+                if (
+                    attempt
+                    >= self._TEMPORARY_PATH_MAX_ATTEMPTS
+                ):
+                    raise
+
+                continue
+
+            return temporary_path
+
+        raise RuntimeError(
+            "Temporary dashboard path reservation failed."
+        )
 
     @classmethod
     def _is_transient_replace_error(

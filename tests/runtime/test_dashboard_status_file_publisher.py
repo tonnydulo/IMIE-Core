@@ -4549,3 +4549,261 @@ def test_separate_publishers_do_not_share_temporary_files(
         1,
         2,
     }
+
+def test_temporary_path_collision_does_not_overwrite_existing_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    collided_path = (
+        tmp_path
+        / ".dashboard.json.collision.tmp"
+    )
+    collided_path.write_text(
+        "existing temporary content",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    generated_paths = iter(
+        (
+            collided_path,
+            (
+                tmp_path
+                / ".dashboard.json.recovery.tmp"
+            ),
+        )
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: next(
+            generated_paths
+        ),
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    assert collided_path.read_text(
+        encoding="utf-8",
+    ) == "existing temporary content"
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] == 1
+
+    collided_path.unlink()
+
+def test_temporary_path_reservation_retries_collision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    collided_path = (
+        tmp_path
+        / ".dashboard.json.collision.tmp"
+    )
+    recovery_path = (
+        tmp_path
+        / ".dashboard.json.recovery.tmp"
+    )
+
+    collided_path.write_text(
+        "occupied",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    generated_paths: list[Path] = []
+
+    def build_temporary_path() -> Path:
+        path = (
+            collided_path
+            if not generated_paths
+            else recovery_path
+        )
+
+        generated_paths.append(
+            path
+        )
+
+        return path
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        build_temporary_path,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert generated_paths == [
+        collided_path,
+        recovery_path,
+    ]
+
+    assert collided_path.read_text(
+        encoding="utf-8",
+    ) == "occupied"
+
+    assert recovery_path.exists() is False
+    assert output_path.exists()
+
+    collided_path.unlink()
+
+def test_temporary_path_reservation_raises_after_collision_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    collided_path = (
+        tmp_path
+        / ".dashboard.json.collision.tmp"
+    )
+
+    collided_path.write_text(
+        "occupied",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    build_attempts = 0
+
+    def build_temporary_path() -> Path:
+        nonlocal build_attempts
+
+        build_attempts += 1
+
+        return collided_path
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        build_temporary_path,
+    )
+
+    with pytest.raises(
+        FileExistsError,
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert (
+        build_attempts
+        == publisher._TEMPORARY_PATH_MAX_ATTEMPTS
+    )
+
+    assert collided_path.read_text(
+        encoding="utf-8",
+    ) == "occupied"
+
+    assert output_path.exists() is False
+
+    collided_path.unlink()
+
+def test_temporary_path_is_reserved_before_payload_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_write_text = Path.write_text
+    temporary_file_existed_before_write = False
+
+    def recording_write_text(
+        path: Path,
+        data: str,
+        *,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        nonlocal temporary_file_existed_before_write
+
+        is_temporary_path = (
+            path.parent == tmp_path
+            and path.name.startswith(
+                ".dashboard.json."
+            )
+            and path.name.endswith(
+                ".tmp"
+            )
+        )
+
+        if is_temporary_path:
+            temporary_file_existed_before_write = (
+                path.exists()
+            )
+
+        return original_write_text(
+            path,
+            data,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        recording_write_text,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert (
+        temporary_file_existed_before_write
+        is True
+    )
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
