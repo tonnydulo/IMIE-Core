@@ -11213,3 +11213,197 @@ def test_indented_json_has_no_trailing_newline(
     assert not serialized.endswith(
         "\n"
     )
+
+@pytest.mark.parametrize(
+    "invalid_indent",
+    (
+        False,
+        True,
+    ),
+)
+def test_to_json_rejects_boolean_indent(
+    invalid_indent: bool,
+) -> None:
+    status = make_status()
+
+    with pytest.raises(
+        TypeError,
+        match="indent must be an int or None",
+    ):
+        status.to_json(
+            indent=invalid_indent,
+        )
+
+@pytest.mark.parametrize(
+    "invalid_indent",
+    (
+        2.0,
+        2.5,
+        "2",
+        "",
+        [],
+        {},
+        object(),
+    ),
+)
+def test_to_json_rejects_non_integer_indent(
+    invalid_indent: object,
+) -> None:
+    status = make_status()
+
+    with pytest.raises(
+        TypeError,
+        match="indent must be an int or None",
+    ):
+        status.to_json(
+            indent=invalid_indent,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "invalid_indent",
+    (
+        -1,
+        -2,
+        -4,
+        -100,
+    ),
+)
+def test_to_json_rejects_negative_indent(
+    invalid_indent: int,
+) -> None:
+    status = make_status()
+
+    with pytest.raises(
+        ValueError,
+        match="indent cannot be negative",
+    ):
+        status.to_json(
+            indent=invalid_indent,
+        )
+
+def test_to_json_accepts_none_indent(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=None,
+    )
+
+    assert serialized == status.to_json()
+    assert "\n" not in serialized
+    assert json.loads(
+        serialized
+    ) == status.to_dict()
+
+def test_to_json_accepts_zero_indent(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=0,
+    )
+
+    assert "\n" in serialized
+    assert json.loads(
+        serialized
+    ) == status.to_dict()
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        1,
+        2,
+        4,
+        8,
+    ),
+)
+def test_to_json_accepts_positive_indent(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+
+    assert "\n" in serialized
+    assert json.loads(
+        serialized
+    ) == status.to_dict()
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        1,
+        2,
+        4,
+        8,
+    ),
+)
+def test_to_json_uses_requested_indentation_width(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+    lines = serialized.splitlines()
+
+    content_lines = tuple(
+        line
+        for line in lines[1:-1]
+        if line.strip()
+    )
+
+    assert content_lines
+
+    for line in content_lines:
+        assert line.startswith(
+            " " * indent
+        )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        1,
+        2,
+        4,
+        8,
+    ),
+)
+def test_to_json_indent_changes_format_not_payload(
+    indent: int | None,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = json.loads(
+        status.to_json(
+            indent=indent,
+        )
+    )
+
+    assert payload == status.to_dict()
