@@ -1,5 +1,7 @@
 import json
 
+import os
+
 from datetime import (
     datetime,
     timedelta,
@@ -2920,4 +2922,288 @@ def test_failed_first_serialization_creates_no_dashboard_file(
         )
 
     assert output_path.exists() is False
+    assert temporary_path.exists() is False
+
+def test_temporary_write_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    original_content = output_path.read_text(
+        encoding="utf-8",
+    )
+    original_write_text = Path.write_text
+
+    def failing_write_text(
+        path: Path,
+        data: str,
+        *,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        if path == temporary_path:
+            raise OSError(
+                "Temporary dashboard write failed."
+            )
+
+        return original_write_text(
+            path,
+            data,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        failing_write_text,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Temporary dashboard write failed",
+    ):
+        publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == original_content
+    assert temporary_path.exists() is False
+
+def test_first_temporary_write_failure_creates_no_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_write_text = Path.write_text
+
+    def failing_write_text(
+        path: Path,
+        data: str,
+        *,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        if path == temporary_path:
+            raise PermissionError(
+                "Dashboard directory is read-only."
+            )
+
+        return original_write_text(
+            path,
+            data,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        failing_write_text,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="read-only",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+    assert temporary_path.exists() is False
+
+def test_atomic_replace_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    original_content = output_path.read_text(
+        encoding="utf-8",
+    )
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        raise OSError(
+            "Atomic dashboard replacement failed."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Atomic dashboard replacement failed",
+    ):
+        publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == original_content
+    assert temporary_path.exists() is False
+
+def test_first_atomic_replace_failure_leaves_no_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        raise PermissionError(
+            "Dashboard replacement is not permitted."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="not permitted",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+    assert temporary_path.exists() is False
+
+def test_atomic_replace_uses_expected_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_calls: list[
+        tuple[Path, Path]
+    ] = []
+    original_replace = os.replace
+
+    def recording_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        replace_calls.append(
+            (
+                Path(source),
+                Path(destination),
+            )
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert replace_calls == [
+        (
+            temporary_path,
+            output_path,
+        )
+    ]
+    assert output_path.exists()
     assert temporary_path.exists() is False
