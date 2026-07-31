@@ -11045,3 +11045,171 @@ def test_to_json_with_indent_uses_multiline_format(
     assert json.loads(
         serialized
     ) == status.to_dict()
+
+def test_compact_json_serializes_keys_in_sorted_order(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    serialized = status.to_json()
+    payload = status.to_dict()
+
+    serialized_pairs = json.loads(
+        serialized,
+        object_pairs_hook=lambda pairs: pairs,
+    )
+    serialized_keys = tuple(
+        key
+        for key, _ in serialized_pairs
+    )
+
+    assert serialized_keys == tuple(
+        sorted(
+            payload.keys()
+        )
+    )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+def test_indented_json_serializes_keys_in_sorted_order(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+    payload = status.to_dict()
+
+    serialized_pairs = json.loads(
+        serialized,
+        object_pairs_hook=lambda pairs: pairs,
+    )
+    serialized_keys = tuple(
+        key
+        for key, _ in serialized_pairs
+    )
+
+    assert serialized_keys == tuple(
+        sorted(
+            payload.keys()
+        )
+    )
+
+def test_compact_json_matches_canonical_encoding(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    expected = json.dumps(
+        status.to_dict(),
+        separators=(
+            ",",
+            ":",
+        ),
+        sort_keys=True,
+        allow_nan=False,
+    )
+
+    assert status.to_json() == expected
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+def test_indented_json_matches_canonical_encoding(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    expected = json.dumps(
+        status.to_dict(),
+        indent=indent,
+        sort_keys=True,
+        allow_nan=False,
+    )
+
+    assert status.to_json(
+        indent=indent,
+    ) == expected
+
+def test_compact_json_has_no_trailing_newline(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json()
+
+    assert not serialized.endswith(
+        "\n"
+    )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+def test_indented_json_has_no_trailing_newline(
+    indent: int,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json(
+        indent=indent,
+    )
+
+    assert not serialized.endswith(
+        "\n"
+    )
