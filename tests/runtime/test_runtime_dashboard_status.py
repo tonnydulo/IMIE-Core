@@ -9233,4 +9233,3 @@ def test_acceptance_confidence_rejects_out_of_range_values(
         make_status(
             acceptance_confidence=invalid_value,
         )
-    
