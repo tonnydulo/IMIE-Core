@@ -11531,3 +11531,103 @@ def test_to_dict_preserves_unset_optional_fields_as_none(
     for field_name in unset_serialized_fields:
         assert field_name in payload
         assert payload[field_name] is None
+
+def test_to_dict_preserves_exact_flattened_health_payload(
+) -> None:
+    health = make_health()
+    status = make_status()
+
+    payload = status.to_dict()
+    expected_health_payload = health.to_dict()
+
+    for field_name, expected_value in (
+        expected_health_payload.items()
+    ):
+        assert payload[field_name] == expected_value
+
+def test_to_dict_preserves_flattened_health_scalar_values(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    assert payload["state"] == "RUNNING"
+    assert payload["uptime_seconds"] == 300.0
+    assert payload["completed_cycle_count"] == 2
+    assert payload["error_type"] is None
+
+    assert payload["running"] is True
+    assert payload["failed"] is False
+    assert payload["terminal"] is False
+
+def test_to_dict_preserves_flattened_health_timestamps(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    assert payload["started_at"] == NOW.isoformat()
+    assert payload["checked_at"] == (
+        NOW
+        + timedelta(
+            minutes=5,
+        )
+    ).isoformat()
+    assert payload["last_transition_at"] == NOW.isoformat()
+    assert payload["last_heartbeat_at"] is None
+    assert payload["last_successful_cycle_at"] is None
+
+def test_to_dict_preserves_flattened_health_cycle_flags(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    assert payload["has_cycle"] is True
+    assert payload["cycle_failed"] is False
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+def test_to_json_preserves_exact_flattened_health_payload(
+    indent: int | None,
+) -> None:
+    health = make_health()
+    status = make_status()
+
+    payload = json.loads(
+        status.to_json(
+            indent=indent,
+        )
+    )
+    expected_health_payload = health.to_dict()
+
+    for field_name, expected_value in (
+        expected_health_payload.items()
+    ):
+        assert payload[field_name] == expected_value
+
+def test_dashboard_fields_do_not_override_flattened_health_values(
+) -> None:
+    health = make_health()
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = status.to_dict()
+
+    for field_name, expected_value in health.to_dict().items():
+        assert payload[field_name] == expected_value
