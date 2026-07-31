@@ -2739,3 +2739,185 @@ def test_successful_publication_removes_temporary_file(
 
     assert output_path.exists()
     assert temporary_path.exists() is False
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_non_finite_payload_preserves_existing_dashboard_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    indent: int | None,
+    non_finite_value: float,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=indent,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    original_content = output_path.read_text(
+        encoding="utf-8",
+    )
+
+    invalid_status = publisher.build_status()
+
+    object.__setattr__(
+        invalid_status,
+        "trend_confidence",
+        non_finite_value,
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "build_status",
+        lambda: invalid_status,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == original_content
+
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_non_finite_payload_leaves_no_temporary_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    non_finite_value: float,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    invalid_status = publisher.build_status()
+
+    object.__setattr__(
+        invalid_status,
+        "analyst_operational_percentage",
+        non_finite_value,
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "build_status",
+        lambda: invalid_status,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        publisher.update_latest_decision(
+            "WAIT"
+        )
+
+    assert temporary_path.exists() is False
+    assert output_path.exists()
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+def test_failed_first_serialization_creates_no_dashboard_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    indent: int | None,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=indent,
+    )
+
+    publisher._health = make_health()
+
+    invalid_status = publisher.build_status()
+
+    object.__setattr__(
+        invalid_status,
+        "trend_confidence",
+        float("nan"),
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "build_status",
+        lambda: invalid_status,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        publisher.update_market_session(
+            "REGULAR"
+        )
+
+    assert output_path.exists() is False
+    assert temporary_path.exists() is False
