@@ -6,6 +6,8 @@ from time import sleep
 
 from enum import Enum
 
+from uuid import uuid4
+
 from pathlib import Path
 from threading import RLock
 
@@ -1450,9 +1452,7 @@ class DashboardStatusFilePublisher:
             indent=self.indent
         )
 
-        temporary_path = self.path.with_name(
-            f".{self.path.name}.tmp"
-        )
+        temporary_path = self._build_temporary_path()
 
         try:
             temporary_path.write_text(
@@ -1466,6 +1466,13 @@ class DashboardStatusFilePublisher:
         finally:
             if temporary_path.exists():
                 temporary_path.unlink()
+
+    def _build_temporary_path(
+        self,
+    ) -> Path:
+        return self.path.with_name(
+            f".{self.path.name}.{uuid4().hex}.tmp"
+        )
 
     def _replace_atomically(
         self,

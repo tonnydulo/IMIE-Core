@@ -470,6 +470,15 @@ def make_windows_permission_error(
 
     return error
 
+def dashboard_temporary_files(
+    directory: Path,
+) -> list[Path]:
+    return list(
+        directory.glob(
+            ".dashboard.json.*.tmp"
+        )
+    )
+
 
 def test_publish_result_populates_decision_details(
     tmp_path: Path,
@@ -2742,9 +2751,7 @@ def test_successful_publication_removes_temporary_file(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -2756,7 +2763,9 @@ def test_successful_publication_removes_temporary_file(
     )
 
     assert output_path.exists()
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+    tmp_path
+) == []
 
 @pytest.mark.parametrize(
     "indent",
@@ -2847,9 +2856,7 @@ def test_non_finite_payload_leaves_no_temporary_file(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -2882,7 +2889,9 @@ def test_non_finite_payload_leaves_no_temporary_file(
             "WAIT"
         )
 
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
     assert output_path.exists()
 
 @pytest.mark.parametrize(
@@ -2903,9 +2912,7 @@ def test_failed_first_serialization_creates_no_dashboard_file(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -2938,7 +2945,9 @@ def test_failed_first_serialization_creates_no_dashboard_file(
         )
 
     assert output_path.exists() is False
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_temporary_write_failure_preserves_existing_dashboard(
     tmp_path: Path,
@@ -2947,9 +2956,6 @@ def test_temporary_write_failure_preserves_existing_dashboard(
     output_path = (
         tmp_path
         / "dashboard.json"
-    )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
     )
     publisher = DashboardStatusFilePublisher(
         path=output_path,
@@ -2977,9 +2983,19 @@ def test_temporary_write_failure_preserves_existing_dashboard(
         errors: str | None = None,
         newline: str | None = None,
     ) -> int:
-        if path == temporary_path:
-            raise OSError(
-                "Temporary dashboard write failed."
+        is_temporary_path = (
+            path.parent == tmp_path
+            and path.name.startswith(
+                ".dashboard.json."
+            )
+            and path.name.endswith(
+                ".tmp"
+            )
+        )
+
+        if is_temporary_path:
+            raise PermissionError(
+                "Dashboard directory is read-only."
             )
 
         return original_write_text(
@@ -2997,8 +3013,8 @@ def test_temporary_write_failure_preserves_existing_dashboard(
     )
 
     with pytest.raises(
-        OSError,
-        match="Temporary dashboard write failed",
+        PermissionError,
+        match="read-only",
     ):
         publisher.publish_health(
             make_health(
@@ -3009,7 +3025,10 @@ def test_temporary_write_failure_preserves_existing_dashboard(
     assert output_path.read_text(
         encoding="utf-8",
     ) == original_content
-    assert temporary_path.exists() is False
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_first_temporary_write_failure_creates_no_dashboard(
     tmp_path: Path,
@@ -3018,9 +3037,6 @@ def test_first_temporary_write_failure_creates_no_dashboard(
     output_path = (
         tmp_path
         / "dashboard.json"
-    )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
     )
     publisher = DashboardStatusFilePublisher(
         path=output_path,
@@ -3038,7 +3054,17 @@ def test_first_temporary_write_failure_creates_no_dashboard(
         errors: str | None = None,
         newline: str | None = None,
     ) -> int:
-        if path == temporary_path:
+        is_temporary_path = (
+            path.parent == tmp_path
+            and path.name.startswith(
+                ".dashboard.json."
+            )
+            and path.name.endswith(
+                ".tmp"
+            )
+        )
+
+        if is_temporary_path:
             raise PermissionError(
                 "Dashboard directory is read-only."
             )
@@ -3066,7 +3092,9 @@ def test_first_temporary_write_failure_creates_no_dashboard(
         )
 
     assert output_path.exists() is False
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_atomic_replace_failure_preserves_existing_dashboard(
     tmp_path: Path,
@@ -3076,9 +3104,7 @@ def test_atomic_replace_failure_preserves_existing_dashboard(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3123,7 +3149,9 @@ def test_atomic_replace_failure_preserves_existing_dashboard(
     assert output_path.read_text(
         encoding="utf-8",
     ) == original_content
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_first_atomic_replace_failure_leaves_no_files(
     tmp_path: Path,
@@ -3133,9 +3161,7 @@ def test_first_atomic_replace_failure_leaves_no_files(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3165,7 +3191,9 @@ def test_first_atomic_replace_failure_leaves_no_files(
         )
 
     assert output_path.exists() is False
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_atomic_replace_uses_expected_paths(
     tmp_path: Path,
@@ -3174,9 +3202,6 @@ def test_atomic_replace_uses_expected_paths(
     output_path = (
         tmp_path
         / "dashboard.json"
-    )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
     )
     publisher = DashboardStatusFilePublisher(
         path=output_path,
@@ -3215,14 +3240,26 @@ def test_atomic_replace_uses_expected_paths(
         make_health()
     )
 
-    assert replace_calls == [
-        (
-            temporary_path,
-            output_path,
-        )
-    ]
+    assert len(replace_calls) == 1
+
+    source_path, destination_path = (
+        replace_calls[0]
+    )
+
+    assert source_path.parent == tmp_path
+    assert source_path.name.startswith(
+        ".dashboard.json."
+    )
+    assert source_path.name.endswith(
+        ".tmp"
+    )
+    assert destination_path == output_path
+
     assert output_path.exists()
-    assert temporary_path.exists() is False
+    assert source_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_concurrent_health_updates_leave_valid_dashboard_json(
     tmp_path: Path,
@@ -3362,9 +3399,6 @@ def test_concurrent_publications_serialize_temporary_writes(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3374,8 +3408,10 @@ def test_concurrent_publications_serialize_temporary_writes(
 
     original_write_text = Path.write_text
     counter_lock = Lock()
+
     active_temporary_writes = 0
     maximum_active_temporary_writes = 0
+    observed_temporary_paths: list[Path] = []
 
     def recording_write_text(
         path: Path,
@@ -3388,37 +3424,51 @@ def test_concurrent_publications_serialize_temporary_writes(
         nonlocal active_temporary_writes
         nonlocal maximum_active_temporary_writes
 
-        if path == temporary_path:
-            with counter_lock:
-                active_temporary_writes += 1
-                maximum_active_temporary_writes = max(
-                    maximum_active_temporary_writes,
-                    active_temporary_writes,
-                )
-
-            try:
-                sleep(
-                    0.01
-                )
-
-                return original_write_text(
-                    path,
-                    data,
-                    encoding=encoding,
-                    errors=errors,
-                    newline=newline,
-                )
-            finally:
-                with counter_lock:
-                    active_temporary_writes -= 1
-
-        return original_write_text(
-            path,
-            data,
-            encoding=encoding,
-            errors=errors,
-            newline=newline,
+        is_temporary_path = (
+            path.parent == tmp_path
+            and path.name.startswith(
+                ".dashboard.json."
+            )
+            and path.name.endswith(
+                ".tmp"
+            )
         )
+
+        if not is_temporary_path:
+            return original_write_text(
+                path,
+                data,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+            )
+
+        with counter_lock:
+            observed_temporary_paths.append(
+                path
+            )
+            active_temporary_writes += 1
+            maximum_active_temporary_writes = max(
+                maximum_active_temporary_writes,
+                active_temporary_writes,
+            )
+
+        try:
+            sleep(
+                0.01
+            )
+
+            return original_write_text(
+                path,
+                data,
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+            )
+
+        finally:
+            with counter_lock:
+                active_temporary_writes -= 1
 
     monkeypatch.setattr(
         Path,
@@ -3447,7 +3497,20 @@ def test_concurrent_publications_serialize_temporary_writes(
 
     assert maximum_active_temporary_writes == 1
     assert active_temporary_writes == 0
-    assert temporary_path.exists() is False
+
+    assert len(
+        observed_temporary_paths
+    ) == 16
+
+    assert len(
+        set(
+            observed_temporary_paths
+        )
+    ) == 16
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
     payload = json.loads(
         output_path.read_text(
@@ -3558,9 +3621,6 @@ def test_concurrent_readers_only_observe_complete_destination_files(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3577,11 +3637,16 @@ def test_concurrent_readers_only_observe_complete_destination_files(
     original_replace = os.replace
     replace_started = Event()
     allow_replace = Event()
+    temporary_paths: list[Path] = []
 
     def delayed_replace(
         source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
         destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
     ) -> None:
+        temporary_paths.append(
+            Path(source)
+        )
+
         replace_started.set()
 
         assert allow_replace.wait(
@@ -3613,11 +3678,28 @@ def test_concurrent_readers_only_observe_complete_destination_files(
             timeout=5,
         )
 
+        assert len(
+            temporary_paths
+        ) == 1
+
+        temporary_path = (
+            temporary_paths[0]
+        )
+
+        assert temporary_path.parent == tmp_path
+        assert temporary_path.name.startswith(
+            ".dashboard.json."
+        )
+        assert temporary_path.name.endswith(
+            ".tmp"
+        )
+
         destination_payload = json.loads(
             output_path.read_text(
                 encoding="utf-8",
             )
         )
+
         temporary_payload = json.loads(
             temporary_path.read_text(
                 encoding="utf-8",
@@ -3644,7 +3726,11 @@ def test_concurrent_readers_only_observe_complete_destination_files(
     assert final_payload[
         "completed_cycle_count"
     ] == 1
+
     assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_atomic_replace_retries_transient_permission_error(
     tmp_path: Path,
@@ -3779,9 +3865,7 @@ def test_atomic_replace_raises_after_retry_limit(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3833,7 +3917,9 @@ def test_atomic_replace_raises_after_retry_limit(
         - 1
     )
     assert output_path.exists() is False
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_atomic_replace_does_not_retry_other_os_errors(
     tmp_path: Path,
@@ -3893,9 +3979,7 @@ def test_replace_retry_exhaustion_preserves_existing_dashboard(
         tmp_path
         / "dashboard.json"
     )
-    temporary_path = output_path.with_name(
-        f".{output_path.name}.tmp"
-    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
@@ -3954,7 +4038,9 @@ def test_replace_retry_exhaustion_preserves_existing_dashboard(
     assert output_path.read_text(
         encoding="utf-8",
     ) == original_content
-    assert temporary_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
 
 def test_publisher_recovers_after_replace_retry_exhaustion(
     tmp_path: Path,
@@ -4290,3 +4376,176 @@ def test_permission_error_without_winerror_is_not_retried(
 
     assert replace_attempts == 1
     assert sleep_calls == []
+
+def test_each_publication_uses_unique_temporary_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = tmp_path / "dashboard.json"
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_paths: list[Path] = []
+    original_replace = os.replace
+
+    def recording_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        temporary_paths.append(
+            Path(source)
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=2,
+        )
+    )
+
+    assert len(temporary_paths) == 2
+    assert temporary_paths[0] != temporary_paths[1]
+
+    for temporary_path in temporary_paths:
+        assert temporary_path.parent == tmp_path
+        assert temporary_path.name.startswith(
+            ".dashboard.json."
+        )
+        assert temporary_path.name.endswith(
+            ".tmp"
+        )
+        assert temporary_path.exists() is False
+
+def test_separate_publishers_do_not_share_temporary_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    first_publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+    second_publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_paths: list[Path] = []
+    paths_lock = Lock()
+    original_replace = os.replace
+
+    def recording_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        source_path = Path(
+            source
+        )
+        destination_path = Path(
+            destination
+        )
+
+        if destination_path == output_path:
+            with paths_lock:
+                temporary_paths.append(
+                    source_path
+                )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=2,
+    ) as executor:
+        futures = (
+            executor.submit(
+                first_publisher.publish_health,
+                make_health(
+                    cycle_count=1,
+                ),
+            ),
+            executor.submit(
+                second_publisher.publish_health,
+                make_health(
+                    cycle_count=2,
+                ),
+            ),
+        )
+
+        for future in futures:
+            future.result()
+
+    assert len(
+        temporary_paths
+    ) >= 2
+
+    concurrent_temporary_paths = (
+        temporary_paths[-2:]
+    )
+
+    assert len(
+        set(
+            concurrent_temporary_paths
+        )
+    ) == 2
+
+    for temporary_path in concurrent_temporary_paths:
+        assert temporary_path.parent == tmp_path
+        assert temporary_path.name.startswith(
+            ".dashboard.json."
+        )
+        assert temporary_path.name.endswith(
+            ".tmp"
+        )
+        assert temporary_path.exists() is False
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] in {
+        1,
+        2,
+    }
