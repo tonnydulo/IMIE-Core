@@ -9756,3 +9756,231 @@ def test_core_confidence_fields_preserve_float_values(
         stored_value,
         float,
     )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "supplied_value",
+        "expected_value",
+    ),
+    (
+        (
+            "institutional_bias_confidence",
+            75,
+            75.0,
+        ),
+        (
+            "market_phase_confidence",
+            50,
+            50.0,
+        ),
+        (
+            "confluence_score",
+            25,
+            25.0,
+        ),
+        (
+            "acceptance_confidence",
+            80,
+            80.0,
+        ),
+        (
+            "trend_confidence",
+            60,
+            60.0,
+        ),
+        (
+            "structure_confidence",
+            70,
+            70.0,
+        ),
+        (
+            "liquidity_confidence",
+            65,
+            65.0,
+        ),
+        (
+            "analyst_average_confidence",
+            0,
+            0.0,
+        ),
+        (
+            "analyst_enabled_average_confidence",
+            0,
+            0.0,
+        ),
+        (
+            "analyst_confidence_coverage_percentage",
+            0,
+            0.0,
+        ),
+        (
+            "analyst_enabled_confidence_coverage_percentage",
+            0,
+            0.0,
+        ),
+        (
+            "analyst_coverage_percentage",
+            0,
+            0.0,
+        ),
+        (
+            "analyst_operational_percentage",
+            0,
+            0.0,
+        ),
+    ),
+)
+def test_to_dict_preserves_normalized_numeric_fields(
+    field_name: str,
+    supplied_value: int,
+    expected_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: supplied_value,
+        },
+    )
+
+    payload = status.to_dict()
+
+    assert payload[field_name] == expected_value
+    assert isinstance(
+        payload[field_name],
+        float,
+    )
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "supplied_value",
+    ),
+    (
+        (
+            "institutional_bias_confidence",
+            75.25,
+        ),
+        (
+            "market_phase_confidence",
+            50.5,
+        ),
+        (
+            "confluence_score",
+            25.75,
+        ),
+        (
+            "acceptance_confidence",
+            80.125,
+        ),
+        (
+            "trend_confidence",
+            60.625,
+        ),
+        (
+            "structure_confidence",
+            70.875,
+        ),
+        (
+            "liquidity_confidence",
+            65.375,
+        ),
+    ),
+)
+def test_to_dict_preserves_normalized_decimal_values(
+    field_name: str,
+    supplied_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: supplied_value,
+        },
+    )
+
+    payload = status.to_dict()
+
+    assert payload[field_name] == supplied_value
+    assert isinstance(
+        payload[field_name],
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "market_phase_confidence",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_to_dict_preserves_none_normalized_fields(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: None,
+        },
+    )
+
+    payload = status.to_dict()
+
+    assert payload[field_name] is None
+
+
+def test_to_json_serializes_normalized_operational_percentage(
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = json.loads(
+        status.to_json()
+    )
+
+    assert (
+        payload["analyst_operational_percentage"]
+        == 75.0
+    )
+    assert isinstance(
+        payload["analyst_operational_percentage"],
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_non_finite_operational_percentage_is_rejected_before_json(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be finite"
+        ),
+    ):
+        status = make_status(
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+        status.to_json()
