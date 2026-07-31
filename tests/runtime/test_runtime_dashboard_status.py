@@ -10177,3 +10177,178 @@ def test_serialization_does_not_mutate_normalized_fields(
         isinstance(value, float)
         for value in after
     )
+
+def test_complete_payload_json_matches_dictionary_serialization(
+) -> None:
+    status = make_status(
+        institutional_bias_confidence=81,
+        institutional_bias_strength=72,
+        institutional_bias_bullish_score=68,
+        institutional_bias_bearish_score=32,
+        market_phase_confidence=76,
+        market_phase_strength=64,
+        confluence_score=79,
+        acceptance_confidence=74,
+        trend_confidence=82,
+        structure_confidence=71,
+        liquidity_confidence=69,
+        order_block_confidence=66,
+        auction_confidence=73,
+        pressure_confidence=77,
+        participation_confidence=63,
+        value_confidence=70,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_average_confidence=75,
+        analyst_enabled_average_confidence=75,
+        analyst_confidence_coverage_percentage=100,
+        analyst_enabled_confidence_coverage_percentage=100,
+        analyst_coverage_percentage=100,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    dictionary_payload = status.to_dict()
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload == dictionary_payload
+
+def test_partial_payload_json_matches_dictionary_serialization(
+) -> None:
+    status = make_status(
+        trend_confidence=82,
+        acceptance_confidence=74,
+        analyst_domain_count=4,
+        analyst_operational_status="DEGRADED",
+    )
+
+    dictionary_payload = status.to_dict()
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload == dictionary_payload
+
+def test_missing_operational_fields_match_across_serializers(
+) -> None:
+    status = make_status()
+
+    dictionary_payload = status.to_dict()
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload == dictionary_payload
+    assert (
+        json_payload["analyst_operational_status"]
+        is None
+    )
+    assert (
+        json_payload["analyst_operational_percentage"]
+        is None
+    )
+
+@pytest.mark.parametrize(
+    (
+        "resolved_count",
+        "unresolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            1,
+            2,
+            (1 / 3) * 100.0,
+        ),
+        (
+            2,
+            1,
+            (2 / 3) * 100.0,
+        ),
+        (
+            1,
+            6,
+            (1 / 7) * 100.0,
+        ),
+        (
+            6,
+            1,
+            (6 / 7) * 100.0,
+        ),
+    ),
+)
+def test_repeating_operational_percentage_matches_across_serializers(
+    resolved_count: int,
+    unresolved_count: int,
+    operational_percentage: float,
+) -> None:
+    enabled_count = (
+        resolved_count
+        + unresolved_count
+    )
+
+    status = make_status(
+        analyst_domain_count=enabled_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+        analyst_operational_status="DEGRADED",
+    )
+
+    dictionary_payload = status.to_dict()
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload == dictionary_payload
+    assert (
+        json_payload["analyst_operational_percentage"]
+        == operational_percentage
+    )
+
+def test_repeated_serialization_returns_equivalent_payloads(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    first_dictionary_payload = status.to_dict()
+    second_dictionary_payload = status.to_dict()
+
+    first_json_payload = json.loads(
+        status.to_json()
+    )
+    second_json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert (
+        first_dictionary_payload
+        == second_dictionary_payload
+    )
+    assert (
+        first_json_payload
+        == second_json_payload
+    )
+    assert (
+        first_json_payload
+        == first_dictionary_payload
+    )
