@@ -400,6 +400,9 @@ class RuntimeDashboardStatus:
                 value
             )
 
+            if normalized == 0.0:
+                normalized = 0.0
+
             if not (
                 0.0
                 <= normalized

@@ -10666,3 +10666,126 @@ def test_different_operational_states_produce_different_json(
         degraded_status.to_json()
         != operational_status.to_json()
     )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_normalized_confidence_fields_canonicalize_negative_zero(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: -0.0,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == 0.0
+    assert str(stored_value) == "0.0"
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "trend_confidence",
+        "acceptance_confidence",
+        "analyst_average_confidence",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_to_dict_serializes_negative_zero_as_positive_zero(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: -0.0,
+        },
+    )
+
+    payload = status.to_dict()
+
+    assert payload[field_name] == 0.0
+    assert str(payload[field_name]) == "0.0"
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "trend_confidence",
+        "acceptance_confidence",
+        "analyst_average_confidence",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_to_json_serializes_negative_zero_as_positive_zero(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: -0.0,
+        },
+    )
+
+    serialized = status.to_json()
+    payload = json.loads(
+        serialized
+    )
+
+    assert payload[field_name] == 0.0
+    assert str(payload[field_name]) == "0.0"
+    assert f'"{field_name}": -0.0' not in serialized
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "trend_confidence",
+        "acceptance_confidence",
+        "analyst_average_confidence",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_normalized_confidence_fields_preserve_positive_zero(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: 0.0,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == 0.0
+    assert str(stored_value) == "0.0"
