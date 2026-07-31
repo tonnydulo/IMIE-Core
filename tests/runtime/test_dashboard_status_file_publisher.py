@@ -2539,3 +2539,203 @@ def test_publish_result_uses_singular_missing_confidence_message(
         )
     )
 
+@pytest.mark.parametrize(
+    "indent",
+    (
+        None,
+        0,
+        2,
+        4,
+    ),
+)
+def test_written_file_matches_dashboard_status_json(
+    tmp_path: Path,
+    indent: int | None,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=indent,
+    )
+
+    health = make_health()
+    publisher.publish_health(
+        health
+    )
+
+    expected = (
+        publisher
+        .build_status()
+        .to_json(
+            indent=indent,
+        )
+        + "\n"
+    )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == expected
+
+def test_compact_publisher_output_uses_canonical_format(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=None,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+
+    assert serialized.endswith(
+        "\n"
+    )
+    assert serialized.count(
+        "\n"
+    ) == 1
+    assert ": " not in serialized
+    assert ", " not in serialized
+
+    assert json.loads(
+        serialized
+    ) == (
+        publisher
+        .build_status()
+        .to_dict()
+    )
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        0,
+        2,
+        4,
+    ),
+)
+def test_indented_publisher_output_is_multiline(
+    tmp_path: Path,
+    indent: int,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=indent,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+
+    assert serialized.endswith(
+        "\n"
+    )
+    assert serialized.count(
+        "\n"
+    ) > 1
+
+    assert json.loads(
+        serialized
+    ) == (
+        publisher
+        .build_status()
+        .to_dict()
+    )
+
+def test_subsequent_publication_overwrites_previous_json(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    first_serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=7,
+        )
+    )
+
+    second_serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+    second_payload = json.loads(
+        second_serialized
+    )
+
+    assert second_serialized != first_serialized
+    assert second_payload[
+        "completed_cycle_count"
+    ] == 7
+
+    assert second_serialized == (
+        publisher
+        .build_status()
+        .to_json(
+            indent=2,
+        )
+        + "\n"
+    )
+
+def test_successful_publication_removes_temporary_file(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert output_path.exists()
+    assert temporary_path.exists() is False
