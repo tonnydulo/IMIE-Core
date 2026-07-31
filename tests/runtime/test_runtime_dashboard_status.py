@@ -9394,3 +9394,172 @@ def test_normalized_confidence_fields_allow_none(
         status,
         field_name,
     ) is None
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "invalid_value",
+    (
+        -100.0,
+        -1.0,
+        -0.0001,
+        100.0001,
+        101.0,
+        200.0,
+    ),
+)
+def test_normalized_confidence_fields_reject_out_of_range_values(
+    field_name: str,
+    invalid_value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"{field_name} must be between 0 and 100",
+    ):
+        make_status(
+            **{
+                field_name: invalid_value,
+            },
+        )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "boundary_value",
+    (
+        0,
+        100,
+    ),
+)
+def test_normalized_confidence_fields_accept_range_boundaries(
+    field_name: str,
+    boundary_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: boundary_value,
+        },
+    )
+
+    assert getattr(
+        status,
+        field_name,
+    ) == float(boundary_value)
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+    ),
+)
+@pytest.mark.parametrize(
+    "boundary_value",
+    (
+        0,
+        100,
+    ),
+)
+def test_core_confidence_fields_accept_range_boundaries(
+    field_name: str,
+    boundary_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: boundary_value,
+        },
+    )
+
+    assert getattr(
+        status,
+        field_name,
+    ) == float(boundary_value)
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_analyst_confidence_fields_accept_zero_boundary(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: 0,
+        },
+    )
+
+    assert getattr(
+        status,
+        field_name,
+    ) == 0.0
