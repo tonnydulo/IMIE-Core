@@ -8,6 +8,7 @@ from datetime import (
     timezone,
 )
 
+from dataclasses import fields
 import pytest
 
 from imie.runtime import (
@@ -11407,3 +11408,126 @@ def test_to_json_indent_changes_format_not_payload(
     )
 
     assert payload == status.to_dict()
+
+def test_to_dict_contains_unique_payload_keys(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    assert len(payload) == len(set(payload))
+
+def test_to_dict_serializes_all_non_health_model_fields(
+) -> None:
+    status = make_status()
+
+    payload_field_names = set(
+        status.to_dict()
+    )
+    expected_model_fields = {
+        field.name
+        for field in fields(status)
+        if field.name != "health"
+    }
+
+    assert expected_model_fields <= payload_field_names
+
+def test_to_dict_does_not_expose_nested_health_field(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    assert "health" not in payload
+
+def test_to_dict_flattens_health_fields_into_payload(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    expected_health_fields = {
+        "checked_at",
+        "completed_cycle_count",
+        "cycle_failed",
+        "error_type",
+        "failed",
+        "has_cycle",
+        "last_heartbeat_at",
+        "last_successful_cycle_at",
+        "last_transition_at",
+        "running",
+        "started_at",
+        "state",
+        "terminal",
+        "uptime_seconds",
+    }
+
+    assert expected_health_fields <= set(payload)
+
+def test_to_dict_payload_field_contract_is_complete(
+) -> None:
+    status = make_status()
+
+    model_field_names = {
+        field.name
+        for field in fields(status)
+        if field.name != "health"
+    }
+    flattened_health_fields = {
+        "checked_at",
+        "completed_cycle_count",
+        "cycle_failed",
+        "error_type",
+        "failed",
+        "has_cycle",
+        "last_heartbeat_at",
+        "last_successful_cycle_at",
+        "last_transition_at",
+        "running",
+        "started_at",
+        "state",
+        "terminal",
+        "uptime_seconds",
+    }
+
+    assert set(
+        status.to_dict()
+    ) == model_field_names | flattened_health_fields
+
+def test_to_json_preserves_flattened_payload_contract(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    dictionary_payload = status.to_dict()
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload == dictionary_payload
+    assert "health" not in json_payload
+
+def test_to_dict_preserves_unset_optional_fields_as_none(
+) -> None:
+    status = make_status()
+
+    payload = status.to_dict()
+
+    unset_serialized_fields = {
+        field.name
+        for field in fields(status)
+        if field.name != "health"
+        and getattr(
+            status,
+            field.name,
+        ) is None
+    }
+
+    assert unset_serialized_fields
+
+    for field_name in unset_serialized_fields:
+        assert field_name in payload
+        assert payload[field_name] is None
