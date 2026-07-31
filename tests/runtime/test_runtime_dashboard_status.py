@@ -9233,3 +9233,72 @@ def test_acceptance_confidence_rejects_out_of_range_values(
         make_status(
             acceptance_confidence=invalid_value,
         )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "boolean_value",
+    (
+        False,
+        True,
+    ),
+)
+def test_normalized_confidence_fields_reject_boolean_values(
+    field_name: str,
+    boolean_value: bool,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=rf"{field_name} must be a number or None",
+    ):
+        make_status(
+            **{
+                field_name: boolean_value,
+            },
+        )
+
+@pytest.mark.parametrize(
+    "boolean_value",
+    (
+        False,
+        True,
+    ),
+)
+def test_acceptance_confidence_rejects_boolean_values(
+    boolean_value: bool,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "acceptance_confidence must be "
+            "a number or None"
+        ),
+    ):
+        make_status(
+            acceptance_confidence=boolean_value,
+        )
