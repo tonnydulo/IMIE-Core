@@ -8734,3 +8734,198 @@ def test_operational_state_rejects_single_field_mutation(
         make_complete_operational_status(
             **payload,
         )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            3,
+            1,
+            2,
+            (1 / 3) * 100.0,
+        ),
+        (
+            3,
+            2,
+            1,
+            (2 / 3) * 100.0,
+        ),
+        (
+            6,
+            1,
+            5,
+            (1 / 6) * 100.0,
+        ),
+        (
+            6,
+            5,
+            1,
+            (5 / 6) * 100.0,
+        ),
+        (
+            7,
+            2,
+            5,
+            (2 / 7) * 100.0,
+        ),
+        (
+            7,
+            5,
+            2,
+            (5 / 7) * 100.0,
+        ),
+    ),
+)
+def test_operational_percentage_accepts_repeating_count_ratios(
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_domain_count=enabled_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+
+@pytest.mark.parametrize(
+    "percentage_adjustment",
+    (
+        -1e-7,
+        1e-7,
+        -5e-7,
+        5e-7,
+        -1e-6,
+        1e-6,
+    ),
+)
+def test_operational_percentage_accepts_repeating_ratio_within_tolerance(
+    percentage_adjustment: float,
+) -> None:
+    expected_percentage = (1 / 3) * 100.0
+    supplied_percentage = (
+        expected_percentage
+        + percentage_adjustment
+    )
+
+    status = make_status(
+        analyst_domain_count=3,
+        analyst_enabled_count=3,
+        analyst_enabled_resolved_count=1,
+        analyst_enabled_unresolved_count=2,
+        analyst_operational_percentage=(
+            supplied_percentage
+        ),
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == supplied_percentage
+    )
+
+@pytest.mark.parametrize(
+    "percentage_adjustment",
+    (
+        -0.0001,
+        0.0001,
+        -0.01,
+        0.01,
+        -1.0,
+        1.0,
+    ),
+)
+def test_operational_percentage_rejects_repeating_ratio_outside_tolerance(
+    percentage_adjustment: float,
+) -> None:
+    expected_percentage = (1 / 3) * 100.0
+    supplied_percentage = (
+        expected_percentage
+        + percentage_adjustment
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="analyst_operational_percentage",
+    ):
+        make_status(
+            analyst_domain_count=3,
+            analyst_enabled_count=3,
+            analyst_enabled_resolved_count=1,
+            analyst_enabled_unresolved_count=2,
+            analyst_operational_percentage=(
+                supplied_percentage
+            ),
+            analyst_operational_status="DEGRADED",
+        )
+
+@pytest.mark.parametrize(
+    (
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+    ),
+    (
+        (
+            1,
+            2,
+            (1 / 3) * 100.0,
+        ),
+        (
+            2,
+            1,
+            (2 / 3) * 100.0,
+        ),
+        (
+            1,
+            6,
+            (1 / 7) * 100.0,
+        ),
+        (
+            6,
+            1,
+            (6 / 7) * 100.0,
+        ),
+    ),
+)
+def test_operational_percentage_accepts_repeating_component_ratio_without_enabled_count(
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
