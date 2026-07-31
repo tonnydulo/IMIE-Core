@@ -7,6 +7,10 @@ from datetime import (
     timedelta,
     timezone,
 )
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+from time import sleep
+
 from pathlib import Path
 
 import pytest
@@ -3207,3 +3211,329 @@ def test_atomic_replace_uses_expected_paths(
     ]
     assert output_path.exists()
     assert temporary_path.exists() is False
+
+def test_concurrent_health_updates_leave_valid_dashboard_json(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    cycle_counts = tuple(
+        range(
+            1,
+            21,
+        )
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=8,
+    ) as executor:
+        futures = tuple(
+            executor.submit(
+                publisher.publish_health,
+                make_health(
+                    cycle_count=cycle_count,
+                ),
+            )
+            for cycle_count in cycle_counts
+        )
+
+        for future in futures:
+            future.result()
+
+    serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+    payload = json.loads(
+        serialized
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] in cycle_counts
+
+    assert payload["state"] == "RUNNING"
+    assert payload["symbol"] == "NVDA"
+    assert payload["timeframe"] == "2m"
+
+    assert serialized == (
+        publisher
+        .build_status()
+        .to_json(
+            indent=2,
+        )
+        + "\n"
+    )
+
+def test_concurrent_decision_updates_leave_complete_json(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=None,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    decisions = (
+        "WAIT",
+        "PASS",
+        "READY",
+        "PREPARE",
+        "ENTER",
+        "HOLD",
+        "EXIT",
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=7,
+    ) as executor:
+        futures = tuple(
+            executor.submit(
+                publisher.update_latest_decision,
+                decision,
+            )
+            for decision in decisions
+        )
+
+        for future in futures:
+            future.result()
+
+    serialized = output_path.read_text(
+        encoding="utf-8",
+    )
+    payload = json.loads(
+        serialized
+    )
+
+    assert payload[
+        "latest_decision"
+    ] in decisions
+
+    assert serialized.endswith(
+        "\n"
+    )
+    assert serialized.count(
+        "\n"
+    ) == 1
+
+    assert serialized == (
+        publisher
+        .build_status()
+        .to_json(
+            indent=None,
+        )
+        + "\n"
+    )
+
+def test_concurrent_publications_serialize_temporary_writes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    original_write_text = Path.write_text
+    counter_lock = Lock()
+    active_temporary_writes = 0
+    maximum_active_temporary_writes = 0
+
+    def recording_write_text(
+        path: Path,
+        data: str,
+        *,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> int:
+        nonlocal active_temporary_writes
+        nonlocal maximum_active_temporary_writes
+
+        if path == temporary_path:
+            with counter_lock:
+                active_temporary_writes += 1
+                maximum_active_temporary_writes = max(
+                    maximum_active_temporary_writes,
+                    active_temporary_writes,
+                )
+
+            try:
+                sleep(
+                    0.01
+                )
+
+                return original_write_text(
+                    path,
+                    data,
+                    encoding=encoding,
+                    errors=errors,
+                    newline=newline,
+                )
+            finally:
+                with counter_lock:
+                    active_temporary_writes -= 1
+
+        return original_write_text(
+            path,
+            data,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        recording_write_text,
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=8,
+    ) as executor:
+        futures = tuple(
+            executor.submit(
+                publisher.publish_health,
+                make_health(
+                    cycle_count=cycle_count,
+                ),
+            )
+            for cycle_count in range(
+                1,
+                17,
+            )
+        )
+
+        for future in futures:
+            future.result()
+
+    assert maximum_active_temporary_writes == 1
+    assert active_temporary_writes == 0
+    assert temporary_path.exists() is False
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] in range(
+        1,
+        17,
+    )
+
+def test_concurrent_mixed_updates_leave_coherent_snapshot(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    operations = (
+        lambda: publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        ),
+        lambda: publisher.publish_health(
+            make_health(
+                cycle_count=3,
+            )
+        ),
+        lambda: publisher.update_market_session(
+            "PREMARKET"
+        ),
+        lambda: publisher.update_market_session(
+            "REGULAR"
+        ),
+        lambda: publisher.update_latest_decision(
+            "WAIT"
+        ),
+        lambda: publisher.update_latest_decision(
+            "READY"
+        ),
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=len(
+            operations
+        ),
+    ) as executor:
+        futures = tuple(
+            executor.submit(
+                operation
+            )
+            for operation in operations
+        )
+
+        for future in futures:
+            future.result()
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+    current_status = publisher.build_status()
+
+    assert payload == current_status.to_dict()
+
+    assert payload[
+        "completed_cycle_count"
+    ] in {
+        2,
+        3,
+    }
+    assert payload[
+        "market_session"
+    ] in {
+        "PREMARKET",
+        "REGULAR",
+    }
+    assert payload[
+        "latest_decision"
+    ] in {
+        "WAIT",
+        "READY",
+    }
