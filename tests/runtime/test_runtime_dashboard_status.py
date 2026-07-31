@@ -10522,3 +10522,147 @@ def test_mutating_health_related_dictionary_fields_does_not_change_later_payload
 
         assert first_value == second_value
         assert first_value is not second_value
+
+def test_to_json_is_deterministic_for_repeated_calls(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    first_json = status.to_json()
+    second_json = status.to_json()
+    third_json = status.to_json()
+
+    assert first_json == second_json
+    assert second_json == third_json
+
+def test_equivalent_status_instances_produce_identical_json(
+) -> None:
+    first_status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+    second_status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        first_status.to_json()
+        == second_status.to_json()
+    )
+
+def test_integer_and_float_inputs_produce_identical_json(
+) -> None:
+    integer_status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+    float_status = make_status(
+        trend_confidence=75.0,
+        acceptance_confidence=80.0,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75.0,
+        analyst_operational_status="DEGRADED",
+    )
+
+    assert (
+        integer_status.to_json()
+        == float_status.to_json()
+    )
+
+def test_to_json_returns_valid_json_object(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    serialized = status.to_json()
+    payload = json.loads(
+        serialized
+    )
+
+    assert isinstance(
+        serialized,
+        str,
+    )
+    assert isinstance(
+        payload,
+        dict,
+    )
+    assert payload == status.to_dict()
+
+def test_to_json_does_not_modify_later_dictionary_serialization(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    before = status.to_dict()
+
+    status.to_json()
+    status.to_json()
+
+    after = status.to_dict()
+
+    assert after == before
+
+def test_different_operational_states_produce_different_json(
+) -> None:
+    degraded_status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+    operational_status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=4,
+        analyst_enabled_unresolved_count=0,
+        analyst_operational_percentage=100,
+        analyst_operational_status="OPERATIONAL",
+    )
+
+    assert (
+        degraded_status.to_json()
+        != operational_status.to_json()
+    )
