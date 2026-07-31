@@ -9563,3 +9563,196 @@ def test_analyst_confidence_fields_accept_zero_boundary(
         status,
         field_name,
     ) == 0.0
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "integer_value",
+    (
+        0,
+        25,
+        50,
+        75,
+        100,
+    ),
+)
+def test_normalized_confidence_fields_convert_integers_to_float(
+    field_name: str,
+    integer_value: int,
+) -> None:
+    status = make_status(
+        **{
+            field_name: integer_value,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == float(integer_value)
+    assert isinstance(
+        stored_value,
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+    ),
+)
+@pytest.mark.parametrize(
+    "integer_value",
+    (
+        0,
+        25,
+        50,
+        75,
+        100,
+    ),
+)
+def test_core_confidence_fields_convert_integers_to_float(
+    field_name: str,
+    integer_value: int,
+) -> None:
+    status = make_status(
+        **{
+            field_name: integer_value,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == float(integer_value)
+    assert isinstance(
+        stored_value,
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_analyst_confidence_fields_convert_zero_integer_to_float(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: 0,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == 0.0
+    assert isinstance(
+        stored_value,
+        float,
+    )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+    ),
+)
+@pytest.mark.parametrize(
+    "float_value",
+    (
+        0.5,
+        25.25,
+        50.5,
+        75.75,
+        99.999,
+    ),
+)
+def test_core_confidence_fields_preserve_float_values(
+    field_name: str,
+    float_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: float_value,
+        },
+    )
+
+    stored_value = getattr(
+        status,
+        field_name,
+    )
+
+    assert stored_value == float_value
+    assert isinstance(
+        stored_value,
+        float,
+    )
