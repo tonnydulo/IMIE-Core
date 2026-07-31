@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 
+from time import sleep
+
 from enum import Enum
 
 from pathlib import Path
@@ -27,6 +29,9 @@ class DashboardStatusFilePublisher:
     the dashboard file atomically when a health summary is
     available.
     """
+
+    _REPLACE_MAX_ATTEMPTS = 3
+    _REPLACE_RETRY_DELAY_SECONDS = 0.01
 
     def __init__(
         self,
@@ -1448,14 +1453,40 @@ class DashboardStatusFilePublisher:
                 encoding="utf-8",
             )
 
-            os.replace(
-                temporary_path,
-                self.path,
+            self._replace_atomically(
+                temporary_path=temporary_path,
             )
         finally:
             if temporary_path.exists():
                 temporary_path.unlink()
 
+    def _replace_atomically(
+        self,
+        *,
+        temporary_path: Path,
+    ) -> None:
+        for attempt in range(
+            1,
+            self._REPLACE_MAX_ATTEMPTS + 1,
+        ):
+            try:
+                os.replace(
+                    temporary_path,
+                    self.path,
+                )
+                return
+
+            except PermissionError:
+                if (
+                    attempt
+                    >= self._REPLACE_MAX_ATTEMPTS
+                ):
+                    raise
+
+                sleep(
+                    self._REPLACE_RETRY_DELAY_SECONDS
+                )
+                
     @staticmethod
     def _normalize_required_text(
         *,

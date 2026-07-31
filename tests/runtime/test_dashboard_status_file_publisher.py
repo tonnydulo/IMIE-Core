@@ -3633,3 +3633,241 @@ def test_concurrent_readers_only_observe_complete_destination_files(
         "completed_cycle_count"
     ] == 1
     assert temporary_path.exists() is False
+
+def test_atomic_replace_retries_transient_permission_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    sleep_calls: list[float] = []
+    original_replace = os.replace
+
+    def flaky_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        if replace_attempts == 1:
+            raise PermissionError(
+                "Destination is temporarily in use."
+            )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        flaky_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    assert replace_attempts == 2
+    assert sleep_calls == [
+        publisher._REPLACE_RETRY_DELAY_SECONDS,
+    ]
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] == 1
+
+def test_atomic_replace_can_succeed_on_final_attempt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    original_replace = os.replace
+
+    def flaky_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        if (
+            replace_attempts
+            < publisher._REPLACE_MAX_ATTEMPTS
+        ):
+            raise PermissionError(
+                "Destination remains temporarily locked."
+            )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        flaky_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        lambda _: None,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert (
+        replace_attempts
+        == publisher._REPLACE_MAX_ATTEMPTS
+    )
+    assert output_path.exists()
+
+def test_atomic_replace_raises_after_retry_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    sleep_calls: list[float] = []
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        raise PermissionError(
+            "Destination remained locked."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="remained locked",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert (
+        replace_attempts
+        == publisher._REPLACE_MAX_ATTEMPTS
+    )
+    assert len(
+        sleep_calls
+    ) == (
+        publisher._REPLACE_MAX_ATTEMPTS
+        - 1
+    )
+    assert output_path.exists() is False
+    assert temporary_path.exists() is False
+
+def test_atomic_replace_does_not_retry_other_os_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    sleep_calls: list[float] = []
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        raise OSError(
+            "Unexpected filesystem failure."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Unexpected filesystem failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert replace_attempts == 1
+    assert sleep_calls == []
