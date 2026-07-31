@@ -8131,3 +8131,259 @@ def test_operational_status_allows_missing_domain_count(
         operational.analyst_operational_status
         == "OPERATIONAL"
     )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+        "operational_status",
+    ),
+    (
+        (
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            "UNAVAILABLE",
+        ),
+        (
+            4,
+            0,
+            0,
+            0,
+            0.0,
+            "DISABLED",
+        ),
+        (
+            4,
+            4,
+            0,
+            4,
+            0.0,
+            "UNRESOLVED",
+        ),
+        (
+            4,
+            4,
+            1,
+            3,
+            25.0,
+            "DEGRADED",
+        ),
+        (
+            4,
+            4,
+            2,
+            2,
+            50.0,
+            "DEGRADED",
+        ),
+        (
+            4,
+            4,
+            3,
+            1,
+            75.0,
+            "DEGRADED",
+        ),
+        (
+            4,
+            4,
+            4,
+            0,
+            100.0,
+            "OPERATIONAL",
+        ),
+        (
+            10,
+            4,
+            2,
+            2,
+            50.0,
+            "DEGRADED",
+        ),
+        (
+            10,
+            4,
+            4,
+            0,
+            100.0,
+            "OPERATIONAL",
+        ),
+    ),
+)
+def test_complete_operational_payload_accepts_consistent_state(
+    domain_count: int,
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+    operational_status: str,
+) -> None:
+    status = make_status(
+        analyst_domain_count=domain_count,
+        analyst_enabled_count=enabled_count,
+        analyst_enabled_resolved_count=(
+            enabled_resolved_count
+        ),
+        analyst_enabled_unresolved_count=(
+            enabled_unresolved_count
+        ),
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+        analyst_operational_status=(
+            operational_status
+        ),
+    )
+
+    assert status.analyst_domain_count == domain_count
+    assert status.analyst_enabled_count == enabled_count
+    assert (
+        status.analyst_enabled_resolved_count
+        == enabled_resolved_count
+    )
+    assert (
+        status.analyst_enabled_unresolved_count
+        == enabled_unresolved_count
+    )
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )
+    assert (
+        status.analyst_operational_status
+        == operational_status
+    )
+
+@pytest.mark.parametrize(
+    (
+        "domain_count",
+        "enabled_count",
+        "enabled_resolved_count",
+        "enabled_unresolved_count",
+        "operational_percentage",
+        "operational_status",
+    ),
+    (
+        # Zero domains cannot be disabled.
+        (
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            "DISABLED",
+        ),
+        # Positive domains with no enabled analysts are disabled.
+        (
+            4,
+            0,
+            0,
+            0,
+            0.0,
+            "UNAVAILABLE",
+        ),
+        # Enabled count must equal resolved plus unresolved.
+        (
+            4,
+            4,
+            2,
+            1,
+            50.0,
+            "DEGRADED",
+        ),
+        # Percentage must agree with component counts.
+        (
+            4,
+            4,
+            1,
+            3,
+            50.0,
+            "DEGRADED",
+        ),
+        # Status must agree with unresolved state.
+        (
+            4,
+            4,
+            0,
+            4,
+            0.0,
+            "DEGRADED",
+        ),
+        # Partial resolution cannot be operational.
+        (
+            4,
+            4,
+            3,
+            1,
+            75.0,
+            "OPERATIONAL",
+        ),
+        # Complete resolution requires 100%.
+        (
+            4,
+            4,
+            4,
+            0,
+            75.0,
+            "OPERATIONAL",
+        ),
+        # Complete resolution requires operational status.
+        (
+            4,
+            4,
+            4,
+            0,
+            100.0,
+            "DEGRADED",
+        ),
+        # Enabled analysts cannot exceed domains.
+        (
+            4,
+            5,
+            5,
+            0,
+            100.0,
+            "OPERATIONAL",
+        ),
+        # Component total cannot exceed domains.
+        (
+            4,
+            5,
+            3,
+            2,
+            60.0,
+            "DEGRADED",
+        ),
+    ),
+)
+def test_complete_operational_payload_rejects_inconsistent_state(
+    domain_count: int,
+    enabled_count: int,
+    enabled_resolved_count: int,
+    enabled_unresolved_count: int,
+    operational_percentage: float,
+    operational_status: str,
+) -> None:
+    with pytest.raises(ValueError):
+        make_status(
+            analyst_domain_count=domain_count,
+            analyst_enabled_count=enabled_count,
+            analyst_enabled_resolved_count=(
+                enabled_resolved_count
+            ),
+            analyst_enabled_unresolved_count=(
+                enabled_unresolved_count
+            ),
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+            analyst_operational_status=(
+                operational_status
+            ),
+        )
