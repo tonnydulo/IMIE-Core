@@ -1423,7 +1423,7 @@ class DashboardStatusFilePublisher:
                 else None
             ),
         )
-    
+
 
     def _write_if_ready(
         self,
@@ -1486,7 +1486,7 @@ class DashboardStatusFilePublisher:
                 sleep(
                     self._REPLACE_RETRY_DELAY_SECONDS
                 )
-                
+
     @staticmethod
     def _normalize_required_text(
         *,
