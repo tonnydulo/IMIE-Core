@@ -10352,3 +10352,147 @@ def test_repeated_serialization_returns_equivalent_payloads(
         first_json_payload
         == first_dictionary_payload
     )
+
+def test_mutating_dictionary_payload_does_not_change_status(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = status.to_dict()
+
+    payload["trend_confidence"] = 10.0
+    payload["acceptance_confidence"] = 20.0
+    payload["analyst_operational_percentage"] = 100.0
+    payload["analyst_operational_status"] = "OPERATIONAL"
+
+    assert status.trend_confidence == 75.0
+    assert status.acceptance_confidence == 80.0
+    assert (
+        status.analyst_operational_percentage
+        == 75.0
+    )
+    assert (
+        status.analyst_operational_status
+        == "DEGRADED"
+    )
+
+def test_mutating_dictionary_payload_does_not_change_later_payload(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    first_payload = status.to_dict()
+
+    first_payload["trend_confidence"] = 10.0
+    first_payload["acceptance_confidence"] = 20.0
+    first_payload[
+        "analyst_operational_percentage"
+    ] = 100.0
+    first_payload[
+        "analyst_operational_status"
+    ] = "OPERATIONAL"
+
+    second_payload = status.to_dict()
+
+    assert second_payload["trend_confidence"] == 75.0
+    assert (
+        second_payload["acceptance_confidence"]
+        == 80.0
+    )
+    assert (
+        second_payload[
+            "analyst_operational_percentage"
+        ]
+        == 75.0
+    )
+    assert (
+        second_payload["analyst_operational_status"]
+        == "DEGRADED"
+    )
+
+def test_mutating_dictionary_payload_does_not_change_json_payload(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    dictionary_payload = status.to_dict()
+
+    dictionary_payload["trend_confidence"] = 10.0
+    dictionary_payload[
+        "analyst_operational_percentage"
+    ] = 100.0
+    dictionary_payload[
+        "analyst_operational_status"
+    ] = "OPERATIONAL"
+
+    json_payload = json.loads(
+        status.to_json()
+    )
+
+    assert json_payload["trend_confidence"] == 75.0
+    assert (
+        json_payload[
+            "analyst_operational_percentage"
+        ]
+        == 75.0
+    )
+    assert (
+        json_payload["analyst_operational_status"]
+        == "DEGRADED"
+    )
+
+def test_to_dict_returns_distinct_payload_objects(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    first_payload = status.to_dict()
+    second_payload = status.to_dict()
+
+    assert first_payload == second_payload
+    assert first_payload is not second_payload
+
+def test_mutating_one_dictionary_payload_does_not_change_another(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+    )
+
+    first_payload = status.to_dict()
+    second_payload = status.to_dict()
+
+    first_payload["trend_confidence"] = 10.0
+    first_payload["acceptance_confidence"] = 20.0
+
+    assert second_payload["trend_confidence"] == 75.0
+    assert (
+        second_payload["acceptance_confidence"]
+        == 80.0
+    )
