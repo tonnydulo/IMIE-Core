@@ -9984,3 +9984,196 @@ def test_non_finite_operational_percentage_is_rejected_before_json(
         )
 
         status.to_json()
+
+def test_to_dict_serializes_complete_normalized_payload(
+) -> None:
+    status = make_status(
+        institutional_bias_confidence=81,
+        institutional_bias_strength=72,
+        institutional_bias_bullish_score=68,
+        institutional_bias_bearish_score=32,
+        market_phase_confidence=76,
+        market_phase_strength=64,
+        confluence_score=79,
+        acceptance_confidence=74,
+        trend_confidence=82,
+        structure_confidence=71,
+        liquidity_confidence=69,
+        order_block_confidence=66,
+        auction_confidence=73,
+        pressure_confidence=77,
+        participation_confidence=63,
+        value_confidence=70,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_average_confidence=75,
+        analyst_enabled_average_confidence=75,
+        analyst_confidence_coverage_percentage=100,
+        analyst_enabled_confidence_coverage_percentage=100,
+        analyst_coverage_percentage=100,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = status.to_dict()
+
+    expected_values = {
+        "institutional_bias_confidence": 81.0,
+        "institutional_bias_strength": 72.0,
+        "institutional_bias_bullish_score": 68.0,
+        "institutional_bias_bearish_score": 32.0,
+        "market_phase_confidence": 76.0,
+        "market_phase_strength": 64.0,
+        "confluence_score": 79.0,
+        "acceptance_confidence": 74.0,
+        "trend_confidence": 82.0,
+        "structure_confidence": 71.0,
+        "liquidity_confidence": 69.0,
+        "order_block_confidence": 66.0,
+        "auction_confidence": 73.0,
+        "pressure_confidence": 77.0,
+        "participation_confidence": 63.0,
+        "value_confidence": 70.0,
+        "analyst_average_confidence": 75.0,
+        "analyst_enabled_average_confidence": 75.0,
+        "analyst_confidence_coverage_percentage": 100.0,
+        "analyst_enabled_confidence_coverage_percentage": 100.0,
+        "analyst_coverage_percentage": 100.0,
+        "analyst_operational_percentage": 75.0,
+    }
+
+    for field_name, expected_value in (
+        expected_values.items()
+    ):
+        assert payload[field_name] == expected_value
+        assert isinstance(
+            payload[field_name],
+            float,
+        )
+
+    assert payload["analyst_domain_count"] == 4
+    assert payload["analyst_enabled_count"] == 4
+    assert (
+        payload["analyst_enabled_resolved_count"]
+        == 3
+    )
+    assert (
+        payload["analyst_enabled_unresolved_count"]
+        == 1
+    )
+    assert (
+        payload["analyst_operational_status"]
+        == "DEGRADED"
+    )
+
+def test_to_json_serializes_complete_normalized_payload(
+) -> None:
+    status = make_status(
+        institutional_bias_confidence=81,
+        institutional_bias_strength=72,
+        institutional_bias_bullish_score=68,
+        institutional_bias_bearish_score=32,
+        market_phase_confidence=76,
+        market_phase_strength=64,
+        confluence_score=79,
+        acceptance_confidence=74,
+        trend_confidence=82,
+        structure_confidence=71,
+        liquidity_confidence=69,
+        order_block_confidence=66,
+        auction_confidence=73,
+        pressure_confidence=77,
+        participation_confidence=63,
+        value_confidence=70,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_average_confidence=75,
+        analyst_enabled_average_confidence=75,
+        analyst_confidence_coverage_percentage=100,
+        analyst_enabled_confidence_coverage_percentage=100,
+        analyst_coverage_percentage=100,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    payload = json.loads(
+        status.to_json()
+    )
+
+    normalized_field_names = (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "acceptance_confidence",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    )
+
+    for field_name in normalized_field_names:
+        assert isinstance(
+            payload[field_name],
+            float,
+        )
+
+    assert (
+        payload["analyst_operational_percentage"]
+        == 75.0
+    )
+    assert (
+        payload["analyst_operational_status"]
+        == "DEGRADED"
+    )
+
+def test_serialization_does_not_mutate_normalized_fields(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    before = (
+        status.trend_confidence,
+        status.acceptance_confidence,
+        status.analyst_operational_percentage,
+    )
+
+    status.to_dict()
+    status.to_json()
+
+    after = (
+        status.trend_confidence,
+        status.acceptance_confidence,
+        status.analyst_operational_percentage,
+    )
+
+    assert after == before
+    assert all(
+        isinstance(value, float)
+        for value in after
+    )
