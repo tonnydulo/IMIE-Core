@@ -8,7 +8,7 @@ from datetime import (
     timezone,
 )
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
+from threading import Event, Lock
 from time import sleep
 
 from pathlib import Path
@@ -3537,3 +3537,99 @@ def test_concurrent_mixed_updates_leave_coherent_snapshot(
         "WAIT",
         "READY",
     }
+
+def test_concurrent_readers_only_observe_complete_destination_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=0,
+        )
+    )
+
+    original_replace = os.replace
+    replace_started = Event()
+    allow_replace = Event()
+
+    def delayed_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        replace_started.set()
+
+        assert allow_replace.wait(
+            timeout=5,
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        delayed_replace,
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=2,
+    ) as executor:
+        write_future = executor.submit(
+            publisher.publish_health,
+            make_health(
+                cycle_count=1,
+            ),
+        )
+
+        assert replace_started.wait(
+            timeout=5,
+        )
+
+        destination_payload = json.loads(
+            output_path.read_text(
+                encoding="utf-8",
+            )
+        )
+        temporary_payload = json.loads(
+            temporary_path.read_text(
+                encoding="utf-8",
+            )
+        )
+
+        assert destination_payload[
+            "completed_cycle_count"
+        ] == 0
+
+        assert temporary_payload[
+            "completed_cycle_count"
+        ] == 1
+
+        allow_replace.set()
+        write_future.result()
+
+    final_payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert final_payload[
+        "completed_cycle_count"
+    ] == 1
+    assert temporary_path.exists() is False
