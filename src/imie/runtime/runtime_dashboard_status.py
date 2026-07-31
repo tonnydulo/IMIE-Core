@@ -3148,12 +3148,14 @@ class RuntimeDashboardStatus:
                     ":",
                 ),
                 sort_keys=True,
+                allow_nan=False,
             )
 
         return json.dumps(
             self.to_dict(),
             indent=indent,
             sort_keys=True,
+            allow_nan=False,
         )
 
     @staticmethod

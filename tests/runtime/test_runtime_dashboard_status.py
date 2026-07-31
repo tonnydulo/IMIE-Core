@@ -1,5 +1,7 @@
 import json
 
+import math
+
 from datetime import (
     datetime,
     timedelta,
@@ -10789,3 +10791,105 @@ def test_normalized_confidence_fields_preserve_positive_zero(
 
     assert stored_value == 0.0
     assert str(stored_value) == "0.0"
+
+def test_to_json_uses_strict_json_for_valid_payload(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+        acceptance_confidence=80,
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    serialized = status.to_json()
+    payload = json.loads(
+        serialized
+    )
+
+    assert payload == status.to_dict()
+    assert "NaN" not in serialized
+    assert "Infinity" not in serialized
+
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_to_json_rejects_non_finite_value_that_bypasses_validation(
+    non_finite_value: float,
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+    )
+
+    object.__setattr__(
+        status,
+        "trend_confidence",
+        non_finite_value,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Out of range float values are not "
+            "JSON compliant"
+        ),
+    ):
+        status.to_json()
+
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_to_json_rejects_non_finite_operational_percentage_bypass(
+    non_finite_value: float,
+) -> None:
+    status = make_status(
+        analyst_domain_count=4,
+        analyst_enabled_count=4,
+        analyst_enabled_resolved_count=3,
+        analyst_enabled_unresolved_count=1,
+        analyst_operational_percentage=75,
+        analyst_operational_status="DEGRADED",
+    )
+
+    object.__setattr__(
+        status,
+        "analyst_operational_percentage",
+        non_finite_value,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="JSON compliant",
+    ):
+        status.to_json()
+
+def test_to_dict_remains_plain_payload_after_validation_bypass(
+) -> None:
+    status = make_status(
+        trend_confidence=75,
+    )
+
+    object.__setattr__(
+        status,
+        "trend_confidence",
+        float("nan"),
+    )
+
+    payload = status.to_dict()
+
+    assert math.isnan(
+        payload["trend_confidence"]
+    )
