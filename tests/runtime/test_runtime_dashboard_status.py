@@ -9004,3 +9004,140 @@ def test_operational_percentage_accepts_finite_values(
         status.analyst_operational_percentage
         == operational_percentage
     )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "non_finite_value",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_normalized_confidence_fields_reject_non_finite_values(
+    field_name: str,
+    non_finite_value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"{field_name} must be finite",
+    ):
+        make_status(
+            **{
+                field_name: non_finite_value,
+            },
+        )
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+@pytest.mark.parametrize(
+    "finite_value",
+    (
+        0.0,
+        50.0,
+        100.0,
+    ),
+)
+def test_normalized_confidence_fields_accept_finite_boundaries(
+    field_name: str,
+    finite_value: float,
+) -> None:
+    status = make_status(
+        **{
+            field_name: finite_value,
+        },
+    )
+
+    assert getattr(
+        status,
+        field_name,
+    ) == finite_value
+
+@pytest.mark.parametrize(
+    "field_name",
+    (
+        "institutional_bias_confidence",
+        "institutional_bias_strength",
+        "institutional_bias_bullish_score",
+        "institutional_bias_bearish_score",
+        "market_phase_confidence",
+        "market_phase_strength",
+        "confluence_score",
+        "trend_confidence",
+        "structure_confidence",
+        "liquidity_confidence",
+        "order_block_confidence",
+        "auction_confidence",
+        "pressure_confidence",
+        "participation_confidence",
+        "value_confidence",
+        "analyst_average_confidence",
+        "analyst_enabled_average_confidence",
+        "analyst_confidence_coverage_percentage",
+        "analyst_enabled_confidence_coverage_percentage",
+        "analyst_coverage_percentage",
+        "analyst_operational_percentage",
+    ),
+)
+def test_normalized_confidence_fields_accept_finite_zero(
+    field_name: str,
+) -> None:
+    status = make_status(
+        **{
+            field_name: 0.0,
+        },
+    )
+
+    assert getattr(
+        status,
+        field_name,
+    ) == 0.0
