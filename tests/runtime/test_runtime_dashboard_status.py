@@ -8929,3 +8929,78 @@ def test_operational_percentage_accepts_repeating_component_ratio_without_enable
         status.analyst_operational_percentage
         == operational_percentage
     )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_operational_percentage_rejects_non_finite_values(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be finite"
+        ),
+    ):
+        make_status(
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ),
+)
+def test_complete_operational_payload_rejects_non_finite_percentage(
+    operational_percentage: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "analyst_operational_percentage must be finite"
+        ),
+    ):
+        make_status(
+            analyst_domain_count=4,
+            analyst_enabled_count=4,
+            analyst_enabled_resolved_count=2,
+            analyst_enabled_unresolved_count=2,
+            analyst_operational_percentage=(
+                operational_percentage
+            ),
+            analyst_operational_status="DEGRADED",
+        )
+
+@pytest.mark.parametrize(
+    "operational_percentage",
+    (
+        0.0,
+        25.0,
+        50.0,
+        75.0,
+        100.0,
+    ),
+)
+def test_operational_percentage_accepts_finite_values(
+    operational_percentage: float,
+) -> None:
+    status = make_status(
+        analyst_operational_percentage=(
+            operational_percentage
+        ),
+    )
+
+    assert (
+        status.analyst_operational_percentage
+        == operational_percentage
+    )

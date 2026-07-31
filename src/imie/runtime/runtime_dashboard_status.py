@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from math import isclose
+from math import isclose, isfinite
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -383,12 +383,17 @@ class RuntimeDashboardStatus:
                 )
                 or not isinstance(
                     value,
-                    int | float,
+                    (int, float),
                 )
             ):
                 raise TypeError(
                     f"{field_name} must be "
                     "a number or None."
+                )
+
+            if not isfinite(value):
+                raise ValueError(
+                    f"{field_name} must be finite."
                 )
 
             normalized = float(
