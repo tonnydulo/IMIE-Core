@@ -32,6 +32,13 @@ class DashboardStatusFilePublisher:
 
     _REPLACE_MAX_ATTEMPTS = 3
     _REPLACE_RETRY_DELAY_SECONDS = 0.01
+    _TRANSIENT_REPLACE_WINERRORS = frozenset(
+        {
+            5,
+            32,
+            33,
+        }
+    )
 
     def __init__(
         self,
@@ -1476,7 +1483,12 @@ class DashboardStatusFilePublisher:
                 )
                 return
 
-            except PermissionError:
+            except PermissionError as error:
+                if not self._is_transient_replace_error(
+                    error
+                ):
+                    raise
+
                 if (
                     attempt
                     >= self._REPLACE_MAX_ATTEMPTS
@@ -1486,6 +1498,20 @@ class DashboardStatusFilePublisher:
                 sleep(
                     self._REPLACE_RETRY_DELAY_SECONDS
                 )
+
+    @classmethod
+    def _is_transient_replace_error(
+        cls,
+        error: PermissionError,
+    ) -> bool:
+        return (
+            getattr(
+                error,
+                "winerror",
+                None,
+            )
+            in cls._TRANSIENT_REPLACE_WINERRORS
+        )
 
     @staticmethod
     def _normalize_required_text(

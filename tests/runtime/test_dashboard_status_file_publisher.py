@@ -458,6 +458,18 @@ def make_institutional_context(
         risk=trade_plan,
     )
 
+def make_windows_permission_error(
+    *,
+    winerror: int,
+    message: str = "Destination is temporarily locked.",
+) -> PermissionError:
+    error = PermissionError(
+        message
+    )
+    error.winerror = winerror
+
+    return error
+
 
 def test_publish_result_populates_decision_details(
     tmp_path: Path,
@@ -3661,8 +3673,8 @@ def test_atomic_replace_retries_transient_permission_error(
         replace_attempts += 1
 
         if replace_attempts == 1:
-            raise PermissionError(
-                "Destination is temporarily in use."
+            raise make_windows_permission_error(
+                winerror=32,
             )
 
         original_replace(
@@ -3730,8 +3742,8 @@ def test_atomic_replace_can_succeed_on_final_attempt(
             replace_attempts
             < publisher._REPLACE_MAX_ATTEMPTS
         ):
-            raise PermissionError(
-                "Destination remains temporarily locked."
+            raise make_windows_permission_error(
+                winerror=32,
             )
 
         original_replace(
@@ -3787,8 +3799,9 @@ def test_atomic_replace_raises_after_retry_limit(
 
         replace_attempts += 1
 
-        raise PermissionError(
-            "Destination remained locked."
+        raise make_windows_permission_error(
+            winerror=32,
+            message="Destination remained locked.",
         )
 
     monkeypatch.setattr(
@@ -3909,8 +3922,9 @@ def test_replace_retry_exhaustion_preserves_existing_dashboard(
 
         replace_attempts += 1
 
-        raise PermissionError(
-            "Dashboard destination remained locked."
+        raise make_windows_permission_error(
+            winerror=32,
+            message="Dashboard destination remained locked.",
         )
 
     monkeypatch.setattr(
@@ -3978,8 +3992,9 @@ def test_publisher_recovers_after_replace_retry_exhaustion(
             replace_attempts
             <= publisher._REPLACE_MAX_ATTEMPTS
         ):
-            raise PermissionError(
-                "Dashboard destination remained locked."
+            raise make_windows_permission_error(
+                winerror=32,
+                message="Dashboard destination remained locked.",
             )
 
         original_replace(
@@ -4048,8 +4063,8 @@ def test_replace_retry_delay_occurs_only_between_attempts(
         source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
         destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
     ) -> None:
-        raise PermissionError(
-            "Dashboard destination remained locked."
+        raise make_windows_permission_error(
+            winerror=32,
         )
 
     monkeypatch.setattr(
@@ -4103,3 +4118,175 @@ def test_successful_atomic_replace_does_not_sleep(
 
     assert sleep_calls == []
     assert output_path.exists()
+
+@pytest.mark.parametrize(
+    "winerror",
+    [
+        5,
+        32,
+        33,
+    ],
+)
+def test_transient_windows_replace_errors_are_retried(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    winerror: int,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_replace = os.replace
+    replace_attempts = 0
+
+    def flaky_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        if replace_attempts == 1:
+            raise make_windows_permission_error(
+                winerror=winerror,
+            )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        flaky_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        lambda _: None,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert replace_attempts == 2
+    assert output_path.exists()
+
+@pytest.mark.parametrize(
+    "winerror",
+    [
+        1,
+        2,
+        3,
+        87,
+    ],
+)
+def test_non_transient_windows_permission_errors_are_not_retried(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    winerror: int,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    sleep_calls: list[float] = []
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        raise make_windows_permission_error(
+            winerror=winerror,
+            message="Permanent permission failure.",
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Permanent permission failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert replace_attempts == 1
+    assert sleep_calls == []
+
+def test_permission_error_without_winerror_is_not_retried(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    sleep_calls: list[float] = []
+
+    def failing_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        raise PermissionError(
+            "Permission denied."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Permission denied",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert replace_attempts == 1
+    assert sleep_calls == []
