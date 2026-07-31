@@ -3871,3 +3871,235 @@ def test_atomic_replace_does_not_retry_other_os_errors(
 
     assert replace_attempts == 1
     assert sleep_calls == []
+
+def test_replace_retry_exhaustion_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = output_path.with_name(
+        f".{output_path.name}.tmp"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    original_content = output_path.read_text(
+        encoding="utf-8",
+    )
+    replace_attempts = 0
+
+    def locked_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        raise PermissionError(
+            "Dashboard destination remained locked."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        locked_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        lambda _: None,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="remained locked",
+    ):
+        publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        )
+
+    assert (
+        replace_attempts
+        == publisher._REPLACE_MAX_ATTEMPTS
+    )
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == original_content
+    assert temporary_path.exists() is False
+
+def test_publisher_recovers_after_replace_retry_exhaustion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+        indent=2,
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    original_replace = os.replace
+    replace_attempts = 0
+
+    def temporarily_locked_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+
+        replace_attempts += 1
+
+        if (
+            replace_attempts
+            <= publisher._REPLACE_MAX_ATTEMPTS
+        ):
+            raise PermissionError(
+                "Dashboard destination remained locked."
+            )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        temporarily_locked_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        lambda _: None,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="remained locked",
+    ):
+        publisher.publish_health(
+            make_health(
+                cycle_count=2,
+            )
+        )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=3,
+        )
+    )
+
+    payload = json.loads(
+        output_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    assert payload[
+        "completed_cycle_count"
+    ] == 3
+    assert (
+        replace_attempts
+        == publisher._REPLACE_MAX_ATTEMPTS
+        + 1
+    )
+
+def test_replace_retry_delay_occurs_only_between_attempts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    sleep_calls: list[float] = []
+
+    def locked_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        raise PermissionError(
+            "Dashboard destination remained locked."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        locked_replace,
+    )
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    with pytest.raises(
+        PermissionError,
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert sleep_calls == [
+        publisher._REPLACE_RETRY_DELAY_SECONDS
+        for _ in range(
+            publisher._REPLACE_MAX_ATTEMPTS - 1
+        )
+    ]
+
+def test_successful_atomic_replace_does_not_sleep(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    sleep_calls: list[float] = []
+
+    monkeypatch.setattr(
+        "imie.runtime.dashboard_status_file_publisher.sleep",
+        sleep_calls.append,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert sleep_calls == []
+    assert output_path.exists()
