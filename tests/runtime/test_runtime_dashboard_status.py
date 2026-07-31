@@ -10496,3 +10496,29 @@ def test_mutating_one_dictionary_payload_does_not_change_another(
         second_payload["acceptance_confidence"]
         == 80.0
     )
+    
+def test_mutating_health_related_dictionary_fields_does_not_change_later_payload(
+) -> None:
+    status = make_status()
+
+    first_payload = status.to_dict()
+    second_payload = status.to_dict()
+
+    mutable_field_names = (
+        field_name
+        for field_name, value in first_payload.items()
+        if isinstance(
+            value,
+            (
+                dict,
+                list,
+            ),
+        )
+    )
+
+    for field_name in mutable_field_names:
+        first_value = first_payload[field_name]
+        second_value = second_payload[field_name]
+
+        assert first_value == second_value
+        assert first_value is not second_value
