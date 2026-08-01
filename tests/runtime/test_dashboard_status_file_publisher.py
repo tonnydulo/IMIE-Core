@@ -7691,3 +7691,354 @@ def test_non_regular_destination_does_not_modify_temporary_mode(
         )
 
     assert chmod_called is False
+
+def test_completed_temporary_file_is_validated_before_publication(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    validated_paths: list[Path] = []
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+
+    def recording_validate(
+        temporary_path: Path,
+    ) -> None:
+        validated_paths.append(
+            temporary_path
+        )
+
+        original_validate(
+            temporary_path
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        recording_validate,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert len(
+        validated_paths
+    ) == 1
+
+    validated_path = (
+        validated_paths[0]
+    )
+
+    assert publisher._is_owned_temporary_path(
+        validated_path
+    ) is True
+
+    assert validated_path.exists() is False
+    assert output_path.exists()
+
+def test_temporary_validation_precedes_mode_and_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    events: list[str] = []
+
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+    original_apply_mode = (
+        publisher._apply_existing_destination_mode
+    )
+    original_replace = os.replace
+
+    def recording_validate(
+        temporary_path: Path,
+    ) -> None:
+        events.append(
+            "validate"
+        )
+
+        original_validate(
+            temporary_path
+        )
+
+    def recording_apply_mode(
+        temporary_path: Path,
+    ) -> None:
+        events.append(
+            "mode"
+        )
+
+        original_apply_mode(
+            temporary_path
+        )
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        events.append(
+            "replace"
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        recording_validate,
+    )
+    monkeypatch.setattr(
+        publisher,
+        "_apply_existing_destination_mode",
+        recording_apply_mode,
+    )
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert events == [
+        "validate",
+        "mode",
+        "replace",
+    ]
+
+def test_missing_temporary_file_is_rejected_before_replace(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="disappeared before publication",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+def test_unowned_temporary_file_is_rejected_before_validation(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    unrelated_path = (
+        tmp_path
+        / "unrelated.tmp"
+    )
+
+    unrelated_path.write_text(
+        "keep",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="not owned",
+    ):
+        publisher._validate_temporary_file(
+            unrelated_path
+        )
+
+    assert unrelated_path.read_text(
+        encoding="utf-8",
+    ) == "keep"
+
+def test_directory_temporary_path_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    temporary_path.mkdir()
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+    assert temporary_path.is_dir()
+
+def test_symlink_temporary_path_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    target_path = (
+        tmp_path
+        / "target.tmp"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    target_path.write_text(
+        "target",
+        encoding="utf-8",
+    )
+
+    try:
+        temporary_path.symlink_to(
+            target_path
+        )
+
+    except OSError:
+        pytest.skip(
+            "Symbolic links are unavailable."
+        )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+    assert temporary_path.is_symlink()
+    assert target_path.read_text(
+        encoding="utf-8",
+    ) == "target"
+
+def test_temporary_validation_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_validation(
+        temporary_path: Path,
+    ) -> None:
+        del temporary_path
+
+        raise ValueError(
+            "Temporary validation failed."
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        failing_validation,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Temporary validation failed",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []

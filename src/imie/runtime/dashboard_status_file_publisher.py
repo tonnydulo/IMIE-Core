@@ -1503,6 +1503,10 @@ class DashboardStatusFilePublisher:
         )
 
         try:
+            self._validate_temporary_file(
+                temporary_path
+            )
+
             self._apply_existing_destination_mode(
                 temporary_path
             )
@@ -1601,6 +1605,37 @@ class DashboardStatusFilePublisher:
                 for character in token
             )
         )
+
+    def _validate_temporary_file(
+        self,
+        temporary_path: Path,
+    ) -> None:
+        if not self._is_owned_temporary_path(
+            temporary_path
+        ):
+            raise ValueError(
+                "temporary_path is not owned by this "
+                "dashboard publisher."
+            )
+
+        try:
+            temporary_status = (
+                temporary_path.lstat()
+            )
+
+        except FileNotFoundError as error:
+            raise FileNotFoundError(
+                "Dashboard temporary file disappeared "
+                "before publication."
+            ) from error
+
+        if not stat.S_ISREG(
+            temporary_status.st_mode
+        ):
+            raise ValueError(
+                "Dashboard temporary path must be "
+                "a regular file."
+            )
 
     @staticmethod
     def _directory_open_flags(
