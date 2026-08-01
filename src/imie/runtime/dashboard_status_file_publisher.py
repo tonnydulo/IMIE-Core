@@ -1605,6 +1605,14 @@ class DashboardStatusFilePublisher:
                 self._build_temporary_path()
             )
 
+            if not self._is_owned_temporary_path(
+                temporary_path
+            ):
+                raise ValueError(
+                    "Generated temporary path is not owned by "
+                    "this dashboard publisher."
+                )
+
             try:
                 with temporary_path.open(
                     mode="x",

@@ -6201,3 +6201,156 @@ def test_cleanup_suppression_does_not_allow_unowned_path(
     assert unrelated_path.read_text(
         encoding="utf-8",
     ) == "keep"
+
+def test_generated_destination_path_is_rejected_before_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: output_path,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Generated temporary path is not owned",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+
+def test_generated_unrelated_path_is_rejected_without_modification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    unrelated_path = (
+        tmp_path
+        / "unrelated.txt"
+    )
+
+    unrelated_path.write_text(
+        "keep",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: unrelated_path,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Generated temporary path is not owned",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert unrelated_path.read_text(
+        encoding="utf-8",
+    ) == "keep"
+
+    assert output_path.exists() is False
+
+def test_generated_temporary_path_in_other_directory_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    other_directory = (
+        tmp_path
+        / "other"
+    )
+    other_directory.mkdir()
+
+    unowned_temporary_path = (
+        other_directory
+        / ".dashboard.json.abc123.tmp"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: unowned_temporary_path,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Generated temporary path is not owned",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert unowned_temporary_path.exists() is False
+    assert output_path.exists() is False
+
+def test_generated_temporary_path_with_wrong_prefix_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    unowned_temporary_path = (
+        tmp_path
+        / ".other-dashboard.json.abc123.tmp"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: unowned_temporary_path,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Generated temporary path is not owned",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert unowned_temporary_path.exists() is False
+    assert output_path.exists() is False
