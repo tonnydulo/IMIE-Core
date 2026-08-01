@@ -5958,9 +5958,19 @@ def test_temporary_cleanup_helper_can_propagate_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
     temporary_path = (
         tmp_path
         / ".dashboard.json.cleanup.tmp"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
     )
 
     temporary_path.write_text(
@@ -5989,7 +5999,7 @@ def test_temporary_cleanup_helper_can_propagate_errors(
         PermissionError,
         match="Temporary cleanup failure",
     ):
-        DashboardStatusFilePublisher._remove_temporary_file(
+        publisher._remove_temporary_file(
             temporary_path,
             suppress_errors=False,
         )
@@ -5998,9 +6008,19 @@ def test_temporary_cleanup_helper_can_suppress_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
     temporary_path = (
         tmp_path
         / ".dashboard.json.cleanup.tmp"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
     )
 
     temporary_path.write_text(
@@ -6025,7 +6045,159 @@ def test_temporary_cleanup_helper_can_suppress_errors(
         failing_unlink,
     )
 
-    DashboardStatusFilePublisher._remove_temporary_file(
+    publisher._remove_temporary_file(
         temporary_path,
         suppress_errors=True,
     )
+
+def test_publisher_recognizes_owned_temporary_path(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / ".dashboard.json.abc123.tmp"
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is True
+
+def test_dashboard_destination_is_not_owned_temporary_path(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    assert publisher._is_owned_temporary_path(
+        output_path
+    ) is False
+
+def test_temporary_path_in_other_directory_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    other_directory = (
+        tmp_path
+        / "other"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        other_directory
+        / ".dashboard.json.abc123.tmp"
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_for_other_dashboard_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / ".other-dashboard.json.abc123.tmp"
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_cleanup_refuses_dashboard_destination(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="not owned",
+    ):
+        publisher._remove_temporary_file(
+            output_path,
+            suppress_errors=False,
+        )
+
+    assert output_path.exists()
+
+def test_cleanup_suppression_does_not_allow_unowned_path(
+    tmp_path: Path,
+) -> None:
+    unrelated_path = (
+        tmp_path
+        / "unrelated.txt"
+    )
+
+    unrelated_path.write_text(
+        "keep",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="not owned",
+    ):
+        publisher._remove_temporary_file(
+            unrelated_path,
+            suppress_errors=True,
+        )
+
+    assert unrelated_path.read_text(
+        encoding="utf-8",
+    ) == "keep"

@@ -1534,6 +1534,21 @@ class DashboardStatusFilePublisher:
             self._sync_parent_directory()
             return
 
+    def _is_owned_temporary_path(
+        self,
+        path: Path,
+    ) -> bool:
+        return (
+            path.parent == self.path.parent
+            and path.name.startswith(
+                f".{self.path.name}."
+            )
+            and path.name.endswith(
+                ".tmp"
+            )
+            and path != self.path
+        )
+
     @staticmethod
     def _supports_directory_fsync(
     ) -> bool:
@@ -1651,12 +1666,20 @@ class DashboardStatusFilePublisher:
             in cls._UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
         )
 
-    @staticmethod
     def _remove_temporary_file(
+        self,
         temporary_path: Path,
         *,
         suppress_errors: bool,
     ) -> None:
+        if not self._is_owned_temporary_path(
+            temporary_path
+        ):
+            raise ValueError(
+                "temporary_path is not owned by this "
+                "dashboard publisher."
+            )
+
         try:
             temporary_path.unlink(
                 missing_ok=True
