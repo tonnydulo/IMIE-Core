@@ -1434,7 +1434,6 @@ class DashboardStatusFilePublisher:
             ),
         )
 
-
     def _write_if_ready(
         self,
     ) -> None:
@@ -1454,15 +1453,12 @@ class DashboardStatusFilePublisher:
         )
 
         temporary_path = (
-            self._reserve_temporary_path()
+            self._write_temporary_payload(
+                payload=payload,
+            )
         )
 
         try:
-            temporary_path.write_text(
-                payload + "\n",
-                encoding="utf-8",
-            )
-
             self._replace_atomically(
                 temporary_path=temporary_path,
             )
@@ -1509,8 +1505,10 @@ class DashboardStatusFilePublisher:
                     self._REPLACE_RETRY_DELAY_SECONDS
                 )
 
-    def _reserve_temporary_path(
+    def _write_temporary_payload(
         self,
+        *,
+        payload: str,
     ) -> Path:
         for attempt in range(
             1,
@@ -1521,9 +1519,14 @@ class DashboardStatusFilePublisher:
             )
 
             try:
-                temporary_path.touch(
-                    exist_ok=False
-                )
+                with temporary_path.open(
+                    mode="x",
+                    encoding="utf-8",
+                    newline="",
+                ) as temporary_file:
+                    temporary_file.write(
+                        payload + "\n"
+                    )
 
             except FileExistsError:
                 if (
@@ -1537,7 +1540,7 @@ class DashboardStatusFilePublisher:
             return temporary_path
 
         raise RuntimeError(
-            "Temporary dashboard path reservation failed."
+            "Temporary dashboard payload write failed."
         )
 
     @classmethod

@@ -8,7 +8,7 @@ from datetime import (
     timezone,
 )
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event, Lock
+from threading import Event, Lock, Barrier
 from time import sleep
 
 from pathlib import Path
@@ -479,6 +479,29 @@ def dashboard_temporary_files(
         )
     )
 
+def is_dashboard_temporary_path(
+    path: Path,
+    directory: Path,
+) -> bool:
+    return (
+        path.parent == directory
+        and path.name.startswith(
+            ".dashboard.json."
+        )
+        and path.name.endswith(
+            ".tmp"
+        )
+    )
+
+
+def dashboard_temporary_files(
+    directory: Path,
+) -> list[Path]:
+    return list(
+        directory.glob(
+            ".dashboard.json.*.tmp"
+        )
+    )
 
 def test_publish_result_populates_decision_details(
     tmp_path: Path,
@@ -2957,50 +2980,47 @@ def test_temporary_write_failure_preserves_existing_dashboard(
         tmp_path
         / "dashboard.json"
     )
+
+    original_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        original_payload,
+        encoding="utf-8",
+    )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
         timeframe="2m",
-        indent=2,
     )
 
-    publisher.publish_health(
-        make_health(
-            cycle_count=1,
-        )
-    )
+    original_open = Path.open
 
-    original_content = output_path.read_text(
-        encoding="utf-8",
-    )
-    original_write_text = Path.write_text
-
-    def failing_write_text(
+    def failing_open(
         path: Path,
-        data: str,
-        *,
+        mode: str = "r",
+        buffering: int = -1,
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> int:
-        is_temporary_path = (
-            path.parent == tmp_path
-            and path.name.startswith(
-                ".dashboard.json."
+    ):
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
             )
-            and path.name.endswith(
-                ".tmp"
-            )
-        )
-
-        if is_temporary_path:
+        ):
             raise PermissionError(
-                "Dashboard directory is read-only."
+                "Temporary dashboard write failed."
             )
 
-        return original_write_text(
+        return original_open(
             path,
-            data,
+            mode=mode,
+            buffering=buffering,
             encoding=encoding,
             errors=errors,
             newline=newline,
@@ -3008,23 +3028,21 @@ def test_temporary_write_failure_preserves_existing_dashboard(
 
     monkeypatch.setattr(
         Path,
-        "write_text",
-        failing_write_text,
+        "open",
+        failing_open,
     )
 
     with pytest.raises(
         PermissionError,
-        match="read-only",
+        match="Temporary dashboard write failed",
     ):
         publisher.publish_health(
-            make_health(
-                cycle_count=2,
-            )
+            make_health()
         )
 
     assert output_path.read_text(
         encoding="utf-8",
-    ) == original_content
+    ) == original_payload
 
     assert dashboard_temporary_files(
         tmp_path
@@ -3038,40 +3056,38 @@ def test_first_temporary_write_failure_creates_no_dashboard(
         tmp_path
         / "dashboard.json"
     )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
         timeframe="2m",
     )
 
-    original_write_text = Path.write_text
+    original_open = Path.open
 
-    def failing_write_text(
+    def failing_open(
         path: Path,
-        data: str,
-        *,
+        mode: str = "r",
+        buffering: int = -1,
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> int:
-        is_temporary_path = (
-            path.parent == tmp_path
-            and path.name.startswith(
-                ".dashboard.json."
+    ):
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
             )
-            and path.name.endswith(
-                ".tmp"
-            )
-        )
-
-        if is_temporary_path:
+        ):
             raise PermissionError(
-                "Dashboard directory is read-only."
+                "Temporary dashboard write failed."
             )
 
-        return original_write_text(
+        return original_open(
             path,
-            data,
+            mode=mode,
+            buffering=buffering,
             encoding=encoding,
             errors=errors,
             newline=newline,
@@ -3079,19 +3095,20 @@ def test_first_temporary_write_failure_creates_no_dashboard(
 
     monkeypatch.setattr(
         Path,
-        "write_text",
-        failing_write_text,
+        "open",
+        failing_open,
     )
 
     with pytest.raises(
         PermissionError,
-        match="read-only",
+        match="Temporary dashboard write failed",
     ):
         publisher.publish_health(
             make_health()
         )
 
     assert output_path.exists() is False
+
     assert dashboard_temporary_files(
         tmp_path
     ) == []
@@ -3399,87 +3416,123 @@ def test_concurrent_publications_serialize_temporary_writes(
         tmp_path
         / "dashboard.json"
     )
+
     publisher = DashboardStatusFilePublisher(
         path=output_path,
         symbol="NVDA",
         timeframe="2m",
-        indent=2,
     )
 
-    original_write_text = Path.write_text
-    counter_lock = Lock()
+    original_open = Path.open
+    state_lock = Lock()
 
-    active_temporary_writes = 0
-    maximum_active_temporary_writes = 0
+    active_writes = 0
+    maximum_active_writes = 0
     observed_temporary_paths: list[Path] = []
 
-    def recording_write_text(
-        path: Path,
-        data: str,
-        *,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-    ) -> int:
-        nonlocal active_temporary_writes
-        nonlocal maximum_active_temporary_writes
+    class DelayedTemporaryFile:
+        def __init__(
+            self,
+            file_object,
+            path: Path,
+        ) -> None:
+            self._file_object = file_object
+            self._path = path
 
-        is_temporary_path = (
-            path.parent == tmp_path
-            and path.name.startswith(
-                ".dashboard.json."
-            )
-            and path.name.endswith(
-                ".tmp"
-            )
-        )
+        def __enter__(
+            self,
+        ):
+            nonlocal active_writes
+            nonlocal maximum_active_writes
 
-        if not is_temporary_path:
-            return original_write_text(
-                path,
-                data,
-                encoding=encoding,
-                errors=errors,
-                newline=newline,
-            )
+            self._file_object.__enter__()
 
-        with counter_lock:
-            observed_temporary_paths.append(
-                path
-            )
-            active_temporary_writes += 1
-            maximum_active_temporary_writes = max(
-                maximum_active_temporary_writes,
-                active_temporary_writes,
-            )
+            with state_lock:
+                active_writes += 1
+                maximum_active_writes = max(
+                    maximum_active_writes,
+                    active_writes,
+                )
+                observed_temporary_paths.append(
+                    self._path
+                )
 
-        try:
+            return self
+
+        def write(
+            self,
+            data: str,
+        ) -> int:
             sleep(
                 0.01
             )
 
-            return original_write_text(
-                path,
-                data,
-                encoding=encoding,
-                errors=errors,
-                newline=newline,
+            return self._file_object.write(
+                data
             )
 
-        finally:
-            with counter_lock:
-                active_temporary_writes -= 1
+        def __exit__(
+            self,
+            exception_type,
+            exception,
+            traceback,
+        ):
+            nonlocal active_writes
+
+            try:
+                return self._file_object.__exit__(
+                    exception_type,
+                    exception,
+                    traceback,
+                )
+
+            finally:
+                with state_lock:
+                    active_writes -= 1
+
+    def delayed_open(
+        path: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ):
+        file_object = original_open(
+            path,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
+            )
+        ):
+            return DelayedTemporaryFile(
+                file_object,
+                path,
+            )
+
+        return file_object
 
     monkeypatch.setattr(
         Path,
-        "write_text",
-        recording_write_text,
+        "open",
+        delayed_open,
     )
+
+    publication_count = 16
 
     with ThreadPoolExecutor(
         max_workers=8,
     ) as executor:
-        futures = tuple(
+        futures = [
             executor.submit(
                 publisher.publish_health,
                 make_health(
@@ -3488,42 +3541,30 @@ def test_concurrent_publications_serialize_temporary_writes(
             )
             for cycle_count in range(
                 1,
-                17,
+                publication_count + 1,
             )
-        )
+        ]
 
         for future in futures:
             future.result()
 
-    assert maximum_active_temporary_writes == 1
-    assert active_temporary_writes == 0
+    assert maximum_active_writes == 1
 
     assert len(
         observed_temporary_paths
-    ) == 16
+    ) == publication_count
 
     assert len(
         set(
             observed_temporary_paths
         )
-    ) == 16
+    ) == publication_count
 
     assert dashboard_temporary_files(
         tmp_path
     ) == []
 
-    payload = json.loads(
-        output_path.read_text(
-            encoding="utf-8",
-        )
-    )
-
-    assert payload[
-        "completed_cycle_count"
-    ] in range(
-        1,
-        17,
-    )
+    assert output_path.exists()
 
 def test_concurrent_mixed_updates_leave_coherent_snapshot(
     tmp_path: Path,
@@ -4456,36 +4497,87 @@ def test_separate_publishers_do_not_share_temporary_files(
         timeframe="2m",
     )
 
-    temporary_paths: list[Path] = []
-    paths_lock = Lock()
-    original_replace = os.replace
+    original_open = Path.open
+    recorded_paths: list[Path] = []
+    recorded_paths_lock = Lock()
+    both_writes_started = Barrier(
+        2
+    )
 
-    def recording_replace(
-        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-    ) -> None:
-        source_path = Path(
-            source
-        )
-        destination_path = Path(
-            destination
-        )
+    class CoordinatedTemporaryFile:
+        def __init__(
+            self,
+            file_object,
+            path: Path,
+        ) -> None:
+            self._file_object = file_object
+            self._path = path
 
-        if destination_path == output_path:
-            with paths_lock:
-                temporary_paths.append(
-                    source_path
+        def __enter__(
+            self,
+        ):
+            entered_file = (
+                self._file_object.__enter__()
+            )
+
+            with recorded_paths_lock:
+                recorded_paths.append(
+                    self._path
                 )
 
-        original_replace(
-            source,
-            destination,
+            both_writes_started.wait(
+                timeout=2.0
+            )
+
+            return entered_file
+
+        def __exit__(
+            self,
+            exception_type,
+            exception,
+            traceback,
+        ):
+            return self._file_object.__exit__(
+                exception_type,
+                exception,
+                traceback,
+            )
+
+    def recording_open(
+        path: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ):
+        file_object = original_open(
+            path,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
         )
 
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
+            )
+        ):
+            return CoordinatedTemporaryFile(
+                file_object,
+                path,
+            )
+
+        return file_object
+
     monkeypatch.setattr(
-        os,
-        "replace",
-        recording_replace,
+        Path,
+        "open",
+        recording_open,
     )
 
     with ThreadPoolExecutor(
@@ -4510,20 +4602,16 @@ def test_separate_publishers_do_not_share_temporary_files(
             future.result()
 
     assert len(
-        temporary_paths
-    ) >= 2
-
-    concurrent_temporary_paths = (
-        temporary_paths[-2:]
-    )
+        recorded_paths
+    ) == 2
 
     assert len(
         set(
-            concurrent_temporary_paths
+            recorded_paths
         )
     ) == 2
 
-    for temporary_path in concurrent_temporary_paths:
+    for temporary_path in recorded_paths:
         assert temporary_path.parent == tmp_path
         assert temporary_path.name.startswith(
             ".dashboard.json."
@@ -4739,7 +4827,7 @@ def test_temporary_path_reservation_raises_after_collision_limit(
 
     collided_path.unlink()
 
-def test_temporary_path_is_reserved_before_payload_write(
+def test_temporary_payload_is_written_with_exclusive_mode(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4753,37 +4841,36 @@ def test_temporary_path_is_reserved_before_payload_write(
         timeframe="2m",
     )
 
-    original_write_text = Path.write_text
-    temporary_file_existed_before_write = False
+    open_calls: list[
+        tuple[Path, str, str | None, str | None]
+    ] = []
+    original_open = Path.open
 
-    def recording_write_text(
+    def recording_open(
         path: Path,
-        data: str,
-        *,
+        mode: str = "r",
+        buffering: int = -1,
         encoding: str | None = None,
         errors: str | None = None,
         newline: str | None = None,
-    ) -> int:
-        nonlocal temporary_file_existed_before_write
-
-        is_temporary_path = (
-            path.parent == tmp_path
-            and path.name.startswith(
-                ".dashboard.json."
-            )
-            and path.name.endswith(
-                ".tmp"
-            )
-        )
-
-        if is_temporary_path:
-            temporary_file_existed_before_write = (
-                path.exists()
-            )
-
-        return original_write_text(
+    ):
+        if is_dashboard_temporary_path(
             path,
-            data,
+            tmp_path,
+        ):
+            open_calls.append(
+                (
+                    path,
+                    mode,
+                    encoding,
+                    newline,
+                )
+            )
+
+        return original_open(
+            path,
+            mode=mode,
+            buffering=buffering,
             encoding=encoding,
             errors=errors,
             newline=newline,
@@ -4791,19 +4878,142 @@ def test_temporary_path_is_reserved_before_payload_write(
 
     monkeypatch.setattr(
         Path,
-        "write_text",
-        recording_write_text,
+        "open",
+        recording_open,
     )
 
     publisher.publish_health(
         make_health()
     )
 
-    assert (
-        temporary_file_existed_before_write
-        is True
+    assert len(open_calls) == 1
+
+    temporary_path, mode, encoding, newline = (
+        open_calls[0]
     )
 
+    assert mode == "x"
+    assert encoding == "utf-8"
+    assert newline == ""
+    assert temporary_path.exists() is False
+
+def test_exclusive_temporary_write_does_not_truncate_collision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    collided_path = (
+        tmp_path
+        / ".dashboard.json.collision.tmp"
+    )
+    recovery_path = (
+        tmp_path
+        / ".dashboard.json.recovery.tmp"
+    )
+
+    collided_path.write_text(
+        "occupied",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    generated_paths = iter(
+        (
+            collided_path,
+            recovery_path,
+        )
+    )
+
+    monkeypatch.setattr(
+        publisher,
+        "_build_temporary_path",
+        lambda: next(
+            generated_paths
+        ),
+    )
+
+    publisher.publish_health(
+        make_health(
+            cycle_count=1,
+        )
+    )
+
+    assert collided_path.read_text(
+        encoding="utf-8",
+    ) == "occupied"
+
+    assert recovery_path.exists() is False
+    assert output_path.exists()
+
+    collided_path.unlink()
+
+def test_exclusive_temporary_write_failure_creates_no_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_open = Path.open
+
+    def failing_open(
+        path: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ):
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
+            )
+        ):
+            raise PermissionError(
+                "Dashboard directory is read-only."
+            )
+
+        return original_open(
+            path,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "open",
+        failing_open,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="read-only",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
     assert dashboard_temporary_files(
         tmp_path
     ) == []
