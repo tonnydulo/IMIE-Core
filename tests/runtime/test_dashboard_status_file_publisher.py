@@ -5321,7 +5321,10 @@ def test_parent_directory_is_synced_after_atomic_replace(
         mode: int = 0o777,
     ) -> int:
         assert Path(path) == tmp_path
-        assert flags == os.O_RDONLY
+        assert (
+            flags
+            == publisher._directory_open_flags()
+        )
 
         events.append(
             "directory-open"
@@ -6790,3 +6793,136 @@ def test_directory_close_failure_propagates_after_unsupported_fsync(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_directory_open_flags_include_read_only(
+) -> None:
+    flags = (
+        DashboardStatusFilePublisher
+        ._directory_open_flags()
+    )
+
+    assert flags & os.O_RDONLY == os.O_RDONLY
+
+def test_directory_open_flags_include_directory_flag_when_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    directory_flag = 0x10000
+
+    monkeypatch.setattr(
+        os,
+        "O_DIRECTORY",
+        directory_flag,
+        raising=False,
+    )
+
+    flags = (
+        DashboardStatusFilePublisher
+        ._directory_open_flags()
+    )
+
+    assert flags == (
+        os.O_RDONLY
+        | directory_flag
+    )
+
+def test_directory_open_flags_fall_back_without_directory_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delattr(
+        os,
+        "O_DIRECTORY",
+        raising=False,
+    )
+
+    flags = (
+        DashboardStatusFilePublisher
+        ._directory_open_flags()
+    )
+
+    assert flags == os.O_RDONLY
+
+def test_parent_directory_sync_uses_directory_open_flags(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    expected_flags = 0x1234
+    observed_calls: list[
+        tuple[Path, int]
+    ] = []
+
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        publisher,
+        "_directory_open_flags",
+        lambda: expected_flags,
+    )
+
+    def recording_open(
+        path,
+        flags: int,
+    ) -> int:
+        observed_calls.append(
+            (
+                Path(path),
+                flags,
+            )
+        )
+
+        return directory_descriptor
+
+    def recording_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            return
+
+        original_fsync(
+            file_descriptor
+        )
+
+    monkeypatch.setattr(
+        os,
+        "open",
+        recording_open,
+    )
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        recording_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        lambda file_descriptor: None,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert observed_calls == [
+        (
+            tmp_path,
+            expected_flags,
+        )
+    ]
+
+    assert output_path.exists()

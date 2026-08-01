@@ -1569,6 +1569,18 @@ class DashboardStatusFilePublisher:
         )
 
     @staticmethod
+    def _directory_open_flags(
+    ) -> int:
+        return (
+            os.O_RDONLY
+            | getattr(
+                os,
+                "O_DIRECTORY",
+                0,
+            )
+        )
+
+    @staticmethod
     def _supports_directory_fsync(
     ) -> bool:
         return os.name == "posix"
@@ -1582,7 +1594,7 @@ class DashboardStatusFilePublisher:
         try:
             directory_descriptor = os.open(
                 self.path.parent,
-                os.O_RDONLY,
+                self._directory_open_flags(),
             )
 
         except OSError as error:
