@@ -7038,3 +7038,240 @@ def test_directory_open_flags_fall_back_without_close_on_exec(
     )
 
     assert flags == expected_flags
+
+def test_existing_dashboard_mode_is_applied_before_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    destination_mode = (
+        output_path.stat().st_mode
+    )
+
+    observed_modes: list[int] = []
+    original_replace = os.replace
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        observed_modes.append(
+            Path(source).stat().st_mode
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert observed_modes == [
+        destination_mode
+    ]
+
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason="POSIX permission bits are required.",
+)
+def test_existing_dashboard_permissions_survive_publication(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+    output_path.chmod(
+        0o640
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert (
+        output_path.stat().st_mode
+        & 0o777
+    ) == 0o640
+
+def test_first_publication_skips_destination_mode_copy(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_destination_mode_is_checked_before_atomic_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    events: list[str] = []
+
+    original_apply_mode = (
+        publisher._apply_existing_destination_mode
+    )
+    original_replace = os.replace
+
+    def recording_apply_mode(
+        temporary_path: Path,
+    ) -> None:
+        events.append(
+            "mode"
+        )
+
+        original_apply_mode(
+            temporary_path
+        )
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        events.append(
+            "replace"
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_apply_existing_destination_mode",
+        recording_apply_mode,
+    )
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert events == [
+        "mode",
+        "replace",
+    ]
+
+def test_mode_application_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_apply_mode(
+        temporary_path: Path,
+    ) -> None:
+        del temporary_path
+
+        raise PermissionError(
+            "Unable to preserve dashboard mode."
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_apply_existing_destination_mode",
+        failing_apply_mode,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Unable to preserve dashboard mode",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []

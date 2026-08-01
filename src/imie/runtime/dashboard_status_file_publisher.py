@@ -1448,6 +1448,22 @@ class DashboardStatusFilePublisher:
             ),
         )
 
+    def _apply_existing_destination_mode(
+        self,
+        temporary_path: Path,
+    ) -> None:
+        try:
+            destination_mode = (
+                self.path.stat().st_mode
+            )
+
+        except FileNotFoundError:
+            return
+
+        temporary_path.chmod(
+            destination_mode
+        )
+
     def _write_if_ready(
         self,
     ) -> None:
@@ -1473,6 +1489,10 @@ class DashboardStatusFilePublisher:
         )
 
         try:
+            self._apply_existing_destination_mode(
+                temporary_path
+            )
+
             self._replace_atomically(
                 temporary_path=temporary_path,
             )
