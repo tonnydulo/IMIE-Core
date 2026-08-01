@@ -7376,7 +7376,7 @@ def test_existing_destination_mode_uses_permission_mask(
 
     monkeypatch.setattr(
         Path,
-        "stat",
+        "lstat",
         lambda path: FakeStatResult(),
     )
 
@@ -7446,7 +7446,7 @@ def test_existing_destination_special_permission_bits_are_retained(
 
     monkeypatch.setattr(
         Path,
-        "stat",
+        "lstat",
         lambda path: FakeStatResult(),
     )
 
@@ -7476,3 +7476,218 @@ def test_existing_destination_special_permission_bits_are_retained(
     assert observed_modes == [
         expected_permissions
     ]
+
+def test_existing_regular_dashboard_mode_is_preserved(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    expected_mode = 0o640
+    observed_modes: list[int] = []
+
+    class FakeStatResult:
+        st_mode = (
+            stat.S_IFREG
+            | expected_mode
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "lstat",
+        lambda path: FakeStatResult(),
+    )
+
+    def recording_chmod(
+        path: Path,
+        mode: int,
+        *,
+        follow_symlinks: bool = True,
+    ) -> None:
+        del path
+        del follow_symlinks
+
+        observed_modes.append(
+            mode
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "chmod",
+        recording_chmod,
+    )
+
+    publisher._apply_existing_destination_mode(
+        temporary_path
+    )
+
+    assert observed_modes == [
+        expected_mode
+    ]
+
+def test_symlink_dashboard_destination_is_rejected(
+    tmp_path: Path,
+) -> None:
+    target_path = (
+        tmp_path
+        / "target.json"
+    )
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    target_payload = (
+        '{"target": true}\n'
+    )
+
+    target_path.write_text(
+        target_payload,
+        encoding="utf-8",
+    )
+
+    try:
+        output_path.symlink_to(
+            target_path
+        )
+
+    except OSError:
+        pytest.skip(
+            "Symbolic links are unavailable."
+        )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.is_symlink()
+
+    assert target_path.read_text(
+        encoding="utf-8",
+    ) == target_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_directory_dashboard_destination_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.mkdir()
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.is_dir()
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_non_regular_destination_does_not_modify_temporary_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    class FakeStatResult:
+        st_mode = (
+            stat.S_IFDIR
+            | 0o755
+        )
+
+    chmod_called = False
+
+    monkeypatch.setattr(
+        Path,
+        "lstat",
+        lambda path: FakeStatResult(),
+    )
+
+    def recording_chmod(
+        path: Path,
+        mode: int,
+        *,
+        follow_symlinks: bool = True,
+    ) -> None:
+        nonlocal chmod_called
+
+        del path
+        del mode
+        del follow_symlinks
+
+        chmod_called = True
+
+    monkeypatch.setattr(
+        Path,
+        "chmod",
+        recording_chmod,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        publisher._apply_existing_destination_mode(
+            temporary_path
+        )
+
+    assert chmod_called is False

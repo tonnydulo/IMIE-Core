@@ -1455,12 +1455,24 @@ class DashboardStatusFilePublisher:
         temporary_path: Path,
     ) -> None:
         try:
-            destination_mode = stat.S_IMODE(
-                self.path.stat().st_mode
+            destination_status = (
+                self.path.lstat()
             )
 
         except FileNotFoundError:
             return
+
+        if not stat.S_ISREG(
+            destination_status.st_mode
+        ):
+            raise ValueError(
+                "Existing dashboard destination must be "
+                "a regular file."
+            )
+
+        destination_mode = stat.S_IMODE(
+            destination_status.st_mode
+        )
 
         temporary_path.chmod(
             destination_mode
