@@ -1538,15 +1538,34 @@ class DashboardStatusFilePublisher:
         self,
         path: Path,
     ) -> bool:
+        prefix = (
+            f".{self.path.name}."
+        )
+        suffix = ".tmp"
+
+        if (
+            path.parent != self.path.parent
+            or path == self.path
+            or not path.name.startswith(
+                prefix
+            )
+            or not path.name.endswith(
+                suffix
+            )
+        ):
+            return False
+
+        token = path.name[
+            len(prefix):
+            -len(suffix)
+        ]
+
         return (
-            path.parent == self.path.parent
-            and path.name.startswith(
-                f".{self.path.name}."
+            len(token) == 32
+            and all(
+                character in "0123456789abcdef"
+                for character in token
             )
-            and path.name.endswith(
-                ".tmp"
-            )
-            and path != self.path
         )
 
     @staticmethod

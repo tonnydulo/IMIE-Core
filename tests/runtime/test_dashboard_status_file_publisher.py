@@ -62,6 +62,16 @@ DEFAULT_SESSION_STATE = next(
     if state is not MarketSessionState.CLOSED
 )
 
+VALID_TEMP_TOKEN_1 = (
+    "11111111111111111111111111111111"
+)
+VALID_TEMP_TOKEN_2 = (
+    "22222222222222222222222222222222"
+)
+VALID_TEMP_TOKEN_3 = (
+    "33333333333333333333333333333333"
+)
+
 
 def make_health(
     *,
@@ -4657,8 +4667,19 @@ def test_temporary_path_collision_does_not_overwrite_existing_file(
     )
     collided_path = (
         tmp_path
-        / ".dashboard.json.collision.tmp"
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
     )
+    recovery_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "22222222222222222222222222222222.tmp"
+        )
+    )
+
     collided_path.write_text(
         "existing temporary content",
         encoding="utf-8",
@@ -4673,10 +4694,7 @@ def test_temporary_path_collision_does_not_overwrite_existing_file(
     generated_paths = iter(
         (
             collided_path,
-            (
-                tmp_path
-                / ".dashboard.json.recovery.tmp"
-            ),
+            recovery_path,
         )
     )
 
@@ -4697,6 +4715,8 @@ def test_temporary_path_collision_does_not_overwrite_existing_file(
     assert collided_path.read_text(
         encoding="utf-8",
     ) == "existing temporary content"
+
+    assert recovery_path.exists() is False
 
     payload = json.loads(
         output_path.read_text(
@@ -4720,11 +4740,17 @@ def test_temporary_path_reservation_retries_collision(
     )
     collided_path = (
         tmp_path
-        / ".dashboard.json.collision.tmp"
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
     )
     recovery_path = (
         tmp_path
-        / ".dashboard.json.recovery.tmp"
+        / (
+            ".dashboard.json."
+            "22222222222222222222222222222222.tmp"
+        )
     )
 
     collided_path.write_text(
@@ -4787,7 +4813,10 @@ def test_temporary_path_reservation_raises_after_collision_limit(
     )
     collided_path = (
         tmp_path
-        / ".dashboard.json.collision.tmp"
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
     )
 
     collided_path.write_text(
@@ -4916,11 +4945,17 @@ def test_exclusive_temporary_write_does_not_truncate_collision(
     )
     collided_path = (
         tmp_path
-        / ".dashboard.json.collision.tmp"
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
     )
     recovery_path = (
         tmp_path
-        / ".dashboard.json.recovery.tmp"
+        / (
+            ".dashboard.json."
+            "22222222222222222222222222222222.tmp"
+        )
     )
 
     collided_path.write_text(
@@ -5964,7 +5999,10 @@ def test_temporary_cleanup_helper_can_propagate_errors(
     )
     temporary_path = (
         tmp_path
-        / ".dashboard.json.cleanup.tmp"
+        / (
+            ".dashboard.json."
+            "33333333333333333333333333333333.tmp"
+        )
     )
 
     publisher = DashboardStatusFilePublisher(
@@ -6014,7 +6052,10 @@ def test_temporary_cleanup_helper_can_suppress_errors(
     )
     temporary_path = (
         tmp_path
-        / ".dashboard.json.cleanup.tmp"
+        / (
+            ".dashboard.json."
+            "33333333333333333333333333333333.tmp"
+        )
     )
 
     publisher = DashboardStatusFilePublisher(
@@ -6064,7 +6105,10 @@ def test_publisher_recognizes_owned_temporary_path(
 
     temporary_path = (
         tmp_path
-        / ".dashboard.json.abc123.tmp"
+        / (
+            ".dashboard.json."
+            "0123456789abcdef0123456789abcdef.tmp"
+        )
     )
 
     assert publisher._is_owned_temporary_path(
@@ -6354,3 +6398,161 @@ def test_generated_temporary_path_with_wrong_prefix_is_rejected(
 
     assert unowned_temporary_path.exists() is False
     assert output_path.exists() is False
+
+def test_generated_temporary_path_has_owned_uuid_format(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        publisher._build_temporary_path()
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is True
+
+def test_temporary_path_with_empty_token_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / ".dashboard.json..tmp"
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_with_short_token_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / ".dashboard.json.abc123.tmp"
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_with_long_token_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "0123456789abcdef0123456789abcdef00.tmp"
+        )
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_with_non_hex_token_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "0123456789abcdef0123456789abcdeg.tmp"
+        )
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_with_uppercase_token_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "0123456789ABCDEF0123456789ABCDEF.tmp"
+        )
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
+
+def test_temporary_path_with_extra_segment_is_not_owned(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=(
+            tmp_path
+            / "dashboard.json"
+        ),
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json.extra."
+            "0123456789abcdef0123456789abcdef.tmp"
+        )
+    )
+
+    assert publisher._is_owned_temporary_path(
+        temporary_path
+    ) is False
