@@ -2,6 +2,8 @@ import json
 
 import os
 
+import stat
+
 import errno
 
 from datetime import (
@@ -7275,3 +7277,202 @@ def test_mode_application_failure_preserves_existing_dashboard(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_existing_dashboard_permission_bits_are_applied_before_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    destination_permissions = stat.S_IMODE(
+        output_path.stat().st_mode
+    )
+
+    observed_permissions: list[int] = []
+    original_replace = os.replace
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        observed_permissions.append(
+            stat.S_IMODE(
+                Path(source).stat().st_mode
+            )
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert observed_permissions == [
+        destination_permissions
+    ]
+
+def test_existing_destination_mode_uses_permission_mask(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    output_path.write_text(
+        '{"existing": true}\n',
+        encoding="utf-8",
+    )
+    temporary_path.write_text(
+        "temporary",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    full_mode = (
+        stat.S_IFREG
+        | 0o640
+    )
+    observed_modes: list[int] = []
+
+    class FakeStatResult:
+        st_mode = full_mode
+
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path: FakeStatResult(),
+    )
+
+    def recording_chmod(
+        path: Path,
+        mode: int,
+        *,
+        follow_symlinks: bool = True,
+    ) -> None:
+        del path
+        del follow_symlinks
+
+        observed_modes.append(
+            mode
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "chmod",
+        recording_chmod,
+    )
+
+    publisher._apply_existing_destination_mode(
+        temporary_path
+    )
+
+    assert observed_modes == [
+        0o640
+    ]
+
+def test_existing_destination_special_permission_bits_are_retained(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    expected_permissions = (
+        stat.S_ISUID
+        | stat.S_ISGID
+        | stat.S_ISVTX
+        | 0o640
+    )
+
+    class FakeStatResult:
+        st_mode = (
+            stat.S_IFREG
+            | expected_permissions
+        )
+
+    observed_modes: list[int] = []
+
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path: FakeStatResult(),
+    )
+
+    def recording_chmod(
+        path: Path,
+        mode: int,
+        *,
+        follow_symlinks: bool = True,
+    ) -> None:
+        del path
+        del follow_symlinks
+
+        observed_modes.append(
+            mode
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "chmod",
+        recording_chmod,
+    )
+
+    publisher._apply_existing_destination_mode(
+        temporary_path
+    )
+
+    assert observed_modes == [
+        expected_permissions
+    ]

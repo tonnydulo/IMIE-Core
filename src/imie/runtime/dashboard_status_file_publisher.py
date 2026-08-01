@@ -4,6 +4,8 @@ import os
 
 import errno
 
+import stat
+
 from time import sleep
 
 from enum import Enum
@@ -1453,7 +1455,7 @@ class DashboardStatusFilePublisher:
         temporary_path: Path,
     ) -> None:
         try:
-            destination_mode = (
+            destination_mode = stat.S_IMODE(
                 self.path.stat().st_mode
             )
 
