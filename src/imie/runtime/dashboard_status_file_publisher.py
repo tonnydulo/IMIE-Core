@@ -1487,7 +1487,6 @@ class DashboardStatusFilePublisher:
                     temporary_path,
                     self.path,
                 )
-                return
 
             except PermissionError as error:
                 if not self._is_transient_replace_error(
@@ -1504,6 +1503,38 @@ class DashboardStatusFilePublisher:
                 sleep(
                     self._REPLACE_RETRY_DELAY_SECONDS
                 )
+
+                continue
+
+            self._sync_parent_directory()
+            return
+
+    @staticmethod
+    def _supports_directory_fsync(
+    ) -> bool:
+        return os.name == "posix"
+
+
+    def _sync_parent_directory(
+        self,
+    ) -> None:
+        if not self._supports_directory_fsync():
+            return
+
+        directory_descriptor = os.open(
+            self.path.parent,
+            os.O_RDONLY,
+        )
+
+        try:
+            os.fsync(
+                directory_descriptor
+            )
+
+        finally:
+            os.close(
+                directory_descriptor
+            )
 
     def _write_temporary_payload(
         self,

@@ -493,14 +493,10 @@ def is_dashboard_temporary_path(
         )
     )
 
-
-def dashboard_temporary_files(
-    directory: Path,
-) -> list[Path]:
-    return list(
-        directory.glob(
-            ".dashboard.json.*.tmp"
-        )
+def _raise_directory_sync_error(
+) -> None:
+    raise PermissionError(
+        "Directory sync failed."
     )
 
 def test_publish_result_populates_decision_details(
@@ -5195,3 +5191,300 @@ def test_fsync_failure_creates_no_dashboard(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_atomic_replace_skips_directory_fsync_when_unsupported(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_opened = False
+    original_open = os.open
+
+    def recording_open(
+        path,
+        flags: int,
+        mode: int = 0o777,
+    ) -> int:
+        nonlocal directory_opened
+
+        if Path(path) == tmp_path:
+            directory_opened = True
+
+        return original_open(
+            path,
+            flags,
+            mode,
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        recording_open,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert directory_opened is False
+    assert output_path.exists()
+
+def test_parent_directory_is_synced_after_atomic_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    events: list[str] = []
+    directory_descriptor = 12345
+
+    original_replace = os.replace
+    original_fsync = os.fsync
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        events.append(
+            "replace"
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    def recording_open(
+        path,
+        flags: int,
+        mode: int = 0o777,
+    ) -> int:
+        assert Path(path) == tmp_path
+        assert flags == os.O_RDONLY
+
+        events.append(
+            "directory-open"
+        )
+
+        return directory_descriptor
+
+    def recording_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            events.append(
+                "directory-fsync"
+            )
+            return
+
+        events.append(
+            "file-fsync"
+        )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    def recording_close(
+        file_descriptor: int,
+    ) -> None:
+        assert (
+            file_descriptor
+            == directory_descriptor
+        )
+
+        events.append(
+            "directory-close"
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        recording_open,
+    )
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        recording_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        recording_close,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert events == [
+        "file-fsync",
+        "replace",
+        "directory-open",
+        "directory-fsync",
+        "directory-close",
+    ]
+
+def test_parent_directory_descriptor_closes_when_fsync_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    closed_descriptors: list[int] = []
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def failing_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            raise OSError(
+                "Directory sync failed."
+            )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        failing_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        lambda file_descriptor: (
+            closed_descriptors.append(
+                file_descriptor
+            )
+        ),
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Directory sync failed",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert closed_descriptors == [
+        directory_descriptor
+    ]
+
+    # Replacement completed before directory sync failed.
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_directory_fsync_failure_does_not_retry_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_count = 0
+    original_replace = os.replace
+
+    def recording_replace(
+        source,
+        destination,
+    ) -> None:
+        nonlocal replace_count
+
+        replace_count += 1
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+    monkeypatch.setattr(
+        publisher,
+        "_sync_parent_directory",
+        lambda: (
+            _raise_directory_sync_error()
+        ),
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Directory sync failed",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert replace_count == 1
+    assert output_path.exists()
