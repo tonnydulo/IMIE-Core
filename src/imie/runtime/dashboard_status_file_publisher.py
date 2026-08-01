@@ -1527,6 +1527,10 @@ class DashboardStatusFilePublisher:
                     temporary_file.write(
                         payload + "\n"
                     )
+                    temporary_file.flush()
+                    os.fsync(
+                        temporary_file.fileno()
+                    )
 
             except FileExistsError:
                 if (
@@ -1536,6 +1540,12 @@ class DashboardStatusFilePublisher:
                     raise
 
                 continue
+
+            except Exception:
+                if temporary_path.exists():
+                    temporary_path.unlink()
+
+                raise
 
             return temporary_path
 

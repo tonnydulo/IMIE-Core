@@ -3471,6 +3471,17 @@ def test_concurrent_publications_serialize_temporary_writes(
                 data
             )
 
+        def flush(
+            self,
+        ) -> None:
+            self._file_object.flush()
+
+
+        def fileno(
+            self,
+        ) -> int:
+            return self._file_object.fileno()
+
         def __exit__(
             self,
             exception_type,
@@ -5014,6 +5025,173 @@ def test_exclusive_temporary_write_failure_creates_no_dashboard(
         )
 
     assert output_path.exists() is False
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_temporary_payload_is_flushed_before_atomic_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    events: list[str] = []
+    original_fsync = os.fsync
+    original_replace = os.replace
+
+    def recording_fsync(
+        file_descriptor: int,
+    ) -> None:
+        events.append(
+            "fsync"
+        )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    def recording_replace(
+        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+    ) -> None:
+        events.append(
+            "replace"
+        )
+
+        original_replace(
+            source,
+            destination,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        recording_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "replace",
+        recording_replace,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert events == [
+        "fsync",
+        "replace",
+    ]
+
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_fsync_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_fsync(
+        file_descriptor: int,
+    ) -> None:
+        del file_descriptor
+
+        raise OSError(
+            "Temporary dashboard flush failed."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        failing_fsync,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Temporary dashboard flush failed",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_fsync_failure_creates_no_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_fsync(
+        file_descriptor: int,
+    ) -> None:
+        del file_descriptor
+
+        raise OSError(
+            "Temporary dashboard flush failed."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        failing_fsync,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Temporary dashboard flush failed",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+
     assert dashboard_temporary_files(
         tmp_path
     ) == []
