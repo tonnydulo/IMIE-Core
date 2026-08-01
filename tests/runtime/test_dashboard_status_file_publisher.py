@@ -6801,7 +6801,21 @@ def test_directory_open_flags_include_read_only(
         ._directory_open_flags()
     )
 
-    assert flags & os.O_RDONLY == os.O_RDONLY
+    expected_flags = (
+        os.O_RDONLY
+        | getattr(
+            os,
+            "O_DIRECTORY",
+            0,
+        )
+        | getattr(
+            os,
+            "O_CLOEXEC",
+            0,
+        )
+    )
+
+    assert flags == expected_flags
 
 def test_directory_open_flags_include_directory_flag_when_available(
     monkeypatch: pytest.MonkeyPatch,
@@ -6820,10 +6834,17 @@ def test_directory_open_flags_include_directory_flag_when_available(
         ._directory_open_flags()
     )
 
-    assert flags == (
+    expected_flags = (
         os.O_RDONLY
         | directory_flag
+        | getattr(
+            os,
+            "O_CLOEXEC",
+            0,
+        )
     )
+
+    assert flags == expected_flags
 
 def test_directory_open_flags_fall_back_without_directory_flag(
     monkeypatch: pytest.MonkeyPatch,
@@ -6839,7 +6860,16 @@ def test_directory_open_flags_fall_back_without_directory_flag(
         ._directory_open_flags()
     )
 
-    assert flags == os.O_RDONLY
+    expected_flags = (
+        os.O_RDONLY
+        | getattr(
+            os,
+            "O_CLOEXEC",
+            0,
+        )
+    )
+
+    assert flags == expected_flags
 
 def test_parent_directory_sync_uses_directory_open_flags(
     tmp_path: Path,
@@ -6856,8 +6886,17 @@ def test_parent_directory_sync_uses_directory_open_flags(
         timeframe="2m",
     )
 
+    directory_flag = 0x10000
+    close_on_exec_flag = 0x20000
+
+    expected_flags = (
+        os.O_RDONLY
+        | directory_flag
+        | close_on_exec_flag
+    )
+
     directory_descriptor = 12345
-    expected_flags = 0x1234
+
     observed_calls: list[
         tuple[Path, int]
     ] = []
@@ -6869,10 +6908,19 @@ def test_parent_directory_sync_uses_directory_open_flags(
         "_supports_directory_fsync",
         lambda: True,
     )
+
     monkeypatch.setattr(
-        publisher,
-        "_directory_open_flags",
-        lambda: expected_flags,
+        os,
+        "O_DIRECTORY",
+        directory_flag,
+        raising=False,
+    )
+
+    monkeypatch.setattr(
+        os,
+        "O_CLOEXEC",
+        close_on_exec_flag,
+        raising=False,
     )
 
     def recording_open(
@@ -6891,11 +6939,22 @@ def test_parent_directory_sync_uses_directory_open_flags(
     def recording_fsync(
         file_descriptor: int,
     ) -> None:
-        if file_descriptor == directory_descriptor:
+        if (
+            file_descriptor
+            == directory_descriptor
+        ):
             return
 
         original_fsync(
             file_descriptor
+        )
+
+    def recording_close(
+        file_descriptor: int,
+    ) -> None:
+        assert (
+            file_descriptor
+            == directory_descriptor
         )
 
     monkeypatch.setattr(
@@ -6911,7 +6970,7 @@ def test_parent_directory_sync_uses_directory_open_flags(
     monkeypatch.setattr(
         os,
         "close",
-        lambda file_descriptor: None,
+        recording_close,
     )
 
     publisher.publish_health(
@@ -6926,3 +6985,56 @@ def test_parent_directory_sync_uses_directory_open_flags(
     ]
 
     assert output_path.exists()
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_directory_open_flags_include_close_on_exec_when_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    close_on_exec_flag = 0x20000
+
+    monkeypatch.setattr(
+        os,
+        "O_CLOEXEC",
+        close_on_exec_flag,
+        raising=False,
+    )
+
+    flags = (
+        DashboardStatusFilePublisher
+        ._directory_open_flags()
+    )
+
+    assert (
+        flags
+        & close_on_exec_flag
+    ) == close_on_exec_flag
+
+def test_directory_open_flags_fall_back_without_close_on_exec(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    directory_flag = getattr(
+        os,
+        "O_DIRECTORY",
+        0,
+    )
+
+    monkeypatch.delattr(
+        os,
+        "O_CLOEXEC",
+        raising=False,
+    )
+
+    flags = (
+        DashboardStatusFilePublisher
+        ._directory_open_flags()
+    )
+
+    expected_flags = (
+        os.O_RDONLY
+        | directory_flag
+    )
+
+    assert flags == expected_flags

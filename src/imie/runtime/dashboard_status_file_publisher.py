@@ -1578,6 +1578,11 @@ class DashboardStatusFilePublisher:
                 "O_DIRECTORY",
                 0,
             )
+            | getattr(
+                os,
+                "O_CLOEXEC",
+                0,
+            )
         )
 
     @staticmethod
