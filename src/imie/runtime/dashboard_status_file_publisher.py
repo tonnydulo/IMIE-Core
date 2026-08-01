@@ -1637,6 +1637,12 @@ class DashboardStatusFilePublisher:
                 "a regular file."
             )
 
+        if temporary_status.st_nlink != 1:
+            raise ValueError(
+                "Dashboard temporary file must have "
+                "exactly one hard link."
+            )
+
     @staticmethod
     def _directory_open_flags(
     ) -> int:

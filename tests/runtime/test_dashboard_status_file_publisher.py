@@ -8042,3 +8042,250 @@ def test_temporary_validation_failure_preserves_existing_dashboard(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_regular_temporary_file_with_one_link_is_valid(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    temporary_path.write_text(
+        "temporary",
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher._validate_temporary_file(
+        temporary_path
+    )
+
+    assert temporary_path.stat().st_nlink == 1
+
+def test_hard_linked_temporary_file_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+    linked_path = (
+        tmp_path
+        / "linked-dashboard-temp"
+    )
+
+    temporary_path.write_text(
+        "temporary",
+        encoding="utf-8",
+    )
+
+    try:
+        os.link(
+            temporary_path,
+            linked_path,
+        )
+
+    except OSError:
+        pytest.skip(
+            "Hard links are unavailable."
+        )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    assert temporary_path.stat().st_nlink >= 2
+
+    with pytest.raises(
+        ValueError,
+        match="exactly one hard link",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+    assert temporary_path.read_text(
+        encoding="utf-8",
+    ) == "temporary"
+
+    assert linked_path.read_text(
+        encoding="utf-8",
+    ) == "temporary"
+
+def test_temporary_file_with_zero_links_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    class FakeStatResult:
+        st_mode = (
+            stat.S_IFREG
+            | 0o600
+        )
+        st_nlink = 0
+
+    monkeypatch.setattr(
+        Path,
+        "lstat",
+        lambda path: FakeStatResult(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exactly one hard link",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+@pytest.mark.parametrize(
+    "link_count",
+    [
+        2,
+        3,
+        10,
+    ],
+)
+def test_temporary_file_with_multiple_links_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    link_count: int,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    class FakeStatResult:
+        st_mode = (
+            stat.S_IFREG
+            | 0o600
+        )
+        st_nlink = link_count
+
+    monkeypatch.setattr(
+        Path,
+        "lstat",
+        lambda path: FakeStatResult(),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exactly one hard link",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path
+        )
+
+def test_hard_link_validation_failure_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+
+    def failing_validation(
+        temporary_path: Path,
+    ) -> None:
+        original_validate(
+            temporary_path
+        )
+
+        raise ValueError(
+            "Dashboard temporary file must have "
+            "exactly one hard link."
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        failing_validation,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exactly one hard link",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
