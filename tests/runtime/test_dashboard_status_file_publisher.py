@@ -5737,3 +5737,295 @@ def test_real_directory_fsync_error_propagates_and_closes(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_temporary_cleanup_failure_does_not_mask_write_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_open = Path.open
+    original_unlink = Path.unlink
+
+    def failing_open(
+        path: Path,
+        mode: str = "r",
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ):
+        if (
+            mode == "x"
+            and is_dashboard_temporary_path(
+                path,
+                tmp_path,
+            )
+        ):
+            path.touch(
+                exist_ok=False
+            )
+
+            raise OSError(
+                "Primary temporary write failure."
+            )
+
+        return original_open(
+            path,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+        )
+
+    def failing_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        if is_dashboard_temporary_path(
+            path,
+            tmp_path,
+        ):
+            raise PermissionError(
+                "Temporary cleanup failure."
+            )
+
+        original_unlink(
+            path,
+            missing_ok=missing_ok,
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "open",
+        failing_open,
+    )
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        failing_unlink,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Primary temporary write failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+
+def test_temporary_cleanup_failure_does_not_mask_replace_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_unlink = Path.unlink
+
+    def failing_replace(
+        source,
+        destination,
+    ) -> None:
+        del source
+        del destination
+
+        raise OSError(
+            "Primary atomic replace failure."
+        )
+
+    def failing_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        if is_dashboard_temporary_path(
+            path,
+            tmp_path,
+        ):
+            raise PermissionError(
+                "Temporary cleanup failure."
+            )
+
+        original_unlink(
+            path,
+            missing_ok=missing_ok,
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_replace,
+    )
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        failing_unlink,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Primary atomic replace failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists() is False
+
+def test_cleanup_failure_does_not_mask_directory_sync_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_unlink = Path.unlink
+
+    def failing_directory_sync(
+    ) -> None:
+        raise OSError(
+            "Primary directory sync failure."
+        )
+
+    def failing_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        if is_dashboard_temporary_path(
+            path,
+            tmp_path,
+        ):
+            raise PermissionError(
+                "Temporary cleanup failure."
+            )
+
+        original_unlink(
+            path,
+            missing_ok=missing_ok,
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_sync_parent_directory",
+        failing_directory_sync,
+    )
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        failing_unlink,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Primary directory sync failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    # The replacement completed before directory syncing failed.
+    assert output_path.exists()
+
+def test_temporary_cleanup_helper_can_propagate_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    temporary_path = (
+        tmp_path
+        / ".dashboard.json.cleanup.tmp"
+    )
+
+    temporary_path.write_text(
+        "temporary",
+        encoding="utf-8",
+    )
+
+    def failing_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        del path
+        del missing_ok
+
+        raise PermissionError(
+            "Temporary cleanup failure."
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        failing_unlink,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Temporary cleanup failure",
+    ):
+        DashboardStatusFilePublisher._remove_temporary_file(
+            temporary_path,
+            suppress_errors=False,
+        )
+
+def test_temporary_cleanup_helper_can_suppress_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    temporary_path = (
+        tmp_path
+        / ".dashboard.json.cleanup.tmp"
+    )
+
+    temporary_path.write_text(
+        "temporary",
+        encoding="utf-8",
+    )
+
+    def failing_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        del path
+        del missing_ok
+
+        raise PermissionError(
+            "Temporary cleanup failure."
+        )
+
+    monkeypatch.setattr(
+        Path,
+        "unlink",
+        failing_unlink,
+    )
+
+    DashboardStatusFilePublisher._remove_temporary_file(
+        temporary_path,
+        suppress_errors=True,
+    )

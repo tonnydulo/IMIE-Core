@@ -1476,9 +1476,20 @@ class DashboardStatusFilePublisher:
             self._replace_atomically(
                 temporary_path=temporary_path,
             )
-        finally:
-            if temporary_path.exists():
-                temporary_path.unlink()
+
+        except Exception:
+            self._remove_temporary_file(
+                temporary_path,
+                suppress_errors=True,
+            )
+
+            raise
+
+        else:
+            self._remove_temporary_file(
+                temporary_path,
+                suppress_errors=False,
+            )
 
     def _build_temporary_path(
         self,
@@ -1603,8 +1614,10 @@ class DashboardStatusFilePublisher:
                 continue
 
             except Exception:
-                if temporary_path.exists():
-                    temporary_path.unlink()
+                self._remove_temporary_file(
+                    temporary_path,
+                    suppress_errors=True,
+                )
 
                 raise
 
@@ -1637,6 +1650,21 @@ class DashboardStatusFilePublisher:
             error.errno
             in cls._UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
         )
+
+    @staticmethod
+    def _remove_temporary_file(
+        temporary_path: Path,
+        *,
+        suppress_errors: bool,
+    ) -> None:
+        try:
+            temporary_path.unlink(
+                missing_ok=True
+            )
+
+        except OSError:
+            if not suppress_errors:
+                raise
 
     @staticmethod
     def _normalize_required_text(
