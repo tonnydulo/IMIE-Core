@@ -6556,3 +6556,237 @@ def test_temporary_path_with_extra_segment_is_not_owned(
     assert publisher._is_owned_temporary_path(
         temporary_path
     ) is False
+
+def test_directory_close_failure_does_not_mask_fsync_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def failing_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            raise OSError(
+                errno.EIO,
+                "Primary directory fsync failure.",
+            )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    def failing_close(
+        file_descriptor: int,
+    ) -> None:
+        assert (
+            file_descriptor
+            == directory_descriptor
+        )
+
+        raise PermissionError(
+            "Secondary directory close failure."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        failing_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        failing_close,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Primary directory fsync failure",
+    ) as error_info:
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert error_info.value.errno == errno.EIO
+
+    # Replacement completed before directory syncing.
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_directory_close_failure_propagates_after_successful_fsync(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def successful_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            return
+
+        original_fsync(
+            file_descriptor
+        )
+
+    def failing_close(
+        file_descriptor: int,
+    ) -> None:
+        assert (
+            file_descriptor
+            == directory_descriptor
+        )
+
+        raise PermissionError(
+            "Directory close failure."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        successful_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        failing_close,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Directory close failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_directory_close_failure_propagates_after_unsupported_fsync(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def unsupported_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            raise OSError(
+                errno.ENOTSUP,
+                "Directory fsync is unsupported.",
+            )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    def failing_close(
+        file_descriptor: int,
+    ) -> None:
+        assert (
+            file_descriptor
+            == directory_descriptor
+        )
+
+        raise PermissionError(
+            "Directory close failure."
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        unsupported_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        failing_close,
+    )
+
+    with pytest.raises(
+        PermissionError,
+        match="Directory close failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []

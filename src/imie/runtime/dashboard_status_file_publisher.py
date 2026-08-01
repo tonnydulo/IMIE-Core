@@ -1573,7 +1573,6 @@ class DashboardStatusFilePublisher:
     ) -> bool:
         return os.name == "posix"
 
-
     def _sync_parent_directory(
         self,
     ) -> None:
@@ -1594,6 +1593,8 @@ class DashboardStatusFilePublisher:
 
             raise
 
+        sync_error: OSError | None = None
+
         try:
             try:
                 os.fsync(
@@ -1601,15 +1602,23 @@ class DashboardStatusFilePublisher:
                 )
 
             except OSError as error:
-                if not self._is_unsupported_directory_fsync_error(
+                if self._is_unsupported_directory_fsync_error(
                     error
                 ):
-                    raise
+                    return
+
+                sync_error = error
+                raise
 
         finally:
-            os.close(
-                directory_descriptor
-            )
+            try:
+                os.close(
+                    directory_descriptor
+                )
+
+            except OSError:
+                if sync_error is None:
+                    raise
 
     def _write_temporary_payload(
         self,
