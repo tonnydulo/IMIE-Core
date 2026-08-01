@@ -2,6 +2,8 @@ import json
 
 import os
 
+import errno
+
 from datetime import (
     datetime,
     timedelta,
@@ -5488,3 +5490,250 @@ def test_directory_fsync_failure_does_not_retry_replace(
 
     assert replace_count == 1
     assert output_path.exists()
+
+def test_unsupported_directory_open_error_is_ignored(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_open(
+        path,
+        flags: int,
+        mode: int = 0o777,
+    ) -> int:
+        del path
+        del flags
+        del mode
+
+        raise OSError(
+            errno.EINVAL,
+            "Directory handles are unsupported.",
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        failing_open,
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_unsupported_directory_fsync_error_is_ignored(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    closed_descriptors: list[int] = []
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def unsupported_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            raise OSError(
+                errno.ENOTSUP,
+                "Directory fsync is unsupported.",
+            )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        unsupported_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        lambda file_descriptor: (
+            closed_descriptors.append(
+                file_descriptor
+            )
+        ),
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    assert closed_descriptors == [
+        directory_descriptor
+    ]
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_real_directory_open_error_propagates(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    def failing_open(
+        path,
+        flags: int,
+        mode: int = 0o777,
+    ) -> int:
+        del path
+        del flags
+        del mode
+
+        raise OSError(
+            errno.EIO,
+            "Directory I/O failure.",
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        failing_open,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Directory I/O failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    # Replacement occurred before directory syncing.
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_real_directory_fsync_error_propagates_and_closes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    directory_descriptor = 12345
+    closed_descriptors: list[int] = []
+    original_fsync = os.fsync
+
+    monkeypatch.setattr(
+        publisher,
+        "_supports_directory_fsync",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags: directory_descriptor,
+    )
+
+    def failing_directory_fsync(
+        file_descriptor: int,
+    ) -> None:
+        if file_descriptor == directory_descriptor:
+            raise OSError(
+                errno.EIO,
+                "Directory I/O failure.",
+            )
+
+        original_fsync(
+            file_descriptor
+        )
+
+    monkeypatch.setattr(
+        os,
+        "fsync",
+        failing_directory_fsync,
+    )
+    monkeypatch.setattr(
+        os,
+        "close",
+        lambda file_descriptor: (
+            closed_descriptors.append(
+                file_descriptor
+            )
+        ),
+    )
+
+    with pytest.raises(
+        OSError,
+        match="Directory I/O failure",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert closed_descriptors == [
+        directory_descriptor
+    ]
+    assert output_path.exists()
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []

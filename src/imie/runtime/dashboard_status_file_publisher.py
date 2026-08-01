@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 
+import errno
+
 from time import sleep
 
 from enum import Enum
@@ -40,6 +42,18 @@ class DashboardStatusFilePublisher:
             5,
             32,
             33,
+        }
+    )
+    _UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS = frozenset(
+        {
+            errno.EINVAL,
+            errno.ENOTSUP,
+            errno.EBADF,
+            getattr(
+                errno,
+                "EOPNOTSUPP",
+                errno.ENOTSUP,
+            ),
         }
     )
 
@@ -1521,15 +1535,31 @@ class DashboardStatusFilePublisher:
         if not self._supports_directory_fsync():
             return
 
-        directory_descriptor = os.open(
-            self.path.parent,
-            os.O_RDONLY,
-        )
+        try:
+            directory_descriptor = os.open(
+                self.path.parent,
+                os.O_RDONLY,
+            )
+
+        except OSError as error:
+            if self._is_unsupported_directory_fsync_error(
+                error
+            ):
+                return
+
+            raise
 
         try:
-            os.fsync(
-                directory_descriptor
-            )
+            try:
+                os.fsync(
+                    directory_descriptor
+                )
+
+            except OSError as error:
+                if not self._is_unsupported_directory_fsync_error(
+                    error
+                ):
+                    raise
 
         finally:
             os.close(
@@ -1596,6 +1626,16 @@ class DashboardStatusFilePublisher:
                 None,
             )
             in cls._TRANSIENT_REPLACE_WINERRORS
+        )
+
+    @classmethod
+    def _is_unsupported_directory_fsync_error(
+        cls,
+        error: OSError,
+    ) -> bool:
+        return (
+            error.errno
+            in cls._UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
         )
 
     @staticmethod
