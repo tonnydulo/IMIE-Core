@@ -7719,12 +7719,12 @@ def test_completed_temporary_file_is_validated_before_publication(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> None:
+    ) -> tuple[int, int]:
         validated_paths.append(
             temporary_path
         )
 
-        original_validate(
+        return original_validate(
             temporary_path,
             expected_size=expected_size,
             expected_digest=expected_digest,
@@ -7791,12 +7791,12 @@ def test_temporary_validation_precedes_mode_and_replace(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> None:
+    ) -> tuple[int, int]:
         events.append(
             "validate"
         )
 
-        original_validate(
+        return original_validate(
             temporary_path,
             expected_size=expected_size,
             expected_digest=expected_digest,
