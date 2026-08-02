@@ -1534,17 +1534,11 @@ class DashboardStatusFilePublisher:
                     expected_digest=expected_digest,
                 )
             )
-
-            self._validate_temporary_file_fingerprint(
-                temporary_path,
-                expected_fingerprint=(
-                    temporary_fingerprint
-                ),
-                expected_digest=expected_digest,
-            )
-
+            
             self._replace_atomically(
                 temporary_path=temporary_path,
+                expected_fingerprint=temporary_fingerprint,
+                expected_digest=expected_digest,
             )
 
         except Exception:
@@ -1572,11 +1566,26 @@ class DashboardStatusFilePublisher:
         self,
         *,
         temporary_path: Path,
+        expected_fingerprint: tuple[
+            int,
+            int,
+            int,
+            int,
+        ],
+        expected_digest: str,
     ) -> None:
         for attempt in range(
             1,
             self._REPLACE_MAX_ATTEMPTS + 1,
         ):
+            self._validate_temporary_file_fingerprint(
+                temporary_path,
+                expected_fingerprint=(
+                    expected_fingerprint
+                ),
+                expected_digest=expected_digest,
+            )
+
             try:
                 os.replace(
                     temporary_path,

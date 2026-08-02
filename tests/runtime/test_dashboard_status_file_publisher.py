@@ -8999,3 +8999,127 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_retry_revalidates_temporary_payload_before_replace(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+        newline="",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    replace_attempts = 0
+    temporary_path: Path | None = None
+
+    def failing_first_replace(
+        source: str
+        | bytes
+        | os.PathLike[str]
+        | os.PathLike[bytes],
+        destination: str
+        | bytes
+        | os.PathLike[str]
+        | os.PathLike[bytes],
+    ) -> None:
+        nonlocal replace_attempts
+        nonlocal temporary_path
+
+        del destination
+
+        replace_attempts += 1
+        temporary_path = Path(
+            source
+        )
+
+        error = PermissionError(
+            "Temporary Windows sharing violation."
+        )
+        error.winerror = 32
+
+        raise error
+
+    def corrupt_during_retry_delay(
+        delay_seconds: float,
+    ) -> None:
+        del delay_seconds
+
+        assert temporary_path is not None
+
+        original_status = (
+            temporary_path.stat()
+        )
+        original_bytes = (
+            temporary_path.read_bytes()
+        )
+
+        assert original_bytes
+
+        corrupted_bytes = bytearray(
+            original_bytes
+        )
+        corrupted_bytes[0] ^= 1
+
+        assert len(
+            corrupted_bytes
+        ) == len(
+            original_bytes
+        )
+
+        temporary_path.write_bytes(
+            corrupted_bytes
+        )
+
+        os.utime(
+            temporary_path,
+            ns=(
+                original_status.st_atime_ns,
+                original_status.st_mtime_ns,
+            ),
+        )
+
+    monkeypatch.setattr(
+        os,
+        "replace",
+        failing_first_replace,
+    )
+    monkeypatch.setattr(
+        (
+            "imie.runtime."
+            "dashboard_status_file_publisher.sleep"
+        ),
+        corrupt_during_retry_delay,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed after payload validation",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert replace_attempts == 1
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
