@@ -1496,6 +1496,16 @@ class DashboardStatusFilePublisher:
             indent=self.indent
         )
 
+        serialized_payload = (
+            payload + "\n"
+        )
+
+        expected_size = len(
+            serialized_payload.encode(
+                "utf-8"
+            )
+        )
+
         temporary_path = (
             self._write_temporary_payload(
                 payload=payload,
@@ -1504,7 +1514,8 @@ class DashboardStatusFilePublisher:
 
         try:
             self._validate_temporary_file(
-                temporary_path
+                temporary_path,
+                expected_size=expected_size,
             )
 
             self._apply_existing_destination_mode(
@@ -1609,6 +1620,8 @@ class DashboardStatusFilePublisher:
     def _validate_temporary_file(
         self,
         temporary_path: Path,
+        *,
+        expected_size: int,
     ) -> None:
         if not self._is_owned_temporary_path(
             temporary_path
@@ -1641,6 +1654,12 @@ class DashboardStatusFilePublisher:
             raise ValueError(
                 "Dashboard temporary file must have "
                 "exactly one hard link."
+            )
+
+        if temporary_status.st_size != expected_size:
+            raise ValueError(
+                "Dashboard temporary file size does not "
+                "match the serialized payload."
             )
 
     @staticmethod

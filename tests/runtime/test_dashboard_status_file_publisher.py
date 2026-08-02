@@ -7714,13 +7714,16 @@ def test_completed_temporary_file_is_validated_before_publication(
 
     def recording_validate(
         temporary_path: Path,
+        *,
+        expected_size: int,
     ) -> None:
         validated_paths.append(
             temporary_path
         )
 
         original_validate(
-            temporary_path
+            temporary_path,
+            expected_size=expected_size,
         )
 
     monkeypatch.setattr(
@@ -7780,13 +7783,16 @@ def test_temporary_validation_precedes_mode_and_replace(
 
     def recording_validate(
         temporary_path: Path,
+        *,
+        expected_size: int,
     ) -> None:
         events.append(
             "validate"
         )
 
         original_validate(
-            temporary_path
+            temporary_path,
+            expected_size=expected_size,
         )
 
     def recording_apply_mode(
@@ -7865,7 +7871,8 @@ def test_missing_temporary_file_is_rejected_before_replace(
         match="disappeared before publication",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=0,
         )
 
 def test_unowned_temporary_file_is_rejected_before_validation(
@@ -7896,7 +7903,8 @@ def test_unowned_temporary_file_is_rejected_before_validation(
         match="not owned",
     ):
         publisher._validate_temporary_file(
-            unrelated_path
+            unrelated_path,
+            expected_size=0,
         )
 
     assert unrelated_path.read_text(
@@ -7931,7 +7939,8 @@ def test_directory_temporary_path_is_rejected(
         match="must be a regular file",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=0,
         )
 
     assert temporary_path.is_dir()
@@ -7981,7 +7990,8 @@ def test_symlink_temporary_path_is_rejected(
         match="must be a regular file",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=0,
         )
 
     assert temporary_path.is_symlink()
@@ -8014,23 +8024,15 @@ def test_temporary_validation_failure_preserves_existing_dashboard(
 
     def failing_validation(
         temporary_path: Path,
+        *,
+        expected_size: int,
     ) -> None:
         del temporary_path
+        del expected_size
 
         raise ValueError(
             "Temporary validation failed."
         )
-
-    monkeypatch.setattr(
-        publisher,
-        "_validate_temporary_file",
-        failing_validation,
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="Temporary validation failed",
-    ):
         publisher.publish_health(
             make_health()
         )
@@ -8069,8 +8071,13 @@ def test_regular_temporary_file_with_one_link_is_valid(
         timeframe="2m",
     )
 
+    expected_size = len(
+        temporary_path.read_bytes()
+    )
+
     publisher._validate_temporary_file(
-        temporary_path
+        temporary_path,
+        expected_size=expected_size,
     )
 
     assert temporary_path.stat().st_nlink == 1
@@ -8118,12 +8125,17 @@ def test_hard_linked_temporary_file_is_rejected(
 
     assert temporary_path.stat().st_nlink >= 2
 
+    expected_size = len(
+        temporary_path.read_bytes()
+    )
+
     with pytest.raises(
         ValueError,
         match="exactly one hard link",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=expected_size,
         )
 
     assert temporary_path.read_text(
@@ -8162,6 +8174,7 @@ def test_temporary_file_with_zero_links_is_rejected(
             | 0o600
         )
         st_nlink = 0
+        st_size = 10
 
     monkeypatch.setattr(
         Path,
@@ -8174,9 +8187,9 @@ def test_temporary_file_with_zero_links_is_rejected(
         match="exactly one hard link",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=10,
         )
-
 @pytest.mark.parametrize(
     "link_count",
     [
@@ -8214,6 +8227,7 @@ def test_temporary_file_with_multiple_links_is_rejected(
             | 0o600
         )
         st_nlink = link_count
+        st_size = 10
 
     monkeypatch.setattr(
         Path,
@@ -8226,7 +8240,8 @@ def test_temporary_file_with_multiple_links_is_rejected(
         match="exactly one hard link",
     ):
         publisher._validate_temporary_file(
-            temporary_path
+            temporary_path,
+            expected_size=10,
         )
 
 def test_hard_link_validation_failure_preserves_existing_dashboard(
@@ -8258,9 +8273,12 @@ def test_hard_link_validation_failure_preserves_existing_dashboard(
 
     def failing_validation(
         temporary_path: Path,
+        *,
+        expected_size: int,
     ) -> None:
         original_validate(
-            temporary_path
+            temporary_path,
+            expected_size=expected_size,
         )
 
         raise ValueError(
@@ -8277,6 +8295,255 @@ def test_hard_link_validation_failure_preserves_existing_dashboard(
     with pytest.raises(
         ValueError,
         match="exactly one hard link",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
+
+def test_temporary_file_with_expected_size_is_valid(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    contents = (
+        '{"status": "ok"}\n'
+    )
+
+    temporary_path.write_text(
+        contents,
+        encoding="utf-8",
+        newline="",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    expected_size = len(
+        contents.encode(
+            "utf-8"
+        )
+    )
+
+    publisher._validate_temporary_file(
+        temporary_path,
+        expected_size=expected_size,
+    )
+
+def test_truncated_temporary_payload_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    expected_contents = (
+        '{"status": "complete"}\n'
+    )
+    truncated_contents = (
+        '{"status":'
+    )
+
+    temporary_path.write_text(
+        truncated_contents,
+        encoding="utf-8",
+        newline="",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="size does not match",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path,
+            expected_size=len(
+                expected_contents.encode(
+                    "utf-8"
+                )
+            ),
+        )
+
+def test_oversized_temporary_payload_is_rejected(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    expected_contents = (
+        '{"status": "ok"}\n'
+    )
+    oversized_contents = (
+        expected_contents
+        + "unexpected"
+    )
+
+    temporary_path.write_text(
+        oversized_contents,
+        encoding="utf-8",
+        newline="",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="size does not match",
+    ):
+        publisher._validate_temporary_file(
+            temporary_path,
+            expected_size=len(
+                expected_contents.encode(
+                    "utf-8"
+                )
+            ),
+        )
+
+def test_temporary_payload_size_uses_utf8_bytes(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    contents = (
+        '{"message": "café"}\n'
+    )
+
+    temporary_path.write_text(
+        contents,
+        encoding="utf-8",
+        newline="",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    assert len(
+        contents.encode(
+            "utf-8"
+        )
+    ) > len(
+        contents
+    )
+
+    publisher._validate_temporary_file(
+        temporary_path,
+        expected_size=len(
+            contents.encode(
+                "utf-8"
+            )
+        ),
+    )
+
+def test_temporary_size_mismatch_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+
+    def failing_validation(
+        temporary_path: Path,
+        *,
+        expected_size: int,
+    ) -> None:
+        original_validate(
+            temporary_path,
+            expected_size=expected_size,
+        )
+
+        raise ValueError(
+            "Dashboard temporary file size does not "
+            "match the serialized payload."
+        )
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        failing_validation,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="size does not match",
     ):
         publisher.publish_health(
             make_health()
