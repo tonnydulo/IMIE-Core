@@ -7835,6 +7835,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
             int,
             int,
         ],
+        expected_digest: str,
     ) -> None:
         events.append(
             "fingerprint"
@@ -7845,6 +7846,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
             expected_fingerprint=(
                 expected_fingerprint
             ),
+            expected_digest=expected_digest,
         )
 
     def recording_replace(

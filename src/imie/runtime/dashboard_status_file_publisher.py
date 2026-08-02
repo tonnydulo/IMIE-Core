@@ -1540,6 +1540,7 @@ class DashboardStatusFilePublisher:
                 expected_fingerprint=(
                     temporary_fingerprint
                 ),
+                expected_digest=expected_digest,
             )
 
             self._replace_atomically(
@@ -2072,6 +2073,7 @@ class DashboardStatusFilePublisher:
             int,
             int,
         ],
+        expected_digest: str,
     ) -> None:
         try:
             current_status = (
@@ -2104,3 +2106,40 @@ class DashboardStatusFilePublisher:
                 "Dashboard temporary file changed "
                 "after payload validation."
             )
+
+        current_digest = (
+            self._calculate_file_digest(
+                temporary_path
+            )
+        )
+
+        if current_digest != expected_digest:
+            raise ValueError(
+                "Dashboard temporary file changed "
+                "after payload validation."
+            )
+
+    def _calculate_file_digest(
+        self,
+        path: Path,
+    ) -> str:
+        digest = hashlib.sha256()
+
+        with open(
+            path,
+            "rb",
+            buffering=0,
+        ) as file:
+            while True:
+                chunk = file.read(
+                    64 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                digest.update(
+                    chunk
+                )
+
+        return digest.hexdigest()
