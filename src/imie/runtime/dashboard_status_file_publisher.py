@@ -6,6 +6,8 @@ import errno
 
 import stat
 
+import hashlib
+
 from time import sleep
 
 from enum import Enum
@@ -1500,11 +1502,19 @@ class DashboardStatusFilePublisher:
             payload + "\n"
         )
 
-        expected_size = len(
+        serialized_payload_bytes = (
             serialized_payload.encode(
                 "utf-8"
             )
         )
+
+        expected_size = len(
+            serialized_payload_bytes
+        )
+
+        expected_digest = hashlib.sha256(
+            serialized_payload_bytes
+        ).hexdigest()
 
         temporary_path = (
             self._write_temporary_payload(
@@ -1516,6 +1526,7 @@ class DashboardStatusFilePublisher:
             self._validate_temporary_file(
                 temporary_path,
                 expected_size=expected_size,
+                expected_digest=expected_digest,
             )
 
             self._apply_existing_destination_mode(
@@ -1622,6 +1633,7 @@ class DashboardStatusFilePublisher:
         temporary_path: Path,
         *,
         expected_size: int,
+        expected_digest: str,
     ) -> None:
         if not self._is_owned_temporary_path(
             temporary_path
@@ -1659,6 +1671,35 @@ class DashboardStatusFilePublisher:
         if temporary_status.st_size != expected_size:
             raise ValueError(
                 "Dashboard temporary file size does not "
+                "match the serialized payload."
+            )
+
+        digest = hashlib.sha256()
+
+        with open(
+            temporary_path,
+            "rb",
+            buffering=0,
+        ) as temporary_file:
+            while True:
+                chunk = temporary_file.read(
+                    64 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                digest.update(
+                    chunk
+                )
+
+        actual_digest = (
+            digest.hexdigest()
+        )
+
+        if actual_digest != expected_digest:
+            raise ValueError(
+                "Dashboard temporary file digest does not "
                 "match the serialized payload."
             )
 
