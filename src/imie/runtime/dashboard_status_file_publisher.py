@@ -2076,70 +2076,59 @@ class DashboardStatusFilePublisher:
         expected_digest: str,
     ) -> None:
         try:
-            current_status = (
-                temporary_path.lstat()
-            )
+            with open(
+                temporary_path,
+                "rb",
+                buffering=0,
+            ) as temporary_file:
+                current_status = os.fstat(
+                    temporary_file.fileno()
+                )
+
+                if not stat.S_ISREG(
+                    current_status.st_mode
+                ):
+                    raise ValueError(
+                        "Dashboard temporary file must be "
+                        "a regular file."
+                    )
+
+                if current_status.st_nlink != 1:
+                    raise ValueError(
+                        "Dashboard temporary file must have "
+                        "exactly one hard link."
+                    )
+
+                if self._temporary_file_fingerprint(
+                    current_status
+                ) != expected_fingerprint:
+                    raise ValueError(
+                        "Dashboard temporary file changed "
+                        "after payload validation."
+                    )
+
+                digest = hashlib.sha256()
+
+                while True:
+                    chunk = temporary_file.read(
+                        64 * 1024
+                    )
+
+                    if not chunk:
+                        break
+
+                    digest.update(
+                        chunk
+                    )
+
         except FileNotFoundError as error:
             raise FileNotFoundError(
                 "Dashboard temporary file disappeared "
                 "before publication."
             ) from error
 
-        if not stat.S_ISREG(
-            current_status.st_mode
-        ):
-            raise ValueError(
-                "Dashboard temporary file must be "
-                "a regular file."
-            )
-
-        if current_status.st_nlink != 1:
-            raise ValueError(
-                "Dashboard temporary file must have "
-                "exactly one hard link."
-            )
-
-        if self._temporary_file_fingerprint(
-            current_status
-        ) != expected_fingerprint:
+        if digest.hexdigest() != expected_digest:
             raise ValueError(
                 "Dashboard temporary file changed "
                 "after payload validation."
             )
-
-        current_digest = (
-            self._calculate_file_digest(
-                temporary_path
-            )
-        )
-
-        if current_digest != expected_digest:
-            raise ValueError(
-                "Dashboard temporary file changed "
-                "after payload validation."
-            )
-
-    def _calculate_file_digest(
-        self,
-        path: Path,
-    ) -> str:
-        digest = hashlib.sha256()
-
-        with open(
-            path,
-            "rb",
-            buffering=0,
-        ) as file:
-            while True:
-                chunk = file.read(
-                    64 * 1024
-                )
-
-                if not chunk:
-                    break
-
-                digest.update(
-                    chunk
-                )
-
-        return digest.hexdigest()

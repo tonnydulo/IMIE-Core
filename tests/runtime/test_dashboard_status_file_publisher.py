@@ -8822,3 +8822,180 @@ def test_temporary_digest_mismatch_preserves_existing_dashboard(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_final_digest_check_rejects_same_fingerprint_corruption(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    expected_bytes = (
+        b'{"status":"ok"}\n'
+    )
+    corrupted_bytes = (
+        b'{"status":"no"}\n'
+    )
+
+    assert len(
+        corrupted_bytes
+    ) == len(
+        expected_bytes
+    )
+
+    temporary_path.write_bytes(
+        expected_bytes
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    expected_fingerprint = (
+        publisher._temporary_file_fingerprint(
+            temporary_path.lstat()
+        )
+    )
+    expected_digest = hashlib.sha256(
+        expected_bytes
+    ).hexdigest()
+
+    original_times = (
+        temporary_path.stat().st_atime_ns,
+        temporary_path.stat().st_mtime_ns,
+    )
+
+    temporary_path.write_bytes(
+        corrupted_bytes
+    )
+
+    os.utime(
+        temporary_path,
+        ns=original_times,
+    )
+
+    assert (
+        publisher._temporary_file_fingerprint(
+            temporary_path.lstat()
+        )
+        == expected_fingerprint
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed after payload validation",
+    ):
+        publisher._validate_temporary_file_fingerprint(
+            temporary_path,
+            expected_fingerprint=expected_fingerprint,
+            expected_digest=expected_digest,
+        )
+
+def test_same_fingerprint_corruption_preserves_existing_dashboard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    existing_payload = (
+        '{"existing": true}\n'
+    )
+
+    output_path.write_text(
+        existing_payload,
+        encoding="utf-8",
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+
+    def corrupt_after_validation(
+        temporary_path: Path,
+        *,
+        expected_size: int,
+        expected_digest: str,
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
+        fingerprint = original_validate(
+            temporary_path,
+            expected_size=expected_size,
+            expected_digest=expected_digest,
+        )
+
+        original_status = (
+            temporary_path.stat()
+        )
+        original_bytes = (
+            temporary_path.read_bytes()
+        )
+
+        corrupted_bytes = bytearray(
+            original_bytes
+        )
+        corrupted_bytes[0] ^= 1
+
+        temporary_path.write_bytes(
+            corrupted_bytes
+        )
+
+        os.utime(
+            temporary_path,
+            ns=(
+                original_status.st_atime_ns,
+                original_status.st_mtime_ns,
+            ),
+        )
+
+        assert (
+            publisher._temporary_file_fingerprint(
+                temporary_path.lstat()
+            )
+            == fingerprint
+        )
+
+        return fingerprint
+
+    monkeypatch.setattr(
+        publisher,
+        "_validate_temporary_file",
+        corrupt_after_validation,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed after payload validation",
+    ):
+        publisher.publish_health(
+            make_health()
+        )
+
+    assert output_path.read_text(
+        encoding="utf-8",
+    ) == existing_payload
+
+    assert dashboard_temporary_files(
+        tmp_path
+    ) == []
