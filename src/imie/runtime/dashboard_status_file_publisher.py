@@ -1523,7 +1523,11 @@ class DashboardStatusFilePublisher:
         )
 
         try:
-            temporary_identity = (
+            self._apply_existing_destination_mode(
+                temporary_path
+            )
+
+            temporary_fingerprint = (
                 self._validate_temporary_file(
                     temporary_path,
                     expected_size=expected_size,
@@ -1531,13 +1535,11 @@ class DashboardStatusFilePublisher:
                 )
             )
 
-            self._apply_existing_destination_mode(
-                temporary_path
-            )
-
-            self._validate_temporary_file_identity(
+            self._validate_temporary_file_fingerprint(
                 temporary_path,
-                expected_identity=temporary_identity,
+                expected_fingerprint=(
+                    temporary_fingerprint
+                ),
             )
 
             self._replace_atomically(
@@ -1641,20 +1643,24 @@ class DashboardStatusFilePublisher:
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[int, int]:
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
         if not self._is_owned_temporary_path(
             temporary_path
         ):
             raise ValueError(
-                "temporary_path is not owned by this "
-                "dashboard publisher."
+                "Dashboard temporary file path is not owned "
+                "by this publisher."
             )
 
         try:
             temporary_status = (
                 temporary_path.lstat()
             )
-
         except FileNotFoundError as error:
             raise FileNotFoundError(
                 "Dashboard temporary file disappeared "
@@ -1665,7 +1671,7 @@ class DashboardStatusFilePublisher:
             temporary_status.st_mode
         ):
             raise ValueError(
-                "Dashboard temporary path must be "
+                "Dashboard temporary file must be "
                 "a regular file."
             )
 
@@ -1673,12 +1679,6 @@ class DashboardStatusFilePublisher:
             raise ValueError(
                 "Dashboard temporary file must have "
                 "exactly one hard link."
-            )
-
-        if temporary_status.st_size != expected_size:
-            raise ValueError(
-                "Dashboard temporary file size does not "
-                "match the serialized payload."
             )
 
         digest = hashlib.sha256()
@@ -1734,7 +1734,9 @@ class DashboardStatusFilePublisher:
                     chunk
                 )
 
-        actual_digest = digest.hexdigest()
+        actual_digest = (
+            digest.hexdigest()
+        )
 
         if actual_digest != expected_digest:
             raise ValueError(
@@ -1742,7 +1744,7 @@ class DashboardStatusFilePublisher:
                 "match the serialized payload."
             )
 
-        return self._temporary_file_identity(
+        return self._temporary_file_fingerprint(
             opened_status
         )
 
@@ -1753,6 +1755,22 @@ class DashboardStatusFilePublisher:
         return (
             status.st_dev,
             status.st_ino,
+        )
+
+    def _temporary_file_fingerprint(
+        self,
+        status: os.stat_result,
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
+        return (
+            status.st_dev,
+            status.st_ino,
+            status.st_size,
+            status.st_mtime_ns,
         )
 
     @staticmethod
@@ -2044,11 +2062,16 @@ class DashboardStatusFilePublisher:
             decision_result.decision
         )
 
-    def _validate_temporary_file_identity(
+    def _validate_temporary_file_fingerprint(
         self,
         temporary_path: Path,
         *,
-        expected_identity: tuple[int, int],
+        expected_fingerprint: tuple[
+            int,
+            int,
+            int,
+            int,
+        ],
     ) -> None:
         try:
             current_status = (
@@ -2059,14 +2082,6 @@ class DashboardStatusFilePublisher:
                 "Dashboard temporary file disappeared "
                 "before publication."
             ) from error
-
-        if self._temporary_file_identity(
-            current_status
-        ) != expected_identity:
-            raise ValueError(
-                "Dashboard temporary file changed "
-                "after payload validation."
-            )
 
         if not stat.S_ISREG(
             current_status.st_mode
@@ -2080,4 +2095,12 @@ class DashboardStatusFilePublisher:
             raise ValueError(
                 "Dashboard temporary file must have "
                 "exactly one hard link."
+            )
+
+        if self._temporary_file_fingerprint(
+            current_status
+        ) != expected_fingerprint:
+            raise ValueError(
+                "Dashboard temporary file changed "
+                "after payload validation."
             )

@@ -7719,7 +7719,12 @@ def test_completed_temporary_file_is_validated_before_publication(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[int, int]:
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
         validated_paths.append(
             temporary_path
         )
@@ -7755,7 +7760,7 @@ def test_completed_temporary_file_is_validated_before_publication(
     assert validated_path.exists() is False
     assert output_path.exists()
 
-def test_temporary_validation_precedes_mode_and_replace(
+def test_mode_validation_and_fingerprint_precede_replace(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -7778,20 +7783,39 @@ def test_temporary_validation_precedes_mode_and_replace(
 
     events: list[str] = []
 
-    original_validate = (
-        publisher._validate_temporary_file
-    )
     original_apply_mode = (
         publisher._apply_existing_destination_mode
     )
+    original_validate = (
+        publisher._validate_temporary_file
+    )
+    original_validate_fingerprint = (
+        publisher._validate_temporary_file_fingerprint
+    )
     original_replace = os.replace
+
+    def recording_apply_mode(
+        temporary_path: Path,
+    ) -> None:
+        events.append(
+            "mode"
+        )
+
+        original_apply_mode(
+            temporary_path
+        )
 
     def recording_validate(
         temporary_path: Path,
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[int, int]:
+    ) -> tuple[
+        int,
+        int,
+        int,
+        int,
+    ]:
         events.append(
             "validate"
         )
@@ -7802,22 +7826,36 @@ def test_temporary_validation_precedes_mode_and_replace(
             expected_digest=expected_digest,
         )
 
-    def recording_apply_mode(
-        *args: object,
-        **kwargs: object,
+    def recording_validate_fingerprint(
+        temporary_path: Path,
+        *,
+        expected_fingerprint: tuple[
+            int,
+            int,
+            int,
+            int,
+        ],
     ) -> None:
         events.append(
-            "mode"
+            "fingerprint"
         )
 
-        original_apply_mode(
-            *args,
-            **kwargs,
+        original_validate_fingerprint(
+            temporary_path,
+            expected_fingerprint=(
+                expected_fingerprint
+            ),
         )
 
     def recording_replace(
-        source: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-        destination: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        source: str
+        | bytes
+        | os.PathLike[str]
+        | os.PathLike[bytes],
+        destination: str
+        | bytes
+        | os.PathLike[str]
+        | os.PathLike[bytes],
     ) -> None:
         events.append(
             "replace"
@@ -7830,13 +7868,18 @@ def test_temporary_validation_precedes_mode_and_replace(
 
     monkeypatch.setattr(
         publisher,
+        "_apply_existing_destination_mode",
+        recording_apply_mode,
+    )
+    monkeypatch.setattr(
+        publisher,
         "_validate_temporary_file",
         recording_validate,
     )
     monkeypatch.setattr(
         publisher,
-        "_apply_existing_destination_mode",
-        recording_apply_mode,
+        "_validate_temporary_file_fingerprint",
+        recording_validate_fingerprint,
     )
     monkeypatch.setattr(
         os,
@@ -7849,8 +7892,9 @@ def test_temporary_validation_precedes_mode_and_replace(
     )
 
     assert events == [
-        "validate",
         "mode",
+        "validate",
+        "fingerprint",
         "replace",
     ]
 
