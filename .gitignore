@@ -8,3 +8,5 @@ data/*.db
 .idea/
 runtime/history/*.jsonl
 *.egg-info/
+build/
+dist/
