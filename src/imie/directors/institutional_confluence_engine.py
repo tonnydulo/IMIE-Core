@@ -21,7 +21,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class InstitutionalConfluenceEngine:
     """
     Measures directional institutional agreement.

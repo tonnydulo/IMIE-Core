@@ -8,7 +8,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class MarketPhaseResolver:
     """
     Resolves a normalized MarketPhaseType from an AnalystResult.

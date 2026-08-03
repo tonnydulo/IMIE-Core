@@ -53,7 +53,7 @@ from imie.utils.constants import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DecisionDirectorConfig:
     """
     Configuration for final trade authorization.

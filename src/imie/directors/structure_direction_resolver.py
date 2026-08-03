@@ -10,7 +10,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class StructureDirectionResolver:
     """
     Resolves completed StructureAnalyst intelligence into a

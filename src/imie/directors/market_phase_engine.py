@@ -17,7 +17,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class MarketPhaseEngine:
     """
     Determines the current institutional market phase.

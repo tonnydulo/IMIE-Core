@@ -29,7 +29,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class InstitutionalBiasEngine:
     """
     Produces the broader institutional market bias.

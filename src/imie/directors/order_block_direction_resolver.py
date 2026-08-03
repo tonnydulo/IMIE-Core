@@ -10,7 +10,7 @@ from imie.models import (
 )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class OrderBlockDirectionResolver:
     """
     Resolves completed OrderBlockAnalyst intelligence into a
