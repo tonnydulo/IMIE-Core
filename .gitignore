@@ -7,3 +7,4 @@ data/*.db
 .vscode/
 .idea/
 runtime/history/*.jsonl
+*.egg-info/
