@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+logs/*.log
+data/*.db
+.vscode/
+.idea/
+runtime/history/*.jsonl
+*.egg-info/
+build/
+dist/

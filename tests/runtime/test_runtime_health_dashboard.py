@@ -1,0 +1,2151 @@
+﻿import json
+
+from pathlib import Path
+
+import pytest
+
+from imie.runtime import (
+    build_dashboard_html,
+    create_dashboard_server,
+    read_health_status,
+)
+
+
+def test_read_health_status(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "health.json"
+    )
+
+    expected = {
+        "state": "RUNNING",
+        "completed_cycle_count": 3,
+    }
+
+    path.write_text(
+        json.dumps(
+            expected
+        ),
+        encoding="utf-8",
+    )
+
+    assert (
+        read_health_status(
+            path
+        )
+        == expected
+    )
+
+
+def test_read_health_status_requires_existing_file(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        FileNotFoundError,
+        match="does not exist",
+    ):
+        read_health_status(
+            tmp_path
+            / "missing.json"
+        )
+
+
+def test_read_health_status_rejects_invalid_json(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "health.json"
+    )
+
+    path.write_text(
+        "{invalid",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="invalid JSON",
+    ):
+        read_health_status(
+            path
+        )
+
+
+def test_read_health_status_requires_object(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "health.json"
+    )
+
+    path.write_text(
+        "[]",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="object",
+    ):
+        read_health_status(
+            path
+        )
+
+
+def test_dashboard_html_contains_health_endpoint() -> None:
+    html = build_dashboard_html(
+        refresh_seconds=2.0
+    )
+
+    assert (
+        "IMIE Runtime Dashboard"
+        in html
+    )
+
+    assert (
+        'fetch(\n                    "/api/health"'
+        in html
+    )
+
+    assert (
+        "2000"
+        in html
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        False,
+        "2",
+        None,
+    ],
+)
+def test_refresh_seconds_requires_number(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="refresh_seconds",
+    ):
+        build_dashboard_html(
+            refresh_seconds=value,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        0,
+        -1,
+    ],
+)
+def test_refresh_seconds_must_be_positive(
+    value: float,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="greater than zero",
+    ):
+        build_dashboard_html(
+            refresh_seconds=value
+        )
+
+
+def test_create_dashboard_server(
+    tmp_path: Path,
+) -> None:
+    server = create_dashboard_server(
+        health_status_file=(
+            tmp_path
+            / "health.json"
+        ),
+        host="127.0.0.1",
+        port=8765,
+    )
+
+    try:
+        assert (
+            server.server_address[0]
+            == "127.0.0.1"
+        )
+
+        assert (
+            server.server_address[1]
+            == 8765
+        )
+    finally:
+        server.server_close()
+
+
+@pytest.mark.parametrize(
+    "port",
+    [
+        0,
+        -1,
+        65536,
+    ],
+)
+def test_dashboard_port_validation(
+    tmp_path: Path,
+    port: int,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="port",
+    ):
+        create_dashboard_server(
+            health_status_file=(
+                tmp_path
+                / "health.json"
+            ),
+            port=port,
+        )
+
+def test_dashboard_html_contains_extended_fields() -> None:
+    html = build_dashboard_html(
+        refresh_seconds=2.0
+    )
+
+    assert 'id="symbol"' in html
+    assert 'id="timeframe"' in html
+    assert 'id="marketSession"' in html
+    assert 'id="latestDecision"' in html
+    assert 'id="latestCycleStatus"' in html
+    assert 'id="latestCycleStarted"' in html
+    assert 'id="latestCycleCompleted"' in html
+    assert 'id="latestCycleMessage"' in html
+
+def test_dashboard_html_reads_extended_payload_fields() -> None:
+    html = build_dashboard_html(
+        refresh_seconds=2.0
+    )
+
+    assert "payload.symbol" in html
+    assert "payload.timeframe" in html
+    assert "payload.market_session" in html
+    assert "payload.latest_decision" in html
+    assert "payload.latest_cycle_status" in html
+    assert "payload.latest_cycle_message" in html
+    assert "payload.latest_cycle_started_at" in html
+    assert "payload.latest_cycle_completed_at" in html
+    assert "payload.latest_error_type" in html
+
+def test_dashboard_html_contains_cycle_styling() -> None:
+    html = build_dashboard_html(
+        refresh_seconds=2.0
+    )
+
+    assert "cycle-completed" in html
+    assert "cycle-skipped" in html
+    assert "cycle-failed" in html
+    assert "decision-ready" in html
+    assert "decision-wait" in html
+
+def test_dashboard_html_contains_decision_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="decisionConfidence"' in html
+    assert 'id="decisionActionable"' in html
+    assert 'id="tradeDirection"' in html
+    assert 'id="decisionRecommendation"' in html
+
+    assert (
+        "payload.decision_confidence"
+        in html
+    )
+
+    assert (
+        "payload.decision_actionable"
+        in html
+    )
+
+    assert (
+        "payload.trade_direction"
+        in html
+    )
+
+    assert (
+        "payload.decision_recommendation"
+        in html
+    )
+
+
+def test_dashboard_html_contains_decision_formatters() -> None:
+    html = build_dashboard_html()
+
+    assert "function formatConfidence" in html
+    assert "function updateActionable" in html
+    assert "function updateTradeDirection" in html
+
+    assert '"actionable-yes"' in html
+    assert '"actionable-no"' in html
+    assert '"direction-long"' in html
+    assert '"direction-short"' in html
+
+def test_dashboard_html_contains_trade_plan_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="tradePlanValid"' in html
+    assert 'id="tradeEntry"' in html
+    assert 'id="tradeStop"' in html
+    assert 'id="tradeTarget1"' in html
+    assert 'id="tradeTarget2"' in html
+    assert 'id="tradeRR1"' in html
+    assert 'id="tradeRR2"' in html
+    assert 'id="tradeQuality"' in html
+
+    assert "payload.trade_plan_valid" in html
+    assert "payload.trade_entry" in html
+    assert "payload.trade_stop" in html
+    assert "payload.trade_target1" in html
+    assert "payload.trade_target2" in html
+    assert "payload.trade_rr1" in html
+    assert "payload.trade_rr2" in html
+    assert "payload.trade_quality" in html
+
+def test_dashboard_html_contains_trade_plan_formatters() -> None:
+    html = build_dashboard_html()
+
+    assert "function formatTradePrice" in html
+    assert "function formatRewardRisk" in html
+    assert "function updateTradePlanValid" in html
+    assert "function updateTradeQuality" in html
+
+    assert '"plan-valid"' in html
+    assert '"plan-invalid"' in html
+    assert '"trade-quality-high"' in html
+    assert '"trade-quality-medium"' in html
+    assert '"trade-quality-low"' in html
+
+def test_dashboard_html_contains_trade_explanation_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="tradeNarrative"' in html
+    assert 'id="tradeReasons"' in html
+    assert 'id="tradeWarnings"' in html
+
+    assert "payload.trade_narrative" in html
+    assert "payload.trade_reasons" in html
+    assert "payload.trade_warnings" in html
+
+def test_dashboard_html_contains_trade_explanation_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateTextList" in html
+    assert "document.createElement" in html
+    assert "element.replaceChildren" in html
+
+    assert "No trade reasons available." in html
+    assert "No trade warnings." in html
+    assert '"empty-list"' in html
+
+def test_dashboard_html_contains_institutional_context_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="institutionalBias"' in html
+    assert 'id="institutionalBiasConfidence"' in html
+    assert 'id="marketPhase"' in html
+    assert 'id="marketPhaseConfidence"' in html
+    assert 'id="confluenceDirection"' in html
+    assert 'id="confluenceScore"' in html
+    assert 'id="confluenceAgreementCount"' in html
+    assert 'id="confluenceConflictCount"' in html
+
+    assert "payload.institutional_bias" in html
+    assert (
+        "payload.institutional_bias_confidence"
+        in html
+    )
+    assert "payload.market_phase" in html
+    assert (
+        "payload.market_phase_confidence"
+        in html
+    )
+    assert "payload.confluence_direction" in html
+    assert "payload.confluence_score" in html
+    assert (
+        "payload.confluence_agreement_count"
+        in html
+    )
+    assert (
+        "payload.confluence_conflict_count"
+        in html
+    )
+
+def test_dashboard_html_contains_institutional_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateInstitutionalDirection"
+        in html
+    )
+
+    assert (
+        "function updatePercentageMetric"
+        in html
+    )
+
+    assert (
+        "function updateInstitutionalCount"
+        in html
+    )
+
+    assert '"institution-bullish"' in html
+    assert '"institution-bearish"' in html
+    assert '"institution-neutral"' in html
+    assert '"institution-unknown"' in html
+
+    assert '"metric-good"' in html
+    assert '"metric-medium"' in html
+    assert '"metric-low"' in html
+
+    assert '"conflict-clear"' in html
+    assert '"conflict-present"' in html
+
+def test_dashboard_institutional_count_renderer_uses_valid_javascript() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateInstitutionalCount(\n"
+        "            id,\n"
+        "            value,\n"
+        "            conflict = false"
+        in html
+    )
+
+    assert "*,\n            conflict" not in html
+
+def test_dashboard_html_contains_market_phase_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="marketPhaseStrength"' in html
+
+    assert (
+        'id="marketPhaseAgreementCount"'
+        in html
+    )
+
+    assert (
+        'id="marketPhaseConflictCount"'
+        in html
+    )
+
+    assert (
+        'id="marketPhaseSupportingDomains"'
+        in html
+    )
+
+    assert (
+        'id="marketPhaseOpposingDomains"'
+        in html
+    )
+
+    assert "payload.market_phase_strength" in html
+
+    assert (
+        "payload.market_phase_agreement_count"
+        in html
+    )
+
+    assert (
+        "payload.market_phase_conflict_count"
+        in html
+    )
+
+    assert (
+        "payload.market_phase_supporting_domains"
+        in html
+    )
+
+    assert (
+        "payload.market_phase_opposing_domains"
+        in html
+    )
+
+def test_dashboard_html_contains_market_phase_domain_lists() -> None:
+    html = build_dashboard_html()
+
+    assert ".domain-list" in html
+    assert ".supporting-domain-list" in html
+    assert ".opposing-domain-list" in html
+
+    assert (
+        'class="domain-list supporting-domain-list"'
+        in html
+    )
+
+    assert (
+        'class="domain-list opposing-domain-list"'
+        in html
+    )
+
+    assert "No supporting phase domains." in html
+    assert "No opposing phase domains." in html
+
+def test_dashboard_market_phase_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "marketPhaseStrength"'
+        in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    "marketPhaseAgreementCount"'
+        in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    "marketPhaseConflictCount"'
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "marketPhaseSupportingDomains"'
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "marketPhaseOpposingDomains"'
+        in html
+    )
+
+def test_dashboard_html_contains_institutional_bias_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="institutionalBiasStrength"' in html
+
+    assert (
+        'id="institutionalBiasBullishScore"'
+        in html
+    )
+
+    assert (
+        'id="institutionalBiasBearishScore"'
+        in html
+    )
+
+    assert (
+        'id="institutionalBiasAgreementCount"'
+        in html
+    )
+
+    assert (
+        'id="institutionalBiasConflictCount"'
+        in html
+    )
+
+    assert (
+        'id="institutionalBiasSupportingDomains"'
+        in html
+    )
+
+    assert (
+        'id="institutionalBiasOpposingDomains"'
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_strength"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_bullish_score"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_bearish_score"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_agreement_count"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_conflict_count"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_supporting_domains"
+        in html
+    )
+
+    assert (
+        "payload.institutional_bias_opposing_domains"
+        in html
+    )
+
+def test_dashboard_html_contains_institutional_bias_domain_lists() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'class="domain-list supporting-domain-list"'
+        in html
+    )
+
+    assert (
+        'class="domain-list opposing-domain-list"'
+        in html
+    )
+
+    assert "No supporting bias domains." in html
+    assert "No opposing bias domains." in html
+
+def test_dashboard_institutional_bias_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "institutionalBiasStrength"'
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "institutionalBiasBullishScore"'
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "institutionalBiasBearishScore"'
+        in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    "institutionalBiasAgreementCount"'
+        in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    "institutionalBiasConflictCount"'
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "institutionalBiasSupportingDomains"'
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "institutionalBiasOpposingDomains"'
+        in html
+    )
+
+def test_dashboard_contains_confluence_detail_elements() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "confluenceConfidenceAdjustment",
+        "confluenceStructureSupport",
+        "confluenceLiquiditySupport",
+        "confluenceOrderBlockSupport",
+        "confluenceAuctionSupport",
+        "confluencePressureSupport",
+        "confluenceParticipationSupport",
+        "confluenceValueSupport",
+        "confluenceBullishCount",
+        "confluenceBearishCount",
+        "confluenceNeutralCount",
+        "confluenceUnknownCount",
+        "confluenceDomainCount",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+
+def test_dashboard_contains_confluence_detail_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateSupportFlag(" in html
+    assert "function updateConfidenceAdjustment(" in html
+    assert '"SUPPORT"' in html
+    assert '"NO SUPPORT"' in html
+
+
+def test_dashboard_formats_confluence_confidence_adjustment() -> None:
+    html = build_dashboard_html()
+
+    assert '"+"' in html
+    assert "normalized.toFixed(0)" in html
+    assert "normalized >= 6" in html
+    assert "normalized >= 3" in html
+
+
+def test_dashboard_updates_confluence_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.confluence_confidence_adjustment",
+        "payload.confluence_structure_support",
+        "payload.confluence_liquidity_support",
+        "payload.confluence_order_block_support",
+        "payload.confluence_auction_support",
+        "payload.confluence_pressure_support",
+        "payload.confluence_participation_support",
+        "payload.confluence_value_support",
+        "payload.confluence_bullish_count",
+        "payload.confluence_bearish_count",
+        "payload.confluence_neutral_count",
+        "payload.confluence_unknown_count",
+        "payload.confluence_domain_count",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+
+def test_confluence_renderers_support_missing_values() -> None:
+    html = build_dashboard_html()
+
+    assert "supported === true" in html
+    assert "supported === false" in html
+    assert "value === null" in html
+    assert "value === undefined" in html
+    assert 'element.textContent = "—"' in html
+
+
+def test_dashboard_confluence_detail_uses_correct_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "updateConfidenceAdjustment(\n"
+        "                    "
+        "payload.confluence_confidence_adjustment"
+        in html
+    )
+
+    support_fields = (
+        (
+            "confluenceStructureSupport",
+            "confluence_structure_support",
+        ),
+        (
+            "confluenceLiquiditySupport",
+            "confluence_liquidity_support",
+        ),
+        (
+            "confluenceOrderBlockSupport",
+            "confluence_order_block_support",
+        ),
+        (
+            "confluenceAuctionSupport",
+            "confluence_auction_support",
+        ),
+        (
+            "confluencePressureSupport",
+            "confluence_pressure_support",
+        ),
+        (
+            "confluenceParticipationSupport",
+            "confluence_participation_support",
+        ),
+        (
+            "confluenceValueSupport",
+            "confluence_value_support",
+        ),
+    )
+
+    for element_id, payload_field in support_fields:
+        assert (
+            "updateSupportFlag(\n"
+            f'                    "{element_id}",\n'
+            f"                    payload.{payload_field}"
+            in html
+        )
+
+    count_fields = (
+        (
+            "confluenceBullishCount",
+            "confluence_bullish_count",
+        ),
+        (
+            "confluenceBearishCount",
+            "confluence_bearish_count",
+        ),
+        (
+            "confluenceNeutralCount",
+            "confluence_neutral_count",
+        ),
+        (
+            "confluenceUnknownCount",
+            "confluence_unknown_count",
+        ),
+        (
+            "confluenceDomainCount",
+            "confluence_domain_count",
+        ),
+    )
+
+    for element_id, payload_field in count_fields:
+        assert (
+            "updateInstitutionalCount(\n"
+            f'                    "{element_id}",\n'
+            f"                    payload.{payload_field}"
+            in html
+        )
+
+def test_dashboard_contains_setup_lifecycle_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "setupLifecycleState",
+        "setupLifecycleDirection",
+        "setupLifecycleConfidence",
+        "setupLifecycleAtrDistance",
+        "setupLifecycleAction",
+        "setupLifecycleReason",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_setup_lifecycle_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.setup_lifecycle_state",
+        "payload.setup_lifecycle_direction",
+        "payload.setup_lifecycle_confidence",
+        "payload.setup_lifecycle_atr_distance",
+        "payload.setup_lifecycle_action",
+        "payload.setup_lifecycle_reason",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_setup_lifecycle_atr_formatter() -> None:
+    html = build_dashboard_html()
+
+    assert "function formatAtrDistance(" in html
+    assert "Number(value).toFixed(2)" in html
+    assert '" ATR"' in html
+
+
+def test_dashboard_setup_lifecycle_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleState",\n'
+        "                    payload.setup_lifecycle_state"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleDirection",\n'
+        "                    payload.setup_lifecycle_direction"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "setupLifecycleConfidence",\n'
+        "                    payload.setup_lifecycle_confidence"
+        in html
+    )
+
+    assert (
+        'formatAtrDistance(\n'
+        "                        "
+        "payload.setup_lifecycle_atr_distance"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleAction",\n'
+        "                    payload.setup_lifecycle_action"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "setupLifecycleReason",\n'
+        "                    payload.setup_lifecycle_reason"
+        in html
+    )
+
+def test_dashboard_contains_acceptance_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "acceptanceConfirmed",
+        "acceptanceDirection",
+        "acceptanceLevel",
+        "acceptanceScore",
+        "acceptanceConfidence",
+        "acceptanceTriggerPrice",
+        "acceptancePreviousLevel",
+        "acceptancePullbackLow",
+        "acceptancePullbackHigh",
+        "acceptanceReason",
+        "acceptanceEvidence",
+        "acceptanceWarnings",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_acceptance_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.acceptance_confirmed",
+        "payload.acceptance_direction",
+        "payload.acceptance_level",
+        "payload.acceptance_score",
+        "payload.acceptance_confidence",
+        "payload.acceptance_trigger_price",
+        "payload.acceptance_previous_level",
+        "payload.acceptance_pullback_low",
+        "payload.acceptance_pullback_high",
+        "payload.acceptance_reason",
+        "payload.acceptance_evidence",
+        "payload.acceptance_warnings",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_acceptance_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateAcceptanceConfirmed(" in html
+    assert '"CONFIRMED"' in html
+    assert '"NOT CONFIRMED"' in html
+    assert '"plan-valid"' in html
+    assert '"plan-invalid"' in html
+
+def test_dashboard_acceptance_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "updateAcceptanceConfirmed(\n"
+        "                    payload.acceptance_confirmed"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "acceptanceScore",\n'
+        "                    payload.acceptance_score"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "acceptanceConfidence",\n'
+        "                    payload.acceptance_confidence"
+        in html
+    )
+
+    price_fields = (
+        (
+            "acceptanceTriggerPrice",
+            "acceptance_trigger_price",
+        ),
+        (
+            "acceptancePreviousLevel",
+            "acceptance_previous_level",
+        ),
+        (
+            "acceptancePullbackLow",
+            "acceptance_pullback_low",
+        ),
+        (
+            "acceptancePullbackHigh",
+            "acceptance_pullback_high",
+        ),
+    )
+
+    for element_id, payload_field in price_fields:
+        assert (
+            'setText(\n'
+            f'                    "{element_id}",\n'
+            "                    formatTradePrice(\n"
+            f"                        payload.{payload_field}"
+            in html
+        )
+
+    assert (
+        'updateTextList(\n'
+        '                    "acceptanceEvidence",\n'
+        "                    payload.acceptance_evidence"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "acceptanceWarnings",\n'
+        "                    payload.acceptance_warnings"
+        in html
+    )
+
+def test_dashboard_contains_trend_detail_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_ids = (
+        "trendAnalyst",
+        "trendOpinion",
+        "trendConfidence",
+        "trendEnabled",
+        "trendEvidence",
+        "trendWarnings",
+    )
+
+    for element_id in expected_ids:
+        assert f'id="{element_id}"' in html
+
+def test_dashboard_reads_trend_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    expected_fields = (
+        "payload.trend_analyst",
+        "payload.trend_opinion",
+        "payload.trend_confidence",
+        "payload.trend_enabled",
+        "payload.trend_evidence",
+        "payload.trend_warnings",
+    )
+
+    for field in expected_fields:
+        assert field in html
+
+def test_dashboard_contains_trend_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert "function updateTrendEnabled(" in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+    assert '"plan-valid"' in html
+    assert '"plan-invalid"' in html
+
+def test_dashboard_trend_detail_reuses_existing_renderers() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'setText(\n'
+        '                    "trendAnalyst",\n'
+        "                    payload.trend_analyst"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "trendOpinion",\n'
+        "                    payload.trend_opinion"
+        in html
+    )
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "trendConfidence",\n'
+        "                    payload.trend_confidence"
+        in html
+    )
+
+    assert (
+        "updateTrendEnabled(\n"
+        "                    payload.trend_enabled"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "trendEvidence",\n'
+        "                    payload.trend_evidence"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "trendWarnings",\n'
+        "                    payload.trend_warnings"
+        in html
+    )
+
+def test_dashboard_contains_decision_rationale_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="decisionReasons"' in html
+    assert 'id="decisionWarnings"' in html
+
+def test_dashboard_reads_decision_rationale_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.decision_reasons" in html
+    assert "payload.decision_warnings" in html
+
+def test_dashboard_contains_decision_rationale_empty_messages() -> None:
+    html = build_dashboard_html()
+
+    assert "No decision reasons available." in html
+    assert "No decision warnings." in html
+
+def test_dashboard_decision_rationale_reuses_text_list_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateTextList(\n'
+        '                    "decisionReasons",\n'
+        "                    payload.decision_reasons"
+        in html
+    )
+
+    assert (
+        'updateTextList(\n'
+        '                    "decisionWarnings",\n'
+        "                    payload.decision_warnings"
+        in html
+    )
+
+def test_dashboard_contains_analyst_summary_container() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystSummary"' in html
+    assert "Analyst Summary" in html
+
+def test_dashboard_reads_analyst_summary_payload() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.analyst_summary" in html
+
+def test_dashboard_contains_analyst_summary_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateAnalystSummary(summary)"
+        in html
+    )
+
+    assert (
+        "Object.entries(summary)"
+        in html
+    )
+
+def test_dashboard_analyst_summary_renders_expected_fields(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'analystHeading.textContent =' in html
+    assert 'opinionHeading.textContent =' in html
+    assert 'confidenceHeading.textContent =' in html
+    assert 'enabledHeading.textContent =' in html
+
+    assert "details?.opinion" in html
+    assert "details?.confidence" in html
+    assert "details?.confidence_available" in html
+    assert "details?.enabled" in html
+
+def test_dashboard_contains_analyst_summary_empty_message() -> None:
+    html = build_dashboard_html()
+
+    assert "No analyst summary available." in html
+
+def test_dashboard_analyst_summary_uses_text_content() -> None:
+    html = build_dashboard_html()
+
+    assert "analystValue.textContent" in html
+    assert "opinionValue.textContent" in html
+    assert "confidenceValue.textContent" in html
+    assert "enabledValue.textContent" in html
+
+def test_dashboard_contains_analyst_coverage_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystDomainCount"' in html
+    assert 'id="analystEnabledCount"' in html
+    assert 'id="analystResolvedCount"' in html
+    assert 'id="analystAverageConfidence"' in html
+
+def test_dashboard_reads_analyst_coverage_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.analyst_domain_count" in html
+    assert "payload.analyst_enabled_count" in html
+    assert "payload.analyst_resolved_count" in html
+
+    assert (
+        "payload.analyst_average_confidence"
+        in html
+    )
+
+def test_dashboard_analyst_coverage_counts_reuse_count_renderer() -> None:
+    html = build_dashboard_html()
+
+    expected = (
+        (
+            "analystDomainCount",
+            "analyst_domain_count",
+        ),
+        (
+            "analystEnabledCount",
+            "analyst_enabled_count",
+        ),
+        (
+            "analystResolvedCount",
+            "analyst_resolved_count",
+        ),
+    )
+
+    for element_id, payload_field in expected:
+        assert (
+            "updateInstitutionalCount(\n"
+            f'                    "{element_id}",\n'
+            f"                    payload.{payload_field}"
+            in html
+        )
+
+def test_dashboard_analyst_average_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "analystAverageConfidence",\n'
+        "                    "
+        "payload.analyst_average_confidence"
+        in html
+    )
+    assert "All-Domain Average Confidence" in html
+
+def test_dashboard_contains_structure_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="structureAnalyst"' in html
+    assert 'id="structureOpinion"' in html
+    assert 'id="structureConfidence"' in html
+    assert 'id="structureEnabled"' in html
+
+def test_dashboard_reads_structure_analyst_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.structure_analyst" in html
+    assert "payload.structure_opinion" in html
+    assert "payload.structure_confidence" in html
+    assert "payload.structure_enabled" in html
+
+def test_dashboard_contains_structure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateStructureEnabled("
+        in html
+    )
+
+    assert '"structureEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_structure_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "structureConfidence",\n'
+        "                    payload.structure_confidence"
+        in html
+    )
+
+def test_dashboard_calls_structure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateStructureEnabled(\n'
+        "                    payload.structure_enabled"
+        in html
+    )
+
+def test_dashboard_contains_liquidity_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="liquidityAnalyst"' in html
+    assert 'id="liquidityOpinion"' in html
+    assert 'id="liquidityConfidence"' in html
+    assert 'id="liquidityEnabled"' in html
+
+def test_dashboard_reads_liquidity_analyst_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.liquidity_analyst" in html
+    assert "payload.liquidity_opinion" in html
+    assert "payload.liquidity_confidence" in html
+    assert "payload.liquidity_enabled" in html
+
+def test_dashboard_contains_liquidity_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateLiquidityEnabled("
+        in html
+    )
+
+    assert '"liquidityEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_liquidity_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "liquidityConfidence",\n'
+        "                    payload.liquidity_confidence"
+        in html
+    )
+
+def test_dashboard_calls_liquidity_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateLiquidityEnabled(\n'
+        "                    payload.liquidity_enabled"
+        in html
+    )
+
+def test_dashboard_contains_order_block_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="orderBlockAnalyst"' in html
+    assert 'id="orderBlockOpinion"' in html
+    assert 'id="orderBlockConfidence"' in html
+    assert 'id="orderBlockEnabled"' in html
+
+def test_dashboard_reads_order_block_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.order_block_analyst" in html
+    assert "payload.order_block_opinion" in html
+    assert "payload.order_block_confidence" in html
+    assert "payload.order_block_enabled" in html
+
+def test_dashboard_contains_order_block_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateOrderBlockEnabled("
+        in html
+    )
+
+    assert '"orderBlockEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_order_block_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "orderBlockConfidence",\n'
+        "                    payload.order_block_confidence"
+        in html
+    )
+
+def test_dashboard_calls_order_block_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateOrderBlockEnabled(\n'
+        "                    payload.order_block_enabled"
+        in html
+    )
+
+def test_dashboard_contains_auction_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="auctionAnalyst"' in html
+    assert 'id="auctionOpinion"' in html
+    assert 'id="auctionConfidence"' in html
+    assert 'id="auctionEnabled"' in html
+
+def test_dashboard_reads_auction_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.auction_analyst" in html
+    assert "payload.auction_opinion" in html
+    assert "payload.auction_confidence" in html
+    assert "payload.auction_enabled" in html
+
+def test_dashboard_contains_auction_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateAuctionEnabled("
+        in html
+    )
+
+    assert '"auctionEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_auction_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "auctionConfidence",\n'
+        "                    payload.auction_confidence"
+        in html
+    )
+
+def test_dashboard_calls_auction_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateAuctionEnabled(\n'
+        "                    payload.auction_enabled"
+        in html
+    )
+
+def test_dashboard_contains_pressure_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="pressureAnalyst"' in html
+    assert 'id="pressureOpinion"' in html
+    assert 'id="pressureConfidence"' in html
+    assert 'id="pressureEnabled"' in html
+
+def test_dashboard_reads_pressure_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.pressure_analyst" in html
+    assert "payload.pressure_opinion" in html
+    assert "payload.pressure_confidence" in html
+    assert "payload.pressure_enabled" in html
+
+def test_dashboard_contains_pressure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updatePressureEnabled("
+        in html
+    )
+
+    assert '"pressureEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_pressure_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "pressureConfidence",\n'
+        "                    payload.pressure_confidence"
+        in html
+    )
+
+def test_dashboard_calls_pressure_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePressureEnabled(\n'
+        "                    payload.pressure_enabled"
+        in html
+    )
+
+def test_dashboard_contains_participation_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="participationAnalyst"' in html
+    assert 'id="participationOpinion"' in html
+    assert 'id="participationConfidence"' in html
+    assert 'id="participationEnabled"' in html
+
+def test_dashboard_reads_participation_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.participation_analyst" in html
+    assert "payload.participation_opinion" in html
+    assert "payload.participation_confidence" in html
+    assert "payload.participation_enabled" in html
+
+def test_dashboard_contains_participation_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateParticipationEnabled("
+        in html
+    )
+
+    assert '"participationEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_participation_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "participationConfidence",\n'
+        "                    payload.participation_confidence"
+        in html
+    )
+
+def test_dashboard_calls_participation_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateParticipationEnabled(\n'
+        "                    payload.participation_enabled"
+        in html
+    )
+
+def test_dashboard_contains_value_analyst_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="valueAnalyst"' in html
+    assert 'id="valueOpinion"' in html
+    assert 'id="valueConfidence"' in html
+    assert 'id="valueEnabled"' in html
+
+def test_dashboard_reads_value_payload_fields() -> None:
+    html = build_dashboard_html()
+
+    assert "payload.value_analyst" in html
+    assert "payload.value_opinion" in html
+    assert "payload.value_confidence" in html
+    assert "payload.value_enabled" in html
+
+def test_dashboard_contains_value_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateValueEnabled("
+        in html
+    )
+
+    assert '"valueEnabled"' in html
+    assert '"ENABLED"' in html
+    assert '"DISABLED"' in html
+
+def test_dashboard_value_confidence_reuses_percentage_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updatePercentageMetric(\n'
+        '                    "valueConfidence",\n'
+        "                    payload.value_confidence"
+        in html
+    )
+
+def test_dashboard_calls_value_enabled_renderer() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateValueEnabled(\n'
+        "                    payload.value_enabled"
+        in html
+    )
+
+def test_dashboard_styles_analyst_coverage_states() -> None:
+    html = build_dashboard_html()
+
+    assert '"COMPLETE"' in html
+    assert '"PARTIAL"' in html
+    assert '"UNRESOLVED"' in html
+
+    assert '"OPERATIONAL"' in html
+    assert '"DEGRADED"' in html
+    assert '"DISABLED"' in html
+    assert '"UNAVAILABLE"' in html
+
+    assert '"status-good"' in html
+    assert '"status-warning"' in html
+    assert '"status-bad"' in html
+    assert '"status-neutral"' in html
+
+    assert "updateAnalystOperationalStatus" in html
+    assert "payload.analyst_operational_status" in html
+    assert 'id="analystOperationalStatus"' in html
+
+def test_dashboard_styles_analyst_operational_statuses() -> None:
+    html = build_dashboard_html()
+
+    assert 'case "OPERATIONAL":' in html
+    assert 'case "DEGRADED":' in html
+    assert 'case "UNRESOLVED":' in html
+    assert 'case "DISABLED":' in html
+    assert 'case "UNAVAILABLE":' in html
+
+    assert (
+        'element.textContent = "Operational";'
+        in html
+    )
+    assert (
+        'element.textContent = "Degraded";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unresolved";'
+        in html
+    )
+    assert (
+        'element.textContent = "Disabled";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unavailable";'
+        in html
+    )
+    assert "analystOperationalMessage" in html
+    assert "payload.analyst_operational_message" in html
+    assert "analystOperationalPercentage" in html
+    assert "payload.analyst_operational_percentage" in html
+    assert "analystEnabledResolvedCount" in html
+    assert "payload.analyst_enabled_resolved_count" in html
+    assert "analystEnabledUnresolvedCount" in html
+    assert "payload.analyst_enabled_unresolved_count" in html
+
+def test_dashboard_styles_confidence_coverage_states(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateConfidenceCoverageState("
+        in html
+    )
+
+    assert 'case "COMPLETE":' in html
+    assert 'case "PARTIAL":' in html
+    assert 'case "MISSING":' in html
+    assert 'case "DISABLED":' in html
+    assert 'case "UNAVAILABLE":' in html
+
+    assert (
+        'element.textContent = "Complete";'
+        in html
+    )
+    assert (
+        'element.textContent = "Partial";'
+        in html
+    )
+    assert (
+        'element.textContent = "Missing";'
+        in html
+    )
+    assert (
+        'element.textContent = "Disabled";'
+        in html
+    )
+    assert (
+        'element.textContent = "Unavailable";'
+        in html
+    )
+
+    assert '"status-good"' in html
+    assert '"status-warning"' in html
+    assert '"status-bad"' in html
+    assert '"status-neutral"' in html
+
+def test_dashboard_uses_confidence_coverage_state_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateConfidenceCoverageState(\n'
+        '                    "analystConfidenceCoverageState",'
+        in html
+    )
+    assert (
+        'updateConfidenceCoverageState(\n'
+        '                    '
+        '"analystEnabledConfidenceCoverageState",'
+        in html
+    )
+
+    assert (
+        "payload.analyst_confidence_coverage_state"
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_state"
+        in html
+    )
+
+
+
+def test_dashboard_contains_analyst_coverage_readiness_cards() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystCoveragePercentage"' in html
+    assert 'id="analystCoverageState"' in html
+    assert "All-Domain Coverage" in html
+    assert "All-Domain Coverage State" in html
+    assert "Enabled Analyst Operation" in html
+    assert "Enabled Analyst Status" in html
+
+def test_dashboard_wires_analyst_coverage_readiness_fields() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "payload.analyst_coverage_percentage"
+        in html
+    )
+
+    assert (
+        "payload.analyst_coverage_state"
+        in html
+    )
+
+    assert (
+        "updateAnalystCoverageState"
+        in html
+    )
+
+def test_dashboard_contains_analyst_coverage_message_card() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystCoverageMessage"' in html
+    assert "All-Domain Coverage Message" in html
+    assert "metric-message" in html
+
+def test_dashboard_wires_analyst_coverage_message() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "payload.analyst_coverage_message"
+        in html
+    )
+
+    assert (
+        'setText(\n'
+        '                    "analystCoverageMessage",\n'
+        "                    "
+        "payload.analyst_coverage_message"
+        in html
+    )
+
+def test_dashboard_styles_analyst_coverage_message() -> None:
+    html = build_dashboard_html()
+
+    assert ".metric-message" in html
+    assert "white-space: normal" in html
+    assert "overflow-wrap: anywhere" in html
+
+def test_dashboard_displays_analyst_operational_message() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystOperationalMessage"'
+        in html
+    )
+
+    assert (
+        "payload.analyst_operational_message"
+        in html
+    )
+
+    assert (
+        "No analyst operational message available."
+        in html
+    )
+
+def test_dashboard_binds_analyst_operational_message_payload() -> None:
+    html = build_dashboard_html()
+
+    assert '"analystOperationalMessage"' in html
+    assert "payload.analyst_operational_message" in html
+
+def test_dashboard_displays_analyst_operational_percentage() -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystOperationalPercentage"'
+        in html
+    )
+
+    assert (
+        "payload.analyst_operational_percentage"
+        in html
+    )
+
+    assert (
+        '"analystOperationalPercentage"'
+        in html
+    )
+
+def test_dashboard_binds_analyst_operational_percentage() -> None:
+    html = build_dashboard_html()
+
+    assert "updatePercentageMetric(" in html
+    assert (
+        '"analystOperationalPercentage"'
+        in html
+    )
+    assert (
+        "payload.analyst_operational_percentage"
+        in html
+    )
+
+def test_dashboard_displays_analyst_enabled_resolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystEnabledResolvedCount"' in html
+    assert "payload.analyst_enabled_resolved_count" in html
+
+
+def test_dashboard_binds_analyst_enabled_resolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert "updateInstitutionalCount(" in html
+    assert '"analystEnabledResolvedCount"' in html
+    assert "payload.analyst_enabled_resolved_count" in html
+
+def test_dashboard_displays_analyst_enabled_unresolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystEnabledUnresolvedCount"' in html
+    assert "payload.analyst_enabled_unresolved_count" in html
+
+
+def test_dashboard_binds_analyst_enabled_unresolved_count(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    "analystEnabledUnresolvedCount",\n'
+        "                    "
+        "payload.analyst_enabled_unresolved_count"
+        in html
+    )
+
+
+def test_dashboard_displays_enabled_analyst_average_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystEnabledAverageConfidence"'
+        in html
+    )
+    assert (
+        "Enabled Analyst Average Confidence"
+        in html
+    )
+
+
+def test_dashboard_binds_enabled_analyst_average_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert "updatePercentageMetric(" in html
+    assert (
+        '"analystEnabledAverageConfidence"'
+        in html
+    )
+    assert (
+        "payload.analyst_enabled_average_confidence"
+        in html
+    )
+
+def test_dashboard_displays_analyst_confidence_counts(
+) -> None:
+    html = build_dashboard_html()
+
+    assert 'id="analystConfidenceCount"' in html
+    assert (
+        "Analyst Confidence Contributors"
+        in html
+    )
+
+    assert (
+        'id="analystEnabledConfidenceCount"'
+        in html
+    )
+    assert (
+        "Enabled Confidence Contributors"
+        in html
+    )
+
+    assert (
+        'id="analystMissingConfidenceCount"'
+        in html
+    )
+    assert "Missing Confidence" in html
+
+    assert (
+        'id="analystEnabledMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "Enabled Missing Confidence"
+        in html
+    )
+
+
+def test_dashboard_binds_analyst_confidence_counts(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        '"analystConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystEnabledConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_enabled_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload.analyst_missing_confidence_count"
+        in html
+    )
+
+    assert (
+        '"analystEnabledMissingConfidenceCount"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_missing_confidence_count"
+        in html
+    )
+
+def test_dashboard_displays_analyst_confidence_coverage(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'id="analystConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        'id="analystConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        'id="analystConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "Analyst Confidence Coverage"
+        in html
+    )
+
+    assert (
+        'id="analystEnabledConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        'id="analystEnabledConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        'id="analystEnabledConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "Enabled Confidence Coverage"
+        in html
+    )
+
+
+def test_dashboard_binds_analyst_confidence_coverage(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        '"analystConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_percentage"
+        in html
+    )
+    assert (
+        '"analystConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_state"
+        in html
+    )
+    assert (
+        '"analystConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "payload.analyst_confidence_coverage_message"
+        in html
+    )
+
+    assert (
+        '"analystEnabledConfidenceCoveragePercentage"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_percentage"
+        in html
+    )
+    assert (
+        '"analystEnabledConfidenceCoverageState"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_state"
+        in html
+    )
+    assert (
+        '"analystEnabledConfidenceCoverageMessage"'
+        in html
+    )
+    assert (
+        "payload."
+        "analyst_enabled_confidence_coverage_message"
+        in html
+    )
+
+def test_dashboard_distinguishes_missing_analyst_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "const confidenceAvailable = ("
+        in html
+    )
+    assert (
+        "details?.confidence_available"
+        in html
+    )
+    assert (
+        '=== true'
+        in html
+    )
+    assert (
+        ': "Unavailable";'
+        in html
+    )
+
+def test_dashboard_contains_confidence_coverage_fallback_messages(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "No analyst confidence coverage message available."
+        in html
+    )
+    assert (
+        "No enabled analyst confidence coverage message available."
+        in html
+    )
+
+def test_dashboard_defines_missing_confidence_count_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        "function updateMissingConfidenceCount("
+        in html
+    )
+
+    assert (
+        'normalized === 0'
+        in html
+    )
+
+    assert (
+        '"status-good"'
+        in html
+    )
+
+    assert (
+        '"status-warning"'
+        in html
+    )
+
+    assert (
+        '"status-neutral"'
+        in html
+    )
+
+def test_dashboard_uses_missing_confidence_count_renderer(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateMissingConfidenceCount(\n'
+        '                    '
+        '"analystMissingConfidenceCount",'
+        in html
+    )
+
+    assert (
+        'updateMissingConfidenceCount(\n'
+        '                    '
+        '"analystEnabledMissingConfidenceCount",'
+        in html
+    )
+
+    assert (
+        "payload.analyst_missing_confidence_count"
+        in html
+    )
+
+    assert (
+        "payload."
+        "analyst_enabled_missing_confidence_count"
+        in html
+    )
+
+def test_dashboard_does_not_use_generic_count_renderer_for_missing_confidence(
+) -> None:
+    html = build_dashboard_html()
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    '
+        '"analystMissingConfidenceCount",'
+        not in html
+    )
+
+    assert (
+        'updateInstitutionalCount(\n'
+        '                    '
+        '"analystEnabledMissingConfidenceCount",'
+        not in html
+    )
+

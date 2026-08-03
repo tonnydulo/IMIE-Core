@@ -1,0 +1,26 @@
+[project]
+name = "imie-core"
+version = "0.4.0"
+description = "Institutional Market Intelligence Engine"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alpaca-py>=0.43.5",
+    "python-dotenv>=1.2.2",
+    "tzdata>=2025.2",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=9.1.1",
+]
+
+[project.scripts]
+imie-runtime = "imie.runtime_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
