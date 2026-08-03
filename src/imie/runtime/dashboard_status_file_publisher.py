@@ -27,6 +27,13 @@ from imie.runtime.runtime_health_summary import (
     RuntimeHealthSummary,
 )
 
+type TemporaryFileFingerprint = tuple[
+    int,
+    int,
+    int,
+    int,
+]
+
 
 class DashboardStatusFilePublisher:
     """
@@ -1566,12 +1573,7 @@ class DashboardStatusFilePublisher:
         self,
         *,
         temporary_path: Path,
-        expected_fingerprint: tuple[
-            int,
-            int,
-            int,
-            int,
-        ],
+        expected_fingerprint: TemporaryFileFingerprint,
         expected_digest: str,
     ) -> None:
         for attempt in range(
@@ -1770,12 +1772,7 @@ class DashboardStatusFilePublisher:
     def _temporary_file_fingerprint(
         self,
         status: os.stat_result,
-    ) -> tuple[
-        int,
-        int,
-        int,
-        int,
-    ]:
+    ) -> TemporaryFileFingerprint:
         return (
             status.st_dev,
             status.st_ino,
@@ -2076,12 +2073,7 @@ class DashboardStatusFilePublisher:
         self,
         temporary_path: Path,
         *,
-        expected_fingerprint: tuple[
-            int,
-            int,
-            int,
-            int,
-        ],
+        expected_fingerprint: TemporaryFileFingerprint,
         expected_digest: str,
     ) -> None:
         try:

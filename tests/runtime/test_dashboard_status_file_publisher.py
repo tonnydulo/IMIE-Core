@@ -49,6 +49,9 @@ from imie.runtime import (
     SessionPolicyAction,
     SessionPolicyResult,
 )
+from imie.runtime.dashboard_status_file_publisher import (
+    TemporaryFileFingerprint,
+)
 
 
 NOW = datetime(
@@ -7719,12 +7722,7 @@ def test_completed_temporary_file_is_validated_before_publication(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[
-        int,
-        int,
-        int,
-        int,
-    ]:
+    ) -> TemporaryFileFingerprint:
         validated_paths.append(
             temporary_path
         )
@@ -7810,12 +7808,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[
-        int,
-        int,
-        int,
-        int,
-    ]:
+    ) -> TemporaryFileFingerprint:
         events.append(
             "validate"
         )
@@ -7829,12 +7822,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
     def recording_validate_fingerprint(
         temporary_path: Path,
         *,
-        expected_fingerprint: tuple[
-            int,
-            int,
-            int,
-            int,
-        ],
+        expected_fingerprint: TemporaryFileFingerprint,
         expected_digest: str,
     ) -> None:
         events.append(
@@ -7843,9 +7831,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
 
         original_validate_fingerprint(
             temporary_path,
-            expected_fingerprint=(
-                expected_fingerprint
-            ),
+            expected_fingerprint=expected_fingerprint,
             expected_digest=expected_digest,
         )
 
@@ -8933,12 +8919,7 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> tuple[
-        int,
-        int,
-        int,
-        int,
-    ]:
+    ) -> TemporaryFileFingerprint:
         fingerprint = original_validate(
             temporary_path,
             expected_size=expected_size,
