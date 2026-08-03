@@ -25,6 +25,8 @@ from imie.runtime_cli import (
     resolve_settings,
     run_application,
 )
+from imie.providers.mock_provider import MockProvider
+from imie.providers.provider_factory import ProviderFactory
 
 
 CHECKED_AT = datetime(
@@ -581,7 +583,22 @@ def test_resolve_settings_requires_app_settings() -> None:
 
 def test_build_application_uses_provider_override(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    requested_providers: list[str] = []
+
+    def recording_create(
+        provider_name: str,
+    ) -> MockProvider:
+        requested_providers.append(provider_name)
+        return MockProvider()
+
+    monkeypatch.setattr(
+        ProviderFactory,
+        "create",
+        staticmethod(recording_create),
+    )
+
     arguments = make_arguments(
         provider="alpaca",
         allow_after_hours=True,
@@ -598,13 +615,9 @@ def test_build_application_uses_provider_override(
         arguments=arguments,
     )
 
-    assert (
-        application.market_data
-        .provider_manager
-        .provider
-        .provider_name
-        == "alpaca"
-    )
+    assert requested_providers == [
+        "alpaca",
+    ]
 
     assert (
         application.one_shot_runner
