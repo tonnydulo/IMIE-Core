@@ -50,7 +50,9 @@ from imie.runtime import (
     SessionPolicyResult,
 )
 from imie.runtime.dashboard_status_file_publisher import (
+    DashboardStatusFilePublisher,
     TemporaryFileFingerprint,
+    TemporaryFileValidationSnapshot,
 )
 
 
@@ -7722,7 +7724,7 @@ def test_completed_temporary_file_is_validated_before_publication(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> TemporaryFileFingerprint:
+    ) -> TemporaryFileValidationSnapshot:
         validated_paths.append(
             temporary_path
         )
@@ -7758,7 +7760,7 @@ def test_completed_temporary_file_is_validated_before_publication(
     assert validated_path.exists() is False
     assert output_path.exists()
 
-def test_mode_validation_and_fingerprint_precede_replace(
+def test_mode_validation_and_snapshot_precede_replace(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -7787,8 +7789,8 @@ def test_mode_validation_and_fingerprint_precede_replace(
     original_validate = (
         publisher._validate_temporary_file
     )
-    original_validate_fingerprint = (
-        publisher._validate_temporary_file_fingerprint
+    original_validate_snapshot = (
+        publisher._validate_temporary_file_snapshot
     )
     original_replace = os.replace
 
@@ -7808,7 +7810,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> TemporaryFileFingerprint:
+    ) -> TemporaryFileValidationSnapshot:
         events.append(
             "validate"
         )
@@ -7819,21 +7821,20 @@ def test_mode_validation_and_fingerprint_precede_replace(
             expected_digest=expected_digest,
         )
 
-    def recording_validate_fingerprint(
+    def recording_validate_snapshot(
         temporary_path: Path,
         *,
-        expected_fingerprint: TemporaryFileFingerprint,
-        expected_digest: str,
+        expected_snapshot: TemporaryFileValidationSnapshot,
     ) -> None:
         events.append(
-            "fingerprint"
+            "snapshot"
         )
 
-        original_validate_fingerprint(
+        original_validate_snapshot(
             temporary_path,
-            expected_fingerprint=expected_fingerprint,
-            expected_digest=expected_digest,
+            expected_snapshot=expected_snapshot,
         )
+
 
     def recording_replace(
         source: str
@@ -7854,6 +7855,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
             destination,
         )
 
+
     monkeypatch.setattr(
         publisher,
         "_apply_existing_destination_mode",
@@ -7866,8 +7868,8 @@ def test_mode_validation_and_fingerprint_precede_replace(
     )
     monkeypatch.setattr(
         publisher,
-        "_validate_temporary_file_fingerprint",
-        recording_validate_fingerprint,
+        "_validate_temporary_file_snapshot",
+        recording_validate_snapshot,
     )
     monkeypatch.setattr(
         os,
@@ -7882,7 +7884,7 @@ def test_mode_validation_and_fingerprint_precede_replace(
     assert events == [
         "mode",
         "validate",
-        "fingerprint",
+        "snapshot",
         "replace",
     ]
 
@@ -8856,9 +8858,15 @@ def test_final_digest_check_rejects_same_fingerprint_corruption(
         expected_bytes
     ).hexdigest()
 
-    original_times = (
-        temporary_path.stat().st_atime_ns,
-        temporary_path.stat().st_mtime_ns,
+    expected_snapshot = (
+        TemporaryFileValidationSnapshot(
+            fingerprint=expected_fingerprint,
+            digest=expected_digest,
+        )
+    )
+
+    original_status = (
+        temporary_path.stat()
     )
 
     temporary_path.write_bytes(
@@ -8867,7 +8875,10 @@ def test_final_digest_check_rejects_same_fingerprint_corruption(
 
     os.utime(
         temporary_path,
-        ns=original_times,
+        ns=(
+            original_status.st_atime_ns,
+            original_status.st_mtime_ns,
+        ),
     )
 
     assert (
@@ -8881,10 +8892,9 @@ def test_final_digest_check_rejects_same_fingerprint_corruption(
         ValueError,
         match="changed after payload validation",
     ):
-        publisher._validate_temporary_file_fingerprint(
+        publisher._validate_temporary_file_snapshot(
             temporary_path,
-            expected_fingerprint=expected_fingerprint,
-            expected_digest=expected_digest,
+            expected_snapshot=expected_snapshot,
         )
 
 def test_same_fingerprint_corruption_preserves_existing_dashboard(
@@ -8902,6 +8912,7 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
     output_path.write_text(
         existing_payload,
         encoding="utf-8",
+        newline="",
     )
 
     publisher = DashboardStatusFilePublisher(
@@ -8919,8 +8930,8 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
         *,
         expected_size: int,
         expected_digest: str,
-    ) -> TemporaryFileFingerprint:
-        fingerprint = original_validate(
+    ) -> TemporaryFileValidationSnapshot:
+        snapshot = original_validate(
             temporary_path,
             expected_size=expected_size,
             expected_digest=expected_digest,
@@ -8954,10 +8965,10 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
             publisher._temporary_file_fingerprint(
                 temporary_path.lstat()
             )
-            == fingerprint
+            == snapshot.fingerprint
         )
 
-        return fingerprint
+        return snapshot
 
     monkeypatch.setattr(
         publisher,

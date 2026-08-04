@@ -12,6 +12,8 @@ from time import sleep
 
 from enum import Enum
 
+from dataclasses import dataclass
+
 from uuid import uuid4
 
 from pathlib import Path
@@ -33,6 +35,14 @@ type TemporaryFileFingerprint = tuple[
     int,
     int,
 ]
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class TemporaryFileValidationSnapshot:
+    fingerprint: TemporaryFileFingerprint
+    digest: str
 
 
 class DashboardStatusFilePublisher:
@@ -1534,18 +1544,17 @@ class DashboardStatusFilePublisher:
                 temporary_path
             )
 
-            temporary_fingerprint = (
+            validation_snapshot = (
                 self._validate_temporary_file(
                     temporary_path,
                     expected_size=expected_size,
                     expected_digest=expected_digest,
                 )
             )
-            
+
             self._replace_atomically(
                 temporary_path=temporary_path,
-                expected_fingerprint=temporary_fingerprint,
-                expected_digest=expected_digest,
+                expected_snapshot=validation_snapshot,
             )
 
         except Exception:
@@ -1573,19 +1582,15 @@ class DashboardStatusFilePublisher:
         self,
         *,
         temporary_path: Path,
-        expected_fingerprint: TemporaryFileFingerprint,
-        expected_digest: str,
+        expected_snapshot: TemporaryFileValidationSnapshot,
     ) -> None:
         for attempt in range(
             1,
             self._REPLACE_MAX_ATTEMPTS + 1,
         ):
-            self._validate_temporary_file_fingerprint(
+            self._validate_temporary_file_snapshot(
                 temporary_path,
-                expected_fingerprint=(
-                    expected_fingerprint
-                ),
-                expected_digest=expected_digest,
+                expected_snapshot=expected_snapshot,
             )
 
             try:
@@ -1756,8 +1761,13 @@ class DashboardStatusFilePublisher:
                 "match the serialized payload."
             )
 
-        return self._temporary_file_fingerprint(
-            opened_status
+        return TemporaryFileValidationSnapshot(
+            fingerprint=(
+                self._temporary_file_fingerprint(
+                    opened_status
+                )
+            ),
+            digest=expected_digest,
         )
 
     def _temporary_file_identity(
@@ -1772,7 +1782,7 @@ class DashboardStatusFilePublisher:
     def _temporary_file_fingerprint(
         self,
         status: os.stat_result,
-    ) -> TemporaryFileFingerprint:
+    ) -> TemporaryFileValidationSnapshot:
         return (
             status.st_dev,
             status.st_ino,
@@ -2069,12 +2079,11 @@ class DashboardStatusFilePublisher:
             decision_result.decision
         )
 
-    def _validate_temporary_file_fingerprint(
+    def _validate_temporary_file_snapshot(
         self,
         temporary_path: Path,
         *,
-        expected_fingerprint: TemporaryFileFingerprint,
-        expected_digest: str,
+        expected_snapshot: TemporaryFileValidationSnapshot,
     ) -> None:
         try:
             with open(
@@ -2102,7 +2111,7 @@ class DashboardStatusFilePublisher:
 
                 if self._temporary_file_fingerprint(
                     current_status
-                ) != expected_fingerprint:
+                ) != expected_snapshot.fingerprint:
                     raise ValueError(
                         "Dashboard temporary file changed "
                         "after payload validation."
@@ -2128,7 +2137,7 @@ class DashboardStatusFilePublisher:
                 "before publication."
             ) from error
 
-        if digest.hexdigest() != expected_digest:
+        if digest.hexdigest() != expected_snapshot.digest:
             raise ValueError(
                 "Dashboard temporary file changed "
                 "after payload validation."
