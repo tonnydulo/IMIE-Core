@@ -4,6 +4,8 @@ import os
 
 import stat
 
+import hmac
+
 import hashlib
 
 import dataclasses
@@ -9553,3 +9555,169 @@ def test_sha256_digest_normalizer_rejects_invalid_values(
             value,
             field_name="Test digest",
         )
+
+def test_temporary_file_validation_uses_constant_time_digest_comparison(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    temporary_bytes = (
+        b'{"status":"ok"}\n'
+    )
+
+    temporary_path.write_bytes(
+        temporary_bytes
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    comparisons: list[
+        tuple[str, str]
+    ] = []
+
+    original_compare_digest = (
+        hmac.compare_digest
+    )
+
+    def recording_compare_digest(
+        left: str,
+        right: str,
+    ) -> bool:
+        comparisons.append(
+            (
+                left,
+                right,
+            )
+        )
+
+        return original_compare_digest(
+            left,
+            right,
+        )
+
+    monkeypatch.setattr(
+        hmac,
+        "compare_digest",
+        recording_compare_digest,
+    )
+
+    expected_digest = hashlib.sha256(
+        temporary_bytes
+    ).hexdigest()
+
+    publisher._validate_temporary_file(
+        temporary_path,
+        expectations=TemporaryFileExpectations(
+            size=len(
+                temporary_bytes
+            ),
+            digest=expected_digest,
+        ),
+    )
+
+    assert comparisons == [
+        (
+            expected_digest,
+            expected_digest,
+        ),
+    ]
+
+def test_temporary_file_snapshot_uses_constant_time_digest_comparison(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    temporary_bytes = (
+        b'{"status":"ok"}\n'
+    )
+
+    temporary_path.write_bytes(
+        temporary_bytes
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    expected_digest = hashlib.sha256(
+        temporary_bytes
+    ).hexdigest()
+
+    snapshot = TemporaryFileValidationSnapshot(
+        fingerprint=(
+            publisher._temporary_file_fingerprint(
+                temporary_path.lstat()
+            )
+        ),
+        digest=expected_digest,
+    )
+
+    comparisons: list[
+        tuple[str, str]
+    ] = []
+
+    original_compare_digest = (
+        hmac.compare_digest
+    )
+
+    def recording_compare_digest(
+        left: str,
+        right: str,
+    ) -> bool:
+        comparisons.append(
+            (
+                left,
+                right,
+            )
+        )
+
+        return original_compare_digest(
+            left,
+            right,
+        )
+
+    monkeypatch.setattr(
+        hmac,
+        "compare_digest",
+        recording_compare_digest,
+    )
+
+    publisher._validate_temporary_file_snapshot(
+        temporary_path,
+        expected_snapshot=snapshot,
+    )
+
+    assert comparisons == [
+        (
+            expected_digest,
+            expected_digest,
+        ),
+    ]

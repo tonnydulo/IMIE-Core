@@ -6,6 +6,8 @@ import errno
 
 import stat
 
+import hmac
+
 import hashlib
 
 from time import sleep
@@ -1884,7 +1886,10 @@ class DashboardStatusFilePublisher:
             digest.hexdigest()
         )
 
-        if actual_digest != expectations.digest:
+        if not hmac.compare_digest(
+            actual_digest,
+            expectations.digest,
+        ):
             raise ValueError(
                 "Dashboard temporary file digest does not "
                 "match the serialized payload."
@@ -2277,9 +2282,9 @@ class DashboardStatusFilePublisher:
                 "before publication."
             ) from error
 
-        if (
-            current_digest
-            != expected_snapshot.digest
+        if not hmac.compare_digest(
+            current_digest,
+            expected_snapshot.digest,
         ):
             raise ValueError(
                 "Dashboard temporary file changed "
