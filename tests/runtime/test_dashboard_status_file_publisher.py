@@ -59,6 +59,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     TemporaryFileValidationSnapshot,
     _calculate_open_file_sha256,
     _normalize_sha256_digest,
+    _SHA256_READ_CHUNK_SIZE
 )
 
 
@@ -9815,3 +9816,67 @@ def test_open_file_sha256_reads_from_current_position(
     assert digest == hashlib.sha256(
         b"payload"
     ).hexdigest()
+
+def test_open_file_sha256_uses_bounded_reads() -> None:
+    class RecordingBinaryFile:
+        def __init__(
+            self,
+            payload: bytes,
+        ) -> None:
+            self._payload = payload
+            self._position = 0
+            self.read_sizes: list[int] = []
+
+        def read(
+            self,
+            size: int = -1,
+        ) -> bytes:
+            self.read_sizes.append(
+                size
+            )
+
+            if self._position >= len(
+                self._payload
+            ):
+                return b""
+
+            end = min(
+                self._position + size,
+                len(
+                    self._payload
+                ),
+            )
+
+            chunk = self._payload[
+                self._position:end
+            ]
+
+            self._position = end
+
+            return chunk
+
+    payload = (
+        b"a"
+        * (
+            _SHA256_READ_CHUNK_SIZE
+            + 1
+        )
+    )
+
+    file = RecordingBinaryFile(
+        payload
+    )
+
+    digest = _calculate_open_file_sha256(
+        file,  # type: ignore[arg-type]
+    )
+
+    assert digest == hashlib.sha256(
+        payload
+    ).hexdigest()
+
+    assert file.read_sizes == [
+        _SHA256_READ_CHUNK_SIZE,
+        _SHA256_READ_CHUNK_SIZE,
+        _SHA256_READ_CHUNK_SIZE,
+    ]
