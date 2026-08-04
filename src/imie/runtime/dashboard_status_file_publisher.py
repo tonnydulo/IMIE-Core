@@ -36,6 +36,53 @@ type TemporaryFileFingerprint = tuple[
     int,
 ]
 
+def _normalize_sha256_digest(
+    value: object,
+    *,
+    field_name: str,
+) -> str:
+    if not isinstance(
+        value,
+        str,
+    ):
+        raise TypeError(
+            f"{field_name} must be a string."
+        )
+
+    normalized_digest = (
+        value.lower()
+    )
+
+    if len(normalized_digest) != 64:
+        raise ValueError(
+            f"{field_name} must be a "
+            "64-character SHA-256 hexadecimal value."
+        )
+
+    try:
+        digest_bytes = bytes.fromhex(
+            normalized_digest
+        )
+    except ValueError as error:
+        raise ValueError(
+            f"{field_name} must be a "
+            "64-character SHA-256 hexadecimal value."
+        ) from error
+
+    if len(digest_bytes) != 32:
+        raise ValueError(
+            f"{field_name} must be a "
+            "64-character SHA-256 hexadecimal value."
+        )
+
+    return normalized_digest
+
+type TemporaryFileFingerprint = tuple[
+    int,
+    int,
+    int,
+    int,
+]
 
 @dataclass(
     frozen=True,
@@ -84,46 +131,16 @@ class TemporaryFileValidationSnapshot:
                 "not be negative."
             )
 
-        if not isinstance(
-            self.digest,
-            str,
-        ):
-            raise TypeError(
-                "Temporary file digest must be a string."
-            )
-
-        normalized_digest = (
-            self.digest.lower()
-        )
-
-        if len(normalized_digest) != 64:
-            raise ValueError(
-                "Temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
-        try:
-            digest_bytes = bytes.fromhex(
-                normalized_digest
-            )
-        except ValueError as error:
-            raise ValueError(
-                "Temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            ) from error
-
-        if len(digest_bytes) != 32:
-            raise ValueError(
-                "Temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
         object.__setattr__(
             self,
             "digest",
-            normalized_digest,
+            _normalize_sha256_digest(
+                self.digest,
+                field_name=(
+                    "Temporary file digest"
+                ),
+            ),
         )
-
 
 @dataclass(
     frozen=True,
@@ -151,47 +168,16 @@ class TemporaryFileExpectations:
                 "be negative."
             )
 
-        if not isinstance(
-            self.digest,
-            str,
-        ):
-            raise TypeError(
-                "Expected temporary file digest must be "
-                "a string."
-            )
-
-        normalized_digest = (
-            self.digest.lower()
-        )
-
-        if len(normalized_digest) != 64:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
-        try:
-            digest_bytes = bytes.fromhex(
-                normalized_digest
-            )
-        except ValueError as error:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            ) from error
-
-        if len(digest_bytes) != 32:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
         object.__setattr__(
             self,
             "digest",
-            normalized_digest,
+            _normalize_sha256_digest(
+                self.digest,
+                field_name=(
+                    "Expected temporary file digest"
+                ),
+            ),
         )
-
 
 class DashboardStatusFilePublisher:
     """

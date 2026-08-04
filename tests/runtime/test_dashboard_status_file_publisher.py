@@ -55,6 +55,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     TemporaryFileExpectations,
     TemporaryFileFingerprint,
     TemporaryFileValidationSnapshot,
+    _normalize_sha256_digest,
 )
 
 
@@ -8442,9 +8443,7 @@ def test_temporary_file_with_expected_size_is_valid(
     publisher._validate_temporary_file(
         temporary_path,
         expectations=TemporaryFileExpectations(
-            size=len(
-                temporary_bytes
-            ),
+            size=expected_size,
             digest=hashlib.sha256(
                 temporary_bytes
             ).hexdigest(),
@@ -8579,7 +8578,7 @@ def test_temporary_payload_size_uses_utf8_bytes(
     )
 
     contents = (
-        '{"message": "cafÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©"}\n'
+        '{"message": "café"}\n'
     )
     contents_bytes = (
         contents.encode(
@@ -9412,15 +9411,8 @@ def test_temporary_file_validation_snapshot_uses_observed_digest(
     ],
 )
 def test_temporary_file_validation_rejects_non_integer_expected_size(
-    tmp_path: Path,
     expected_size: object,
 ) -> None:
-    publisher = DashboardStatusFilePublisher(
-        path=tmp_path / "dashboard.json",
-        symbol="NVDA",
-        timeframe="2m",
-    )
-
     with pytest.raises(
         TypeError,
         match="size must be an integer",
@@ -9432,27 +9424,20 @@ def test_temporary_file_validation_rejects_non_integer_expected_size(
             ),
         )
 
-def test_temporary_file_validation_rejects_negative_expected_size(
-    tmp_path: Path,
-) -> None:
-    publisher = DashboardStatusFilePublisher(
-        path=tmp_path / "dashboard.json",
-        symbol="NVDA",
-        timeframe="2m",
-    )
 
+def test_temporary_file_validation_rejects_negative_expected_size(
+) -> None:
     with pytest.raises(
         ValueError,
         match="must not be negative",
     ):
         TemporaryFileExpectations(
-            expectations=TemporaryFileExpectations(
-                size=-1,
-                digest=(
+            size=-1,
+            digest=(
                 "a" * 64
             ),
-            ),
         )
+
 
 @pytest.mark.parametrize(
     "expected_digest",
@@ -9464,25 +9449,17 @@ def test_temporary_file_validation_rejects_negative_expected_size(
     ],
 )
 def test_temporary_file_validation_rejects_non_string_expected_digest(
-    tmp_path: Path,
     expected_digest: object,
 ) -> None:
-    publisher = DashboardStatusFilePublisher(
-        path=tmp_path / "dashboard.json",
-        symbol="NVDA",
-        timeframe="2m",
-    )
-
     with pytest.raises(
         TypeError,
         match="digest must be a string",
     ):
         TemporaryFileExpectations(
-            expectations=TemporaryFileExpectations(
-                size=10,
-                digest=expected_digest,
-            ),  # type: ignore[arg-type]
+            size=10,
+            digest=expected_digest,  # type: ignore[arg-type]
         )
+
 
 @pytest.mark.parametrize(
     "expected_digest",
@@ -9495,24 +9472,15 @@ def test_temporary_file_validation_rejects_non_string_expected_digest(
     ],
 )
 def test_temporary_file_validation_rejects_invalid_expected_digest(
-    tmp_path: Path,
     expected_digest: str,
 ) -> None:
-    publisher = DashboardStatusFilePublisher(
-        path=tmp_path / "dashboard.json",
-        symbol="NVDA",
-        timeframe="2m",
-    )
-
     with pytest.raises(
         ValueError,
         match="64-character SHA-256",
     ):
         TemporaryFileExpectations(
-            expectations=TemporaryFileExpectations(
-                size=10,
-                digest=expected_digest,
-            ),
+            size=10,
+            digest=expected_digest,
         )
 
 def test_temporary_file_validation_normalizes_expected_digest() -> None:
@@ -9528,3 +9496,60 @@ def test_temporary_file_validation_normalizes_expected_digest() -> None:
         "abcdef" * 10
         + "abcd"
     )
+
+def test_sha256_digest_normalizer_returns_lowercase_digest() -> None:
+    normalized_digest = _normalize_sha256_digest(
+        (
+            "ABCDEF" * 10
+            + "ABCD"
+        ),
+        field_name="Test digest",
+    )
+
+    assert normalized_digest == (
+        "abcdef" * 10
+        + "abcd"
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        123,
+        b"a" * 64,
+        True,
+    ],
+)
+def test_sha256_digest_normalizer_rejects_non_string_values(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="Test digest must be a string",
+    ):
+        _normalize_sha256_digest(
+            value,
+            field_name="Test digest",
+        )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        "a",
+        "a" * 63,
+        "a" * 65,
+        "z" * 64,
+    ],
+)
+def test_sha256_digest_normalizer_rejects_invalid_values(
+    value: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="Test digest must be a 64-character SHA-256",
+    ):
+        _normalize_sha256_digest(
+            value,
+            field_name="Test digest",
+        )
