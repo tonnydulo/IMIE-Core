@@ -36,6 +36,7 @@ type TemporaryFileFingerprint = tuple[
     int,
 ]
 
+
 @dataclass(
     frozen=True,
     slots=True,
@@ -91,7 +92,11 @@ class TemporaryFileValidationSnapshot:
                 "Temporary file digest must be a string."
             )
 
-        if len(self.digest) != 64:
+        normalized_digest = (
+            self.digest.lower()
+        )
+
+        if len(normalized_digest) != 64:
             raise ValueError(
                 "Temporary file digest must be a "
                 "64-character SHA-256 hexadecimal value."
@@ -99,7 +104,7 @@ class TemporaryFileValidationSnapshot:
 
         try:
             digest_bytes = bytes.fromhex(
-                self.digest
+                normalized_digest
             )
         except ValueError as error:
             raise ValueError(
@@ -116,8 +121,78 @@ class TemporaryFileValidationSnapshot:
         object.__setattr__(
             self,
             "digest",
-            self.digest.lower(),
+            normalized_digest,
         )
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class TemporaryFileExpectations:
+    size: int
+    digest: str
+
+    def __post_init__(
+        self,
+    ) -> None:
+        if (
+            not isinstance(self.size, int)
+            or isinstance(self.size, bool)
+        ):
+            raise TypeError(
+                "Expected temporary file size must be "
+                "an integer."
+            )
+
+        if self.size < 0:
+            raise ValueError(
+                "Expected temporary file size must not "
+                "be negative."
+            )
+
+        if not isinstance(
+            self.digest,
+            str,
+        ):
+            raise TypeError(
+                "Expected temporary file digest must be "
+                "a string."
+            )
+
+        normalized_digest = (
+            self.digest.lower()
+        )
+
+        if len(normalized_digest) != 64:
+            raise ValueError(
+                "Expected temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            )
+
+        try:
+            digest_bytes = bytes.fromhex(
+                normalized_digest
+            )
+        except ValueError as error:
+            raise ValueError(
+                "Expected temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            ) from error
+
+        if len(digest_bytes) != 32:
+            raise ValueError(
+                "Expected temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            )
+
+        object.__setattr__(
+            self,
+            "digest",
+            normalized_digest,
+        )
+
+
 class DashboardStatusFilePublisher:
     """
     Maintains the latest unified runtime-dashboard payload.
@@ -1598,13 +1673,14 @@ class DashboardStatusFilePublisher:
             )
         )
 
-        expected_size = len(
-            serialized_payload_bytes
+        expectations = TemporaryFileExpectations(
+            size=len(
+                serialized_payload_bytes
+            ),
+            digest=hashlib.sha256(
+                serialized_payload_bytes
+            ).hexdigest(),
         )
-
-        expected_digest = hashlib.sha256(
-            serialized_payload_bytes
-        ).hexdigest()
 
         temporary_path = (
             self._write_temporary_payload(
@@ -1620,8 +1696,7 @@ class DashboardStatusFilePublisher:
             validation_snapshot = (
                 self._validate_temporary_file(
                     temporary_path,
-                    expected_size=expected_size,
-                    expected_digest=expected_digest,
+                    expectations=expectations,
                 )
             )
 
@@ -1728,24 +1803,11 @@ class DashboardStatusFilePublisher:
         )
 
     def _validate_temporary_file(
-        self,
-        temporary_path: Path,
-        *,
-        expected_size: int,
-        expected_digest: str,
-    ) -> tuple[
-        int,
-        int,
-        int,
-        int,
-    ]:
-
-        normalized_expected_digest = (
-            self._validate_temporary_file_expectations(
-                expected_size=expected_size,
-                expected_digest=expected_digest,
-            )
-        )
+    self,
+    temporary_path: Path,
+    *,
+    expectations: TemporaryFileExpectations,
+) -> TemporaryFileValidationSnapshot:
 
         if not self._is_owned_temporary_path(
             temporary_path
@@ -1814,7 +1876,7 @@ class DashboardStatusFilePublisher:
                     "exactly one hard link."
                 )
 
-            if opened_status.st_size != expected_size:
+            if opened_status.st_size != expectations.size:
                 raise ValueError(
                     "Dashboard temporary file size does not "
                     "match the serialized payload."
@@ -1836,7 +1898,7 @@ class DashboardStatusFilePublisher:
             digest.hexdigest()
         )
 
-        if actual_digest != normalized_expected_digest:
+        if actual_digest != expectations.digest:
             raise ValueError(
                 "Dashboard temporary file digest does not "
                 "match the serialized payload."
@@ -2190,9 +2252,16 @@ class DashboardStatusFilePublisher:
                         "exactly one hard link."
                     )
 
-                if self._temporary_file_fingerprint(
-                    current_status
-                ) != expected_snapshot.fingerprint:
+                current_fingerprint = (
+                    self._temporary_file_fingerprint(
+                        current_status
+                    )
+                )
+
+                if (
+                    current_fingerprint
+                    != expected_snapshot.fingerprint
+                ):
                     raise ValueError(
                         "Dashboard temporary file changed "
                         "after payload validation."
@@ -2212,69 +2281,21 @@ class DashboardStatusFilePublisher:
                         chunk
                     )
 
+                current_digest = (
+                    digest.hexdigest()
+                )
+
         except FileNotFoundError as error:
             raise FileNotFoundError(
                 "Dashboard temporary file disappeared "
                 "before publication."
             ) from error
 
-        if digest.hexdigest() != expected_snapshot.digest:
+        if (
+            current_digest
+            != expected_snapshot.digest
+        ):
             raise ValueError(
                 "Dashboard temporary file changed "
                 "after payload validation."
             )
-
-    def _validate_temporary_file_expectations(
-        self,
-        *,
-        expected_size: int,
-        expected_digest: str,
-    ) -> str:
-        if (
-            not isinstance(expected_size, int)
-            or isinstance(expected_size, bool)
-        ):
-            raise TypeError(
-                "Expected temporary file size must be "
-                "an integer."
-            )
-
-        if expected_size < 0:
-            raise ValueError(
-                "Expected temporary file size must not "
-                "be negative."
-            )
-
-        if not isinstance(expected_digest, str):
-            raise TypeError(
-                "Expected temporary file digest must be "
-                "a string."
-            )
-
-        normalized_digest = (
-            expected_digest.lower()
-        )
-
-        if len(normalized_digest) != 64:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
-        try:
-            digest_bytes = bytes.fromhex(
-                normalized_digest
-            )
-        except ValueError as error:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            ) from error
-
-        if len(digest_bytes) != 32:
-            raise ValueError(
-                "Expected temporary file digest must be a "
-                "64-character SHA-256 hexadecimal value."
-            )
-
-        return normalized_digest

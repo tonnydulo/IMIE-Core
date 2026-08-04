@@ -43,7 +43,6 @@ from imie.models import (
 from imie.runtime import (
     AnalysisCycleResult,
     AnalysisCycleStatus,
-    DashboardStatusFilePublisher,
     MarketSessionResult,
     MarketSessionState,
     RuntimeHealthState,
@@ -53,6 +52,7 @@ from imie.runtime import (
 )
 from imie.runtime.dashboard_status_file_publisher import (
     DashboardStatusFilePublisher,
+    TemporaryFileExpectations,
     TemporaryFileFingerprint,
     TemporaryFileValidationSnapshot,
 )
@@ -7724,8 +7724,7 @@ def test_completed_temporary_file_is_validated_before_publication(
     def recording_validate(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> TemporaryFileValidationSnapshot:
         validated_paths.append(
             temporary_path
@@ -7733,8 +7732,7 @@ def test_completed_temporary_file_is_validated_before_publication(
 
         return original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
     monkeypatch.setattr(
@@ -7810,8 +7808,7 @@ def test_mode_validation_and_snapshot_precede_replace(
     def recording_validate(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> TemporaryFileValidationSnapshot:
         events.append(
             "validate"
@@ -7819,8 +7816,7 @@ def test_mode_validation_and_snapshot_precede_replace(
 
         return original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
     def recording_validate_snapshot(
@@ -7917,9 +7913,11 @@ def test_missing_temporary_file_is_rejected_before_replace(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=0,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=0,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -7952,9 +7950,11 @@ def test_unowned_temporary_file_is_rejected_before_validation(
     ):
         publisher._validate_temporary_file(
             unrelated_path,
-            expected_size=0,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=0,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -7991,9 +7991,11 @@ def test_directory_temporary_path_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=0,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=0,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -8045,9 +8047,11 @@ def test_symlink_temporary_path_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=10,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -8082,12 +8086,10 @@ def test_temporary_validation_failure_preserves_existing_dashboard(
     def failing_validation(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
-    ) -> None:
+        expectations: TemporaryFileExpectations,
+    ) -> TemporaryFileValidationSnapshot:
         del temporary_path
-        del expected_size
-        del expected_digest
+        del expectations
 
         raise ValueError(
             "Temporary validation failed."
@@ -8147,12 +8149,14 @@ def test_regular_temporary_file_with_one_link_is_valid(
 
     publisher._validate_temporary_file(
         temporary_path,
-        expected_size=len(
-            temporary_bytes
+        expectations=TemporaryFileExpectations(
+            size=len(
+                temporary_bytes
+            ),
+            digest=hashlib.sha256(
+                temporary_bytes
+            ).hexdigest(),
         ),
-        expected_digest=hashlib.sha256(
-            temporary_bytes
-        ).hexdigest(),
     )
 
     assert temporary_path.stat().st_nlink == 1
@@ -8206,9 +8210,11 @@ def test_hard_linked_temporary_file_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=10,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -8262,9 +8268,11 @@ def test_temporary_file_with_zero_links_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=10,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 @pytest.mark.parametrize(
@@ -8318,9 +8326,11 @@ def test_temporary_file_with_multiple_links_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=10,
-            expected_digest=(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -8354,13 +8364,11 @@ def test_hard_link_validation_failure_preserves_existing_dashboard(
     def failing_validation(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> None:
         original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
         raise ValueError(
@@ -8433,10 +8441,14 @@ def test_temporary_file_with_expected_size_is_valid(
 
     publisher._validate_temporary_file(
         temporary_path,
-        expected_size=expected_size,
-        expected_digest=hashlib.sha256(
-            temporary_bytes
-        ).hexdigest(),
+        expectations=TemporaryFileExpectations(
+            size=len(
+                temporary_bytes
+            ),
+            digest=hashlib.sha256(
+                temporary_bytes
+            ).hexdigest(),
+        ),
     )
 
 def test_truncated_temporary_payload_is_rejected(
@@ -8485,12 +8497,14 @@ def test_truncated_temporary_payload_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=len(
-                expected_bytes
+            expectations=TemporaryFileExpectations(
+                size=len(
+                    expected_bytes
+                ),
+                digest=hashlib.sha256(
+                    expected_bytes
+                ).hexdigest(),
             ),
-            expected_digest=hashlib.sha256(
-                expected_bytes
-            ).hexdigest(),
         )
 
 def test_oversized_temporary_payload_is_rejected(
@@ -8540,12 +8554,14 @@ def test_oversized_temporary_payload_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=len(
-                expected_bytes
+            expectations=TemporaryFileExpectations(
+                size=len(
+                    expected_bytes
+                ),
+                digest=hashlib.sha256(
+                    expected_bytes
+                ).hexdigest(),
             ),
-            expected_digest=hashlib.sha256(
-                expected_bytes
-            ).hexdigest(),
         )
 def test_temporary_payload_size_uses_utf8_bytes(
     tmp_path: Path,
@@ -8563,7 +8579,7 @@ def test_temporary_payload_size_uses_utf8_bytes(
     )
 
     contents = (
-        '{"message": "café"}\n'
+        '{"message": "cafÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©"}\n'
     )
     contents_bytes = (
         contents.encode(
@@ -8585,12 +8601,14 @@ def test_temporary_payload_size_uses_utf8_bytes(
 
     publisher._validate_temporary_file(
         temporary_path,
-        expected_size=len(
-            contents_bytes
+        expectations=TemporaryFileExpectations(
+            size=len(
+                contents_bytes
+            ),
+            digest=hashlib.sha256(
+                contents_bytes
+            ).hexdigest(),
         ),
-        expected_digest=hashlib.sha256(
-            contents_bytes
-        ).hexdigest(),
     )
 
 def test_temporary_size_mismatch_preserves_existing_dashboard(
@@ -8623,13 +8641,11 @@ def test_temporary_size_mismatch_preserves_existing_dashboard(
     def failing_validation(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> None:
         original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
         raise ValueError(
@@ -8693,12 +8709,14 @@ def test_temporary_file_with_expected_digest_is_valid(
 
     publisher._validate_temporary_file(
         temporary_path,
-        expected_size=len(
-            contents_bytes
+        expectations=TemporaryFileExpectations(
+            size=len(
+                contents_bytes
+            ),
+            digest=hashlib.sha256(
+                contents_bytes
+            ).hexdigest(),
         ),
-        expected_digest=hashlib.sha256(
-            contents_bytes
-        ).hexdigest(),
     )
 
 def test_same_size_temporary_payload_corruption_is_rejected(
@@ -8745,12 +8763,14 @@ def test_same_size_temporary_payload_corruption_is_rejected(
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=len(
-                expected_bytes
+            expectations=TemporaryFileExpectations(
+                size=len(
+                    expected_bytes
+                ),
+                digest=hashlib.sha256(
+                    expected_bytes
+                ).hexdigest(),
             ),
-            expected_digest=hashlib.sha256(
-                expected_bytes
-            ).hexdigest(),
         )
 
 def test_temporary_digest_mismatch_preserves_existing_dashboard(
@@ -8783,13 +8803,11 @@ def test_temporary_digest_mismatch_preserves_existing_dashboard(
     def failing_validation(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> None:
         original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
         raise ValueError(
@@ -8936,13 +8954,11 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
     def corrupt_after_validation(
         temporary_path: Path,
         *,
-        expected_size: int,
-        expected_digest: str,
+        expectations: TemporaryFileExpectations,
     ) -> TemporaryFileValidationSnapshot:
         snapshot = original_validate(
             temporary_path,
-            expected_size=expected_size,
-            expected_digest=expected_digest,
+            expectations=expectations,
         )
 
         original_status = (
@@ -9374,10 +9390,12 @@ def test_temporary_file_validation_snapshot_uses_observed_digest(
     snapshot = (
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=len(
+            expectations=TemporaryFileExpectations(
+                size=len(
                 temporary_bytes
             ),
-            expected_digest=observed_digest.upper(),
+                digest=observed_digest.upper(),
+            ),
         )
     )
 
@@ -9407,9 +9425,9 @@ def test_temporary_file_validation_rejects_non_integer_expected_size(
         TypeError,
         match="size must be an integer",
     ):
-        publisher._validate_temporary_file_expectations(
-            expected_size=expected_size,  # type: ignore[arg-type]
-            expected_digest=(
+        TemporaryFileExpectations(
+            size=expected_size,  # type: ignore[arg-type]
+            digest=(
                 "a" * 64
             ),
         )
@@ -9427,10 +9445,12 @@ def test_temporary_file_validation_rejects_negative_expected_size(
         ValueError,
         match="must not be negative",
     ):
-        publisher._validate_temporary_file_expectations(
-            expected_size=-1,
-            expected_digest=(
+        TemporaryFileExpectations(
+            expectations=TemporaryFileExpectations(
+                size=-1,
+                digest=(
                 "a" * 64
+            ),
             ),
         )
 
@@ -9457,9 +9477,11 @@ def test_temporary_file_validation_rejects_non_string_expected_digest(
         TypeError,
         match="digest must be a string",
     ):
-        publisher._validate_temporary_file_expectations(
-            expected_size=10,
-            expected_digest=expected_digest,  # type: ignore[arg-type]
+        TemporaryFileExpectations(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=expected_digest,
+            ),  # type: ignore[arg-type]
         )
 
 @pytest.mark.parametrize(
@@ -9486,31 +9508,23 @@ def test_temporary_file_validation_rejects_invalid_expected_digest(
         ValueError,
         match="64-character SHA-256",
     ):
-        publisher._validate_temporary_file_expectations(
-            expected_size=10,
-            expected_digest=expected_digest,
-        )
-
-def test_temporary_file_validation_normalizes_expected_digest(
-    tmp_path: Path,
-) -> None:
-    publisher = DashboardStatusFilePublisher(
-        path=tmp_path / "dashboard.json",
-        symbol="NVDA",
-        timeframe="2m",
-    )
-
-    normalized_digest = (
-        publisher._validate_temporary_file_expectations(
-            expected_size=10,
-            expected_digest=(
-                "ABCDEF" * 10
-                + "ABCD"
+        TemporaryFileExpectations(
+            expectations=TemporaryFileExpectations(
+                size=10,
+                digest=expected_digest,
             ),
         )
+
+def test_temporary_file_validation_normalizes_expected_digest() -> None:
+    expectations = TemporaryFileExpectations(
+        size=10,
+        digest=(
+            "ABCDEF" * 10
+            + "ABCD"
+        ),
     )
 
-    assert normalized_digest == (
+    assert expectations.digest == (
         "abcdef" * 10
         + "abcd"
     )
