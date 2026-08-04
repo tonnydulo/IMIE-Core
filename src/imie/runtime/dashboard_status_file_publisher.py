@@ -83,6 +83,26 @@ def _normalize_sha256_digest(
 
     return normalized_digest
 
+def _validate_temporary_file_identity(
+    *,
+    expected_status: os.stat_result,
+    opened_status: os.stat_result,
+) -> None:
+    expected_identity = (
+        expected_status.st_dev,
+        expected_status.st_ino,
+    )
+    opened_identity = (
+        opened_status.st_dev,
+        opened_status.st_ino,
+    )
+
+    if opened_identity != expected_identity:
+        raise ValueError(
+            "Dashboard temporary file changed "
+            "before payload validation."
+        )
+
 def _calculate_open_file_sha256(
     file: BinaryIO,
 ) -> str:
@@ -1844,18 +1864,10 @@ class DashboardStatusFilePublisher:
                     temporary_file.fileno()
                 )
 
-                if (
-                    self._temporary_file_identity(
-                        opened_status
-                    )
-                    != self._temporary_file_identity(
-                        temporary_status
-                    )
-                ):
-                    raise ValueError(
-                        "Dashboard temporary file changed "
-                        "before payload validation."
-                    )
+                _validate_temporary_file_identity(
+                    expected_status=temporary_status,
+                    opened_status=opened_status,
+                )
 
                 _validate_temporary_file_status(
                     opened_status
@@ -1898,15 +1910,6 @@ class DashboardStatusFilePublisher:
                 )
             ),
             digest=actual_digest,
-        )
-
-    def _temporary_file_identity(
-        self,
-        status: os.stat_result,
-    ) -> tuple[int, int]:
-        return (
-            status.st_dev,
-            status.st_ino,
         )
 
     def _temporary_file_fingerprint(

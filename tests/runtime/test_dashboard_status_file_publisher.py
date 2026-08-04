@@ -61,6 +61,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_sha256_digest,
     _SHA256_READ_CHUNK_SIZE,
     _validate_temporary_file_status,
+    _validate_temporary_file_identity,
 )
 
 
@@ -9946,4 +9947,176 @@ def test_temporary_file_status_rejects_multiple_links(
     ):
         _validate_temporary_file_status(
             linked_status
+        )
+
+def test_temporary_file_identity_accepts_same_file(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "temporary.json"
+    )
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    status = path.stat()
+
+    _validate_temporary_file_identity(
+        expected_status=status,
+        opened_status=status,
+    )
+
+
+def test_temporary_file_identity_rejects_changed_inode(
+    tmp_path: Path,
+) -> None:
+    first_path = (
+        tmp_path
+        / "first.json"
+    )
+    second_path = (
+        tmp_path
+        / "second.json"
+    )
+
+    first_path.write_text(
+        '{"file": 1}\n',
+        encoding="utf-8",
+    )
+    second_path.write_text(
+        '{"file": 2}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed before payload validation",
+    ):
+        _validate_temporary_file_identity(
+            expected_status=first_path.stat(),
+            opened_status=second_path.stat(),
+        )
+
+
+def test_temporary_file_identity_rejects_changed_device() -> None:
+    expected_status = os.stat_result(
+        (
+            stat.S_IFREG,
+            100,
+            1,
+            1,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+        )
+    )
+    opened_status = os.stat_result(
+        (
+            stat.S_IFREG,
+            100,
+            2,
+            1,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed before payload validation",
+    ):
+        _validate_temporary_file_identity(
+            expected_status=expected_status,
+            opened_status=opened_status,
+        )
+def test_temporary_file_identity_accepts_same_file(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    status = path.stat()
+
+    _validate_temporary_file_identity(
+        expected_status=status,
+        opened_status=status,
+    )
+
+
+def test_temporary_file_identity_rejects_changed_inode(
+    tmp_path: Path,
+) -> None:
+    first_path = tmp_path / "first.json"
+    second_path = tmp_path / "second.json"
+
+    first_path.write_text(
+        '{"file": 1}\n',
+        encoding="utf-8",
+    )
+    second_path.write_text(
+        '{"file": 2}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed before payload validation",
+    ):
+        _validate_temporary_file_identity(
+            expected_status=first_path.stat(),
+            opened_status=second_path.stat(),
+        )
+
+
+def test_temporary_file_identity_rejects_changed_device() -> None:
+    expected_status = os.stat_result(
+        (
+            stat.S_IFREG,
+            100,
+            1,
+            1,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+        )
+    )
+    opened_status = os.stat_result(
+        (
+            stat.S_IFREG,
+            100,
+            2,
+            1,
+            0,
+            0,
+            10,
+            0,
+            0,
+            0,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed before payload validation",
+    ):
+        _validate_temporary_file_identity(
+            expected_status=expected_status,
+            opened_status=opened_status,
         )
