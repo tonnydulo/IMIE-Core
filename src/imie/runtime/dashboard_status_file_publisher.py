@@ -47,6 +47,15 @@ class TemporaryFileValidationSnapshot:
     def __post_init__(
         self,
     ) -> None:
+        if not isinstance(
+            self.fingerprint,
+            tuple,
+        ):
+            raise TypeError(
+                "Temporary file fingerprint must be "
+                "a tuple."
+            )
+
         if len(self.fingerprint) != 4:
             raise ValueError(
                 "Temporary file fingerprint must contain "
@@ -54,7 +63,10 @@ class TemporaryFileValidationSnapshot:
             )
 
         if any(
-            not isinstance(value, int)
+            (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+            )
             for value in self.fingerprint
         ):
             raise TypeError(
@@ -71,6 +83,14 @@ class TemporaryFileValidationSnapshot:
                 "not be negative."
             )
 
+        if not isinstance(
+            self.digest,
+            str,
+        ):
+            raise TypeError(
+                "Temporary file digest must be a string."
+            )
+
         if len(self.digest) != 64:
             raise ValueError(
                 "Temporary file digest must be a "
@@ -78,7 +98,7 @@ class TemporaryFileValidationSnapshot:
             )
 
         try:
-            bytes.fromhex(
+            digest_bytes = bytes.fromhex(
                 self.digest
             )
         except ValueError as error:
@@ -87,6 +107,11 @@ class TemporaryFileValidationSnapshot:
                 "64-character SHA-256 hexadecimal value."
             ) from error
 
+        if len(digest_bytes) != 32:
+            raise ValueError(
+                "Temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            )
 class DashboardStatusFilePublisher:
     """
     Maintains the latest unified runtime-dashboard payload.

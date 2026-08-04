@@ -9213,3 +9213,77 @@ def test_temporary_file_validation_snapshot_rejects_invalid_digest(
             ),
             digest=digest,
         )
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        [1, 2, 3, 4],
+        "1234",
+        1234,
+        None,
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_non_tuple_fingerprint(
+    fingerprint: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="must be a tuple",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=fingerprint,  # type: ignore[arg-type]
+            digest=(
+                "a" * 64
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        (True, 2, 3, 4),
+        (1, False, 3, 4),
+        (1, 2, True, 4),
+        (1, 2, 3, False),
+        (1.0, 2, 3, 4),
+        (1, "2", 3, 4),
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_non_integer_values(
+    fingerprint: tuple[object, ...],
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="values must be integers",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=fingerprint,  # type: ignore[arg-type]
+            digest=(
+                "a" * 64
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "digest",
+    [
+        None,
+        123,
+        b"a" * 64,
+        True,
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_non_string_digest(
+    digest: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="digest must be a string",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=(
+                1,
+                2,
+                3,
+                4,
+            ),
+            digest=digest,  # type: ignore[arg-type]
+        )
