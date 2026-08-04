@@ -18,6 +18,8 @@ from dataclasses import dataclass
 
 from uuid import uuid4
 
+from typing import BinaryIO
+
 from pathlib import Path
 from threading import RLock
 
@@ -79,12 +81,24 @@ def _normalize_sha256_digest(
 
     return normalized_digest
 
-type TemporaryFileFingerprint = tuple[
-    int,
-    int,
-    int,
-    int,
-]
+def _calculate_open_file_sha256(
+    file: BinaryIO,
+) -> str:
+    digest = hashlib.sha256()
+
+    while True:
+        chunk = file.read(
+            64 * 1024
+        )
+
+        if not chunk:
+            break
+
+        digest.update(
+            chunk
+        )
+
+    return digest.hexdigest()
 
 @dataclass(
     frozen=True,
@@ -1791,12 +1805,11 @@ class DashboardStatusFilePublisher:
         )
 
     def _validate_temporary_file(
-    self,
-    temporary_path: Path,
-    *,
-    expectations: TemporaryFileExpectations,
-) -> TemporaryFileValidationSnapshot:
-
+        self,
+        temporary_path: Path,
+        *,
+        expectations: TemporaryFileExpectations,
+    ) -> TemporaryFileValidationSnapshot:
         if not self._is_owned_temporary_path(
             temporary_path
         ):
@@ -1829,62 +1842,63 @@ class DashboardStatusFilePublisher:
                 "exactly one hard link."
             )
 
-        digest = hashlib.sha256()
-
-        with open(
-            temporary_path,
-            "rb",
-            buffering=0,
-        ) as temporary_file:
-            opened_status = os.fstat(
-                temporary_file.fileno()
-            )
-
-            if self._temporary_file_identity(
-                opened_status
-            ) != self._temporary_file_identity(
-                temporary_status
-            ):
-                raise ValueError(
-                    "Dashboard temporary file changed "
-                    "before payload validation."
+        try:
+            with open(
+                temporary_path,
+                "rb",
+                buffering=0,
+            ) as temporary_file:
+                opened_status = os.fstat(
+                    temporary_file.fileno()
                 )
 
-            if not stat.S_ISREG(
-                opened_status.st_mode
-            ):
-                raise ValueError(
-                    "Dashboard temporary file must be "
-                    "a regular file."
+                if (
+                    self._temporary_file_identity(
+                        opened_status
+                    )
+                    != self._temporary_file_identity(
+                        temporary_status
+                    )
+                ):
+                    raise ValueError(
+                        "Dashboard temporary file changed "
+                        "before payload validation."
+                    )
+
+                if not stat.S_ISREG(
+                    opened_status.st_mode
+                ):
+                    raise ValueError(
+                        "Dashboard temporary file must be "
+                        "a regular file."
+                    )
+
+                if opened_status.st_nlink != 1:
+                    raise ValueError(
+                        "Dashboard temporary file must have "
+                        "exactly one hard link."
+                    )
+
+                if (
+                    opened_status.st_size
+                    != expectations.size
+                ):
+                    raise ValueError(
+                        "Dashboard temporary file size does not "
+                        "match the serialized payload."
+                    )
+
+                actual_digest = (
+                    _calculate_open_file_sha256(
+                        temporary_file
+                    )
                 )
 
-            if opened_status.st_nlink != 1:
-                raise ValueError(
-                    "Dashboard temporary file must have "
-                    "exactly one hard link."
-                )
-
-            if opened_status.st_size != expectations.size:
-                raise ValueError(
-                    "Dashboard temporary file size does not "
-                    "match the serialized payload."
-                )
-
-            while True:
-                chunk = temporary_file.read(
-                    64 * 1024
-                )
-
-                if not chunk:
-                    break
-
-                digest.update(
-                    chunk
-                )
-
-        actual_digest = (
-            digest.hexdigest()
-        )
+        except FileNotFoundError as error:
+            raise FileNotFoundError(
+                "Dashboard temporary file disappeared "
+                "before publication."
+            ) from error
 
         if not hmac.compare_digest(
             actual_digest,
@@ -2258,22 +2272,10 @@ class DashboardStatusFilePublisher:
                         "after payload validation."
                     )
 
-                digest = hashlib.sha256()
-
-                while True:
-                    chunk = temporary_file.read(
-                        64 * 1024
-                    )
-
-                    if not chunk:
-                        break
-
-                    digest.update(
-                        chunk
-                    )
-
                 current_digest = (
-                    digest.hexdigest()
+                    _calculate_open_file_sha256(
+                        temporary_file
+                    )
                 )
 
         except FileNotFoundError as error:

@@ -57,6 +57,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     TemporaryFileExpectations,
     TemporaryFileFingerprint,
     TemporaryFileValidationSnapshot,
+    _calculate_open_file_sha256,
     _normalize_sha256_digest,
 )
 
@@ -9721,3 +9722,96 @@ def test_temporary_file_snapshot_uses_constant_time_digest_comparison(
             expected_digest,
         ),
     ]
+
+def test_open_file_sha256_matches_payload_digest(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "payload.json"
+    )
+    payload = (
+        b'{"status":"ok"}\n'
+    )
+
+    path.write_bytes(
+        payload
+    )
+
+    with open(
+        path,
+        "rb",
+        buffering=0,
+    ) as file:
+        digest = (
+            _calculate_open_file_sha256(
+                file
+            )
+        )
+
+    assert digest == hashlib.sha256(
+        payload
+    ).hexdigest()
+
+def test_open_file_sha256_handles_empty_file(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "empty.json"
+    )
+
+    path.write_bytes(
+        b""
+    )
+
+    with open(
+        path,
+        "rb",
+        buffering=0,
+    ) as file:
+        digest = (
+            _calculate_open_file_sha256(
+                file
+            )
+        )
+
+    assert digest == hashlib.sha256(
+        b""
+    ).hexdigest()
+
+def test_open_file_sha256_reads_from_current_position(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "payload.bin"
+    )
+    payload = (
+        b"prefix-payload"
+    )
+
+    path.write_bytes(
+        payload
+    )
+
+    with open(
+        path,
+        "rb",
+        buffering=0,
+    ) as file:
+        file.read(
+            len(
+                b"prefix-"
+            )
+        )
+
+        digest = (
+            _calculate_open_file_sha256(
+                file
+            )
+        )
+
+    assert digest == hashlib.sha256(
+        b"payload"
+    ).hexdigest()
