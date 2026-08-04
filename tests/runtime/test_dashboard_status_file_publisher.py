@@ -59,7 +59,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     TemporaryFileValidationSnapshot,
     _calculate_open_file_sha256,
     _normalize_sha256_digest,
-    _SHA256_READ_CHUNK_SIZE
+    _SHA256_READ_CHUNK_SIZE,
+    _validate_temporary_file_status,
 )
 
 
@@ -9880,3 +9881,69 @@ def test_open_file_sha256_uses_bounded_reads() -> None:
         _SHA256_READ_CHUNK_SIZE,
         _SHA256_READ_CHUNK_SIZE,
     ]
+
+def test_temporary_file_status_accepts_regular_single_link_file(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "temporary.json"
+    )
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    _validate_temporary_file_status(
+        path.stat()
+    )
+
+def test_temporary_file_status_rejects_non_regular_file(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        _validate_temporary_file_status(
+            tmp_path.stat()
+        )
+
+def test_temporary_file_status_rejects_multiple_links(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "temporary.json"
+    )
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    status = path.stat()
+
+    linked_status = os.stat_result(
+        (
+            status.st_mode,
+            status.st_ino,
+            status.st_dev,
+            2,
+            status.st_uid,
+            status.st_gid,
+            status.st_size,
+            status.st_atime,
+            status.st_mtime,
+            status.st_ctime,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exactly one hard link",
+    ):
+        _validate_temporary_file_status(
+            linked_status
+        )

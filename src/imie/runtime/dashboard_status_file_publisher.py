@@ -1830,19 +1830,9 @@ class DashboardStatusFilePublisher:
                 "before publication."
             ) from error
 
-        if not stat.S_ISREG(
-            temporary_status.st_mode
-        ):
-            raise ValueError(
-                "Dashboard temporary file must be "
-                "a regular file."
-            )
-
-        if temporary_status.st_nlink != 1:
-            raise ValueError(
-                "Dashboard temporary file must have "
-                "exactly one hard link."
-            )
+        _validate_temporary_file_status(
+            temporary_status
+        )
 
         try:
             with open(
@@ -1867,19 +1857,9 @@ class DashboardStatusFilePublisher:
                         "before payload validation."
                     )
 
-                if not stat.S_ISREG(
-                    opened_status.st_mode
-                ):
-                    raise ValueError(
-                        "Dashboard temporary file must be "
-                        "a regular file."
-                    )
-
-                if opened_status.st_nlink != 1:
-                    raise ValueError(
-                        "Dashboard temporary file must have "
-                        "exactly one hard link."
-                    )
+                _validate_temporary_file_status(
+                    opened_status
+                )
 
                 if (
                     opened_status.st_size
@@ -2358,3 +2338,20 @@ def test_open_file_sha256_uses_bounded_reads() -> None:
         _SHA256_READ_CHUNK_SIZE,
         _SHA256_READ_CHUNK_SIZE,
     ]
+
+def _validate_temporary_file_status(
+    status: os.stat_result,
+) -> None:
+    if not stat.S_ISREG(
+        status.st_mode
+    ):
+        raise ValueError(
+            "Dashboard temporary file must be "
+            "a regular file."
+        )
+
+    if status.st_nlink != 1:
+        raise ValueError(
+            "Dashboard temporary file must have "
+            "exactly one hard link."
+        )
