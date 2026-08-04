@@ -1828,7 +1828,7 @@ class DashboardStatusFilePublisher:
             digest.hexdigest()
         )
 
-        if actual_digest != expected_digest:
+        if actual_digest != expected_digest.lower():
             raise ValueError(
                 "Dashboard temporary file digest does not "
                 "match the serialized payload."
@@ -1840,7 +1840,7 @@ class DashboardStatusFilePublisher:
                     opened_status
                 )
             ),
-            digest=expected_digest,
+            digest=actual_digest,
         )
 
     def _temporary_file_identity(

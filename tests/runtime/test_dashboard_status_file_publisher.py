@@ -9332,3 +9332,47 @@ def test_temporary_file_validation_snapshot_is_immutable(
         dataclasses.FrozenInstanceError,
     ):
         snapshot.digest = "b" * 64  # type: ignore[misc]
+
+def test_temporary_file_validation_snapshot_uses_observed_digest(
+    tmp_path: Path,
+) -> None:
+    output_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "11111111111111111111111111111111.tmp"
+        )
+    )
+
+    temporary_bytes = (
+        b'{"status":"ok"}\n'
+    )
+    observed_digest = hashlib.sha256(
+        temporary_bytes
+    ).hexdigest()
+
+    temporary_path.write_bytes(
+        temporary_bytes
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=output_path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    snapshot = (
+        publisher._validate_temporary_file(
+            temporary_path,
+            expected_size=len(
+                temporary_bytes
+            ),
+            expected_digest=observed_digest.upper(),
+        )
+    )
+
+    assert snapshot.digest == observed_digest
