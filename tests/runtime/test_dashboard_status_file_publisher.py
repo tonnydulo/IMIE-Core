@@ -9115,3 +9115,101 @@ def test_retry_revalidates_temporary_payload_before_replace(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+def test_temporary_file_validation_snapshot_accepts_valid_values(
+) -> None:
+    snapshot = TemporaryFileValidationSnapshot(
+        fingerprint=(
+            1,
+            2,
+            3,
+            4,
+        ),
+        digest=(
+            "a" * 64
+        ),
+    )
+
+    assert snapshot.fingerprint == (
+        1,
+        2,
+        3,
+        4,
+    )
+    assert snapshot.digest == (
+        "a" * 64
+    )
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        (),
+        (1,),
+        (1, 2),
+        (1, 2, 3),
+        (1, 2, 3, 4, 5),
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_wrong_fingerprint_length(
+    fingerprint: tuple[int, ...],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="exactly four values",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=fingerprint,
+            digest=(
+                "a" * 64
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        (-1, 2, 3, 4),
+        (1, -2, 3, 4),
+        (1, 2, -3, 4),
+        (1, 2, 3, -4),
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_negative_fingerprint_values(
+    fingerprint: TemporaryFileFingerprint,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="must not be negative",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=fingerprint,
+            digest=(
+                "a" * 64
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "digest",
+    [
+        "",
+        "a",
+        "a" * 63,
+        "a" * 65,
+        "z" * 64,
+    ],
+)
+def test_temporary_file_validation_snapshot_rejects_invalid_digest(
+    digest: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="64-character SHA-256",
+    ):
+        TemporaryFileValidationSnapshot(
+            fingerprint=(
+                1,
+                2,
+                3,
+                4,
+            ),
+            digest=digest,
+        )

@@ -44,6 +44,48 @@ class TemporaryFileValidationSnapshot:
     fingerprint: TemporaryFileFingerprint
     digest: str
 
+    def __post_init__(
+        self,
+    ) -> None:
+        if len(self.fingerprint) != 4:
+            raise ValueError(
+                "Temporary file fingerprint must contain "
+                "exactly four values."
+            )
+
+        if any(
+            not isinstance(value, int)
+            for value in self.fingerprint
+        ):
+            raise TypeError(
+                "Temporary file fingerprint values must "
+                "be integers."
+            )
+
+        if any(
+            value < 0
+            for value in self.fingerprint
+        ):
+            raise ValueError(
+                "Temporary file fingerprint values must "
+                "not be negative."
+            )
+
+        if len(self.digest) != 64:
+            raise ValueError(
+                "Temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            )
+
+        try:
+            bytes.fromhex(
+                self.digest
+            )
+        except ValueError as error:
+            raise ValueError(
+                "Temporary file digest must be a "
+                "64-character SHA-256 hexadecimal value."
+            ) from error
 
 class DashboardStatusFilePublisher:
     """
