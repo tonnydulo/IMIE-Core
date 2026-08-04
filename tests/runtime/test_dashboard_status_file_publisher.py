@@ -6,6 +6,8 @@ import stat
 
 import hashlib
 
+import dataclasses
+
 import errno
 
 from datetime import (
@@ -9287,3 +9289,46 @@ def test_temporary_file_validation_snapshot_rejects_non_string_digest(
             ),
             digest=digest,  # type: ignore[arg-type]
         )
+
+def test_temporary_file_validation_snapshot_normalizes_digest_to_lowercase(
+) -> None:
+    snapshot = TemporaryFileValidationSnapshot(
+        fingerprint=(
+            1,
+            2,
+            3,
+            4,
+        ),
+        digest=(
+            "ABCDEF" * 10
+            + "ABCD"
+        ),
+    )
+
+    assert len(
+        snapshot.digest
+    ) == 64
+
+    assert snapshot.digest == (
+        "abcdef" * 10
+        + "abcd"
+    )
+
+def test_temporary_file_validation_snapshot_is_immutable(
+) -> None:
+    snapshot = TemporaryFileValidationSnapshot(
+        fingerprint=(
+            1,
+            2,
+            3,
+            4,
+        ),
+        digest=(
+            "a" * 64
+        ),
+    )
+
+    with pytest.raises(
+        dataclasses.FrozenInstanceError,
+    ):
+        snapshot.digest = "b" * 64  # type: ignore[misc]

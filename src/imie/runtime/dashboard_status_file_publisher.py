@@ -112,6 +112,12 @@ class TemporaryFileValidationSnapshot:
                 "Temporary file digest must be a "
                 "64-character SHA-256 hexadecimal value."
             )
+
+        object.__setattr__(
+            self,
+            "digest",
+            self.digest.lower(),
+        )
 class DashboardStatusFilePublisher:
     """
     Maintains the latest unified runtime-dashboard payload.
