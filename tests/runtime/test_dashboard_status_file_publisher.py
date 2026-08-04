@@ -7918,7 +7918,9 @@ def test_missing_temporary_file_is_rejected_before_replace(
         publisher._validate_temporary_file(
             temporary_path,
             expected_size=0,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 
 def test_unowned_temporary_file_is_rejected_before_validation(
@@ -7951,7 +7953,9 @@ def test_unowned_temporary_file_is_rejected_before_validation(
         publisher._validate_temporary_file(
             unrelated_path,
             expected_size=0,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 
     assert unrelated_path.read_text(
@@ -7988,7 +7992,9 @@ def test_directory_temporary_path_is_rejected(
         publisher._validate_temporary_file(
             temporary_path,
             expected_size=0,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 
     assert temporary_path.is_dir()
@@ -8040,7 +8046,9 @@ def test_symlink_temporary_path_is_rejected(
         publisher._validate_temporary_file(
             temporary_path,
             expected_size=10,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 
     assert temporary_path.is_symlink()
@@ -8192,22 +8200,16 @@ def test_hard_linked_temporary_file_is_rejected(
 
     assert temporary_path.stat().st_nlink >= 2
 
-    temporary_bytes = (
-        temporary_path.read_bytes()
-    )
-
     with pytest.raises(
         ValueError,
         match="exactly one hard link",
     ):
         publisher._validate_temporary_file(
             temporary_path,
-            expected_size=len(
-                temporary_bytes
+            expected_size=10,
+            expected_digest=(
+                "a" * 64
             ),
-            expected_digest=hashlib.sha256(
-                temporary_bytes
-            ).hexdigest(),
         )
 
     assert temporary_path.read_text(
@@ -8261,7 +8263,9 @@ def test_temporary_file_with_zero_links_is_rejected(
         publisher._validate_temporary_file(
             temporary_path,
             expected_size=10,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 @pytest.mark.parametrize(
     "link_count",
@@ -8315,7 +8319,9 @@ def test_temporary_file_with_multiple_links_is_rejected(
         publisher._validate_temporary_file(
             temporary_path,
             expected_size=10,
-            expected_digest="",
+            expected_digest=(
+                "a" * 64
+            ),
         )
 
 def test_hard_link_validation_failure_preserves_existing_dashboard(
@@ -9376,3 +9382,135 @@ def test_temporary_file_validation_snapshot_uses_observed_digest(
     )
 
     assert snapshot.digest == observed_digest
+
+@pytest.mark.parametrize(
+    "expected_size",
+    [
+        True,
+        False,
+        1.0,
+        "1",
+        None,
+    ],
+)
+def test_temporary_file_validation_rejects_non_integer_expected_size(
+    tmp_path: Path,
+    expected_size: object,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="size must be an integer",
+    ):
+        publisher._validate_temporary_file_expectations(
+            expected_size=expected_size,  # type: ignore[arg-type]
+            expected_digest=(
+                "a" * 64
+            ),
+        )
+
+def test_temporary_file_validation_rejects_negative_expected_size(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must not be negative",
+    ):
+        publisher._validate_temporary_file_expectations(
+            expected_size=-1,
+            expected_digest=(
+                "a" * 64
+            ),
+        )
+
+@pytest.mark.parametrize(
+    "expected_digest",
+    [
+        None,
+        123,
+        b"a" * 64,
+        True,
+    ],
+)
+def test_temporary_file_validation_rejects_non_string_expected_digest(
+    tmp_path: Path,
+    expected_digest: object,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="digest must be a string",
+    ):
+        publisher._validate_temporary_file_expectations(
+            expected_size=10,
+            expected_digest=expected_digest,  # type: ignore[arg-type]
+        )
+
+@pytest.mark.parametrize(
+    "expected_digest",
+    [
+        "",
+        "a",
+        "a" * 63,
+        "a" * 65,
+        "z" * 64,
+    ],
+)
+def test_temporary_file_validation_rejects_invalid_expected_digest(
+    tmp_path: Path,
+    expected_digest: str,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="64-character SHA-256",
+    ):
+        publisher._validate_temporary_file_expectations(
+            expected_size=10,
+            expected_digest=expected_digest,
+        )
+
+def test_temporary_file_validation_normalizes_expected_digest(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    normalized_digest = (
+        publisher._validate_temporary_file_expectations(
+            expected_size=10,
+            expected_digest=(
+                "ABCDEF" * 10
+                + "ABCD"
+            ),
+        )
+    )
+
+    assert normalized_digest == (
+        "abcdef" * 10
+        + "abcd"
+    )
