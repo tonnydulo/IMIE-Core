@@ -78,6 +78,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_owned_temporary_path_for_destination,
     _TEMPORARY_FILE_SIZE_MISMATCH_MESSAGE,
     _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE,
+    _TEMPORARY_FILE_NOT_REGULAR_MESSAGE,
+    _TEMPORARY_FILE_HARD_LINK_MESSAGE,
 )
 
 
@@ -10616,5 +10618,24 @@ def test_temporary_file_digest_mismatch_message() -> None:
         == (
             "Dashboard temporary file digest does not "
             "match the serialized payload."
+        )
+    )
+
+def test_temporary_file_not_regular_message() -> None:
+    assert (
+        _TEMPORARY_FILE_NOT_REGULAR_MESSAGE
+        == (
+            "Dashboard temporary file must be "
+            "a regular file."
+        )
+    )
+
+
+def test_temporary_file_hard_link_message() -> None:
+    assert (
+        _TEMPORARY_FILE_HARD_LINK_MESSAGE
+        == (
+            "Dashboard temporary file must have "
+            "exactly one hard link."
         )
     )

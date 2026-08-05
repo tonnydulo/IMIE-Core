@@ -72,6 +72,16 @@ _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE = (
     "match the serialized payload."
 )
 
+_TEMPORARY_FILE_NOT_REGULAR_MESSAGE = (
+    "Dashboard temporary file must be "
+    "a regular file."
+)
+
+_TEMPORARY_FILE_HARD_LINK_MESSAGE = (
+    "Dashboard temporary file must have "
+    "exactly one hard link."
+)
+
 def _temporary_file_identity(
     status: os.stat_result,
 ) -> TemporaryFileIdentity:
@@ -2349,14 +2359,12 @@ def _validate_temporary_file_status(
         status.st_mode
     ):
         raise ValueError(
-            "Dashboard temporary file must be "
-            "a regular file."
+            _TEMPORARY_FILE_NOT_REGULAR_MESSAGE
         )
 
     if status.st_nlink != 1:
         raise ValueError(
-            "Dashboard temporary file must have "
-            "exactly one hard link."
+            _TEMPORARY_FILE_HARD_LINK_MESSAGE
         )
 
 def _validated_open_file_status(
