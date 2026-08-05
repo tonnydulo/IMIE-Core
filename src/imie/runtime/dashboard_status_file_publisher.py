@@ -1788,20 +1788,14 @@ class DashboardStatusFilePublisher:
         self,
         temporary_path: Path,
     ) -> None:
-        try:
-            destination_status = (
-                self.path.lstat()
+        destination_status = (
+            _existing_destination_status(
+                self.path
             )
+        )
 
-        except FileNotFoundError:
+        if destination_status is None:
             return
-
-        if not stat.S_ISREG(
-            destination_status.st_mode
-        ):
-            raise ValueError(
-                _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE
-            )
 
         destination_mode = stat.S_IMODE(
             destination_status.st_mode
@@ -2386,6 +2380,23 @@ def _validated_temporary_path_status(
     _validate_temporary_file_status(
         status
     )
+
+    return status
+
+def _existing_destination_status(
+    path: Path,
+) -> os.stat_result | None:
+    try:
+        status = path.lstat()
+    except FileNotFoundError:
+        return None
+
+    if not stat.S_ISREG(
+        status.st_mode
+    ):
+        raise ValueError(
+            _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE
+        )
 
     return status
 

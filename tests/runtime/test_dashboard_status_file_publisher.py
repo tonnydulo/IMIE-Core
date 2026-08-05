@@ -81,6 +81,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_FILE_NOT_REGULAR_MESSAGE,
     _TEMPORARY_FILE_HARD_LINK_MESSAGE,
     _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE,
+    _existing_destination_status,
 )
 
 
@@ -10649,3 +10650,47 @@ def test_existing_destination_not_regular_message() -> None:
             "a regular file."
         )
     )
+
+def test_existing_destination_status_returns_none_when_missing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    assert (
+        _existing_destination_status(
+            path
+        )
+        is None
+    )
+
+
+def test_existing_destination_status_returns_regular_file_status(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+
+    path.write_text(
+        "{}",
+        encoding="utf-8",
+    )
+
+    status = _existing_destination_status(
+        path
+    )
+
+    assert status is not None
+    assert stat.S_ISREG(
+        status.st_mode
+    )
+
+
+def test_existing_destination_status_rejects_non_regular_path(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="Existing dashboard destination must be a regular file",
+    ):
+        _existing_destination_status(
+            tmp_path
+        )
