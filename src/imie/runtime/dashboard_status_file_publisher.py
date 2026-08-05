@@ -42,6 +42,16 @@ type TemporaryFileFingerprint = tuple[
 
 _SHA256_READ_CHUNK_SIZE = 64 * 1024
 
+def _temporary_file_fingerprint(
+    status: os.stat_result,
+) -> TemporaryFileFingerprint:
+    return (
+        status.st_dev,
+        status.st_ino,
+        status.st_size,
+        status.st_mtime_ns,
+    )
+
 def _normalize_sha256_digest(
     value: object,
     *,
@@ -102,6 +112,7 @@ def _validate_temporary_file_identity(
             "Dashboard temporary file changed "
             "before payload validation."
         )
+
 
 def _calculate_open_file_sha256(
     file: BinaryIO,
@@ -1905,22 +1916,11 @@ class DashboardStatusFilePublisher:
 
         return TemporaryFileValidationSnapshot(
             fingerprint=(
-                self._temporary_file_fingerprint(
+                _temporary_file_fingerprint(
                     opened_status
                 )
             ),
             digest=actual_digest,
-        )
-
-    def _temporary_file_fingerprint(
-        self,
-        status: os.stat_result,
-    ) -> TemporaryFileValidationSnapshot:
-        return (
-            status.st_dev,
-            status.st_ino,
-            status.st_size,
-            status.st_mtime_ns,
         )
 
     @staticmethod
@@ -2243,7 +2243,7 @@ class DashboardStatusFilePublisher:
                     )
 
                 current_fingerprint = (
-                    self._temporary_file_fingerprint(
+                    _temporary_file_fingerprint(
                         current_status
                     )
                 )

@@ -62,6 +62,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _SHA256_READ_CHUNK_SIZE,
     _validate_temporary_file_status,
     _validate_temporary_file_identity,
+    _temporary_file_fingerprint,
 )
 
 
@@ -8881,7 +8882,7 @@ def test_final_digest_check_rejects_same_fingerprint_corruption(
     )
 
     expected_fingerprint = (
-        publisher._temporary_file_fingerprint(
+        _temporary_file_fingerprint(
             temporary_path.lstat()
         )
     )
@@ -8913,7 +8914,7 @@ def test_final_digest_check_rejects_same_fingerprint_corruption(
     )
 
     assert (
-        publisher._temporary_file_fingerprint(
+        _temporary_file_fingerprint(
             temporary_path.lstat()
         )
         == expected_fingerprint
@@ -8991,7 +8992,7 @@ def test_same_fingerprint_corruption_preserves_existing_dashboard(
         )
 
         assert (
-            publisher._temporary_file_fingerprint(
+            _temporary_file_fingerprint(
                 temporary_path.lstat()
             )
             == snapshot.fingerprint
@@ -9677,7 +9678,7 @@ def test_temporary_file_snapshot_uses_constant_time_digest_comparison(
 
     snapshot = TemporaryFileValidationSnapshot(
         fingerprint=(
-            publisher._temporary_file_fingerprint(
+            _temporary_file_fingerprint(
                 temporary_path.lstat()
             )
         ),
@@ -9952,96 +9953,6 @@ def test_temporary_file_status_rejects_multiple_links(
 def test_temporary_file_identity_accepts_same_file(
     tmp_path: Path,
 ) -> None:
-    path = (
-        tmp_path
-        / "temporary.json"
-    )
-
-    path.write_text(
-        "{}\n",
-        encoding="utf-8",
-    )
-
-    status = path.stat()
-
-    _validate_temporary_file_identity(
-        expected_status=status,
-        opened_status=status,
-    )
-
-
-def test_temporary_file_identity_rejects_changed_inode(
-    tmp_path: Path,
-) -> None:
-    first_path = (
-        tmp_path
-        / "first.json"
-    )
-    second_path = (
-        tmp_path
-        / "second.json"
-    )
-
-    first_path.write_text(
-        '{"file": 1}\n',
-        encoding="utf-8",
-    )
-    second_path.write_text(
-        '{"file": 2}\n',
-        encoding="utf-8",
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="changed before payload validation",
-    ):
-        _validate_temporary_file_identity(
-            expected_status=first_path.stat(),
-            opened_status=second_path.stat(),
-        )
-
-
-def test_temporary_file_identity_rejects_changed_device() -> None:
-    expected_status = os.stat_result(
-        (
-            stat.S_IFREG,
-            100,
-            1,
-            1,
-            0,
-            0,
-            10,
-            0,
-            0,
-            0,
-        )
-    )
-    opened_status = os.stat_result(
-        (
-            stat.S_IFREG,
-            100,
-            2,
-            1,
-            0,
-            0,
-            10,
-            0,
-            0,
-            0,
-        )
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="changed before payload validation",
-    ):
-        _validate_temporary_file_identity(
-            expected_status=expected_status,
-            opened_status=opened_status,
-        )
-def test_temporary_file_identity_accepts_same_file(
-    tmp_path: Path,
-) -> None:
     path = tmp_path / "temporary.json"
 
     path.write_text(
@@ -10120,3 +10031,51 @@ def test_temporary_file_identity_rejects_changed_device() -> None:
             expected_status=expected_status,
             opened_status=opened_status,
         )
+
+def test_temporary_file_fingerprint_contains_expected_status_values(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    status = path.stat()
+
+    assert _temporary_file_fingerprint(
+        status
+    ) == (
+        status.st_dev,
+        status.st_ino,
+        status.st_size,
+        status.st_mtime_ns,
+    )
+
+
+def test_temporary_file_fingerprint_changes_when_size_changes(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"a"
+    )
+
+    first_fingerprint = _temporary_file_fingerprint(
+        path.stat()
+    )
+
+    path.write_bytes(
+        b"longer"
+    )
+
+    second_fingerprint = _temporary_file_fingerprint(
+        path.stat()
+    )
+
+    assert second_fingerprint != first_fingerprint
+    assert second_fingerprint[2] == len(
+        b"longer"
+    )
