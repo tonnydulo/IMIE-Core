@@ -2329,4 +2329,3 @@ def _is_owned_temporary_path(
             for character in token
         )
     )
-
