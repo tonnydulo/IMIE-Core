@@ -2325,13 +2325,13 @@ class DashboardStatusFilePublisher:
                 _TEMPORARY_FILE_DISAPPEARED_MESSAGE
             ) from error
 
-        if not hmac.compare_digest(
-            current_digest,
-            expected_snapshot.digest,
-        ):
-            raise ValueError(
+        _validate_sha256_digest_match(
+            actual_digest=current_digest,
+            expected_digest=expected_snapshot.digest,
+            error_message=(
                 _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
-            )
+            ),
+        )
 
 def _validate_temporary_file_status(
     status: os.stat_result,
