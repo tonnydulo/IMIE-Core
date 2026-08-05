@@ -75,6 +75,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE,
     _validated_temporary_path_status,
     _open_temporary_file,
+    _validate_owned_temporary_path_for_destination,
 )
 
 
@@ -10561,4 +10562,38 @@ def test_open_temporary_file_rejects_missing_file(
     ):
         _open_temporary_file(
             path
+        )
+
+def test_validate_owned_temporary_path_accepts_owned_path(
+    tmp_path: Path,
+) -> None:
+    destination_path = tmp_path / "dashboard.json"
+
+    temporary_path = tmp_path / (
+        ".dashboard.json."
+        f"{VALID_TEMP_TOKEN_1}"
+        ".tmp"
+    )
+
+    _validate_owned_temporary_path_for_destination(
+        path=temporary_path,
+        destination_path=destination_path,
+        error_message="Temporary path is invalid.",
+    )
+
+
+def test_validate_owned_temporary_path_rejects_unowned_path(
+    tmp_path: Path,
+) -> None:
+    destination_path = tmp_path / "dashboard.json"
+    temporary_path = tmp_path / "unowned.tmp"
+
+    with pytest.raises(
+        ValueError,
+        match="Temporary path is invalid",
+    ):
+        _validate_owned_temporary_path_for_destination(
+            path=temporary_path,
+            destination_path=destination_path,
+            error_message="Temporary path is invalid.",
         )

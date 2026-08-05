@@ -1921,19 +1921,32 @@ class DashboardStatusFilePublisher:
             destination_path=self.path,
         )
 
+    def _validate_owned_temporary_path(
+        self,
+        path: Path,
+        *,
+        error_message: str,
+    ) -> None:
+        _validate_owned_temporary_path_for_destination(
+            path=path,
+            destination_path=self.path,
+            error_message=error_message,
+        )
+
+
     def _validate_temporary_file(
         self,
         temporary_path: Path,
         *,
         expectations: TemporaryFileExpectations,
     ) -> TemporaryFileValidationSnapshot:
-        if not self._is_owned_temporary_path(
-            temporary_path
-        ):
-            raise ValueError(
+        self._validate_owned_temporary_path(
+            temporary_path,
+            error_message=(
                 "Dashboard temporary file path is not owned "
                 "by this publisher."
-            )
+            ),
+        )
 
         temporary_status = (
             _validated_temporary_path_status(
@@ -2067,13 +2080,13 @@ class DashboardStatusFilePublisher:
                 self._build_temporary_path()
             )
 
-            if not self._is_owned_temporary_path(
-                temporary_path
-            ):
-                raise ValueError(
+            self._validate_owned_temporary_path(
+                temporary_path,
+                error_message=(
                     "Generated temporary path is not owned by "
                     "this dashboard publisher."
-                )
+                ),
+            )
 
             try:
                 with temporary_path.open(
@@ -2142,13 +2155,13 @@ class DashboardStatusFilePublisher:
         *,
         suppress_errors: bool,
     ) -> None:
-        if not self._is_owned_temporary_path(
-            temporary_path
-        ):
-            raise ValueError(
+        self._validate_owned_temporary_path(
+            temporary_path,
+            error_message=(
                 "temporary_path is not owned by this "
                 "dashboard publisher."
-            )
+            ),
+        )
 
         try:
             temporary_path.unlink(
@@ -2369,6 +2382,20 @@ def _open_temporary_file(
         raise FileNotFoundError(
             _TEMPORARY_FILE_DISAPPEARED_MESSAGE
         ) from error
+
+def _validate_owned_temporary_path_for_destination(
+    *,
+    path: Path,
+    destination_path: Path,
+    error_message: str,
+) -> None:
+    if not _is_owned_temporary_path(
+        path=path,
+        destination_path=destination_path,
+    ):
+        raise ValueError(
+            error_message
+        )
 
 def _is_owned_temporary_path(
     *,
