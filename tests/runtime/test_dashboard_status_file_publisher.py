@@ -65,6 +65,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _temporary_file_fingerprint,
     _is_owned_temporary_path,
     _validated_open_file_status,
+    _validate_temporary_file_fingerprint,
 )
 
 
@@ -10188,4 +10189,55 @@ def test_validated_open_file_status_rejects_invalid_status(
     ):
         _validated_open_file_status(
             FakeBinaryFile()  # type: ignore[arg-type]
+        )
+
+def test_temporary_file_fingerprint_validation_accepts_match(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    status = path.stat()
+
+    _validate_temporary_file_fingerprint(
+        status=status,
+        expected_fingerprint=(
+            _temporary_file_fingerprint(
+                status
+            )
+        ),
+    )
+
+def test_temporary_file_fingerprint_validation_rejects_change(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"a"
+    )
+
+    expected_fingerprint = (
+        _temporary_file_fingerprint(
+            path.stat()
+        )
+    )
+
+    path.write_bytes(
+        b"longer"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="changed after payload validation",
+    ):
+        _validate_temporary_file_fingerprint(
+            status=path.stat(),
+            expected_fingerprint=(
+                expected_fingerprint
+            ),
         )

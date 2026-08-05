@@ -63,6 +63,21 @@ def _temporary_file_fingerprint(
         status.st_mtime_ns,
     )
 
+def _validate_temporary_file_fingerprint(
+    *,
+    status: os.stat_result,
+    expected_fingerprint: TemporaryFileFingerprint,
+) -> None:
+    current_fingerprint = (
+        _temporary_file_fingerprint(
+            status
+        )
+    )
+
+    if current_fingerprint != expected_fingerprint:
+        raise ValueError(
+            _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
+        )
 
 def _normalize_sha256_digest(
     value: object,
@@ -2217,19 +2232,12 @@ class DashboardStatusFilePublisher:
                     )
                 )
 
-                current_fingerprint = (
-                    _temporary_file_fingerprint(
-                        current_status
-                    )
+                _validate_temporary_file_fingerprint(
+                    status=current_status,
+                    expected_fingerprint=(
+                        expected_snapshot.fingerprint
+                    ),
                 )
-
-                if (
-                    current_fingerprint
-                    != expected_snapshot.fingerprint
-                ):
-                    raise ValueError(
-                        _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
-                    )
 
                 current_digest = (
                     _calculate_open_file_sha256(
