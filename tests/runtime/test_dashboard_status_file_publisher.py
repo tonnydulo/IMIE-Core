@@ -72,6 +72,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _temporary_file_identity,
     _normalize_non_negative_int,
     _normalize_temporary_file_fingerprint,
+    _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE,
 )
 
 
@@ -10488,3 +10489,12 @@ def test_normalize_temporary_file_fingerprint_rejects_negative_value() -> None:
                 4,
             )
         )
+
+def test_temporary_file_changed_before_validation_message() -> None:
+    assert (
+        _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE
+        == (
+            "Dashboard temporary file changed "
+            "before payload validation."
+        )
+    )

@@ -57,6 +57,11 @@ _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE = (
     "after payload validation."
 )
 
+_TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE = (
+    "Dashboard temporary file changed "
+    "before payload validation."
+)
+
 def _temporary_file_identity(
     status: os.stat_result,
 ) -> TemporaryFileIdentity:
@@ -217,8 +222,7 @@ def _validate_temporary_file_identity(
 
     if opened_identity != expected_identity:
         raise ValueError(
-            "Dashboard temporary file changed "
-            "before payload validation."
+            _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE
         )
 
 
