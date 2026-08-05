@@ -141,6 +141,17 @@ def _validate_temporary_file_identity(
             "before payload validation."
         )
 
+def _validate_temporary_file_size(
+    *,
+    status: os.stat_result,
+    expected_size: int,
+) -> None:
+    if status.st_size != expected_size:
+        raise ValueError(
+            "Dashboard temporary file size does not "
+            "match the serialized payload."
+        )
+
 
 def _calculate_open_file_sha256(
     file: BinaryIO,
@@ -160,6 +171,7 @@ def _calculate_open_file_sha256(
         )
 
     return digest.hexdigest()
+
 
 def _validate_sha256_digest_match(
     *,
@@ -1901,14 +1913,10 @@ class DashboardStatusFilePublisher:
                     opened_status=opened_status,
                 )
 
-                if (
-                    opened_status.st_size
-                    != expectations.size
-                ):
-                    raise ValueError(
-                        "Dashboard temporary file size does not "
-                        "match the serialized payload."
-                    )
+                _validate_temporary_file_size(
+                    status=opened_status,
+                    expected_size=expectations.size,
+                )
 
                 actual_digest = (
                     _calculate_open_file_sha256(

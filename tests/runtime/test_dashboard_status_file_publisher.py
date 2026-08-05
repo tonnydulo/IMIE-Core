@@ -67,6 +67,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validated_open_file_status,
     _validate_temporary_file_fingerprint,
     _validate_sha256_digest_match,
+    _validate_temporary_file_size,
 )
 
 
@@ -10271,4 +10272,39 @@ def test_sha256_digest_match_rejects_different_digests() -> None:
             actual_digest=actual_digest,
             expected_digest=expected_digest,
             error_message="Digest mismatch.",
+        )
+
+def test_temporary_file_size_validation_accepts_matching_size(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"dashboard"
+    )
+
+    status = path.stat()
+
+    _validate_temporary_file_size(
+        status=status,
+        expected_size=status.st_size,
+    )
+
+
+def test_temporary_file_size_validation_rejects_mismatch(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"dashboard"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="size does not match the serialized payload",
+    ):
+        _validate_temporary_file_size(
+            status=path.stat(),
+            expected_size=1,
         )
