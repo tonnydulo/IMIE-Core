@@ -1836,7 +1836,6 @@ class DashboardStatusFilePublisher:
                 for character in token
             )
         )
-
     def _validate_temporary_file(
         self,
         temporary_path: Path,
@@ -2228,19 +2227,9 @@ class DashboardStatusFilePublisher:
                     temporary_file.fileno()
                 )
 
-                if not stat.S_ISREG(
-                    current_status.st_mode
-                ):
-                    raise ValueError(
-                        "Dashboard temporary file must be "
-                        "a regular file."
-                    )
-
-                if current_status.st_nlink != 1:
-                    raise ValueError(
-                        "Dashboard temporary file must have "
-                        "exactly one hard link."
-                    )
+                _validate_temporary_file_status(
+                    current_status
+                )
 
                 current_fingerprint = (
                     _temporary_file_fingerprint(
