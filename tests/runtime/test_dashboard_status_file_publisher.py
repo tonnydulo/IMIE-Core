@@ -70,6 +70,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_temporary_file_size,
     TemporaryFileIdentity,
     _temporary_file_identity,
+    _normalize_non_negative_int,
 )
 
 
@@ -10353,3 +10354,50 @@ def test_temporary_file_fingerprint_starts_with_identity(
     )
 
     assert fingerprint[:2] == identity
+
+def test_normalize_non_negative_int_accepts_zero() -> None:
+    assert _normalize_non_negative_int(
+        0,
+        field_name="Value",
+    ) == 0
+
+
+def test_normalize_non_negative_int_accepts_positive_value() -> None:
+    assert _normalize_non_negative_int(
+        42,
+        field_name="Value",
+    ) == 42
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        True,
+        False,
+        1.5,
+        "1",
+        None,
+    ],
+)
+def test_normalize_non_negative_int_rejects_non_integer(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="Value must be an integer",
+    ):
+        _normalize_non_negative_int(
+            value,
+            field_name="Value",
+        )
+
+
+def test_normalize_non_negative_int_rejects_negative_value() -> None:
+    with pytest.raises(
+        ValueError,
+        match="Value must not be negative",
+    ):
+        _normalize_non_negative_int(
+            -1,
+            field_name="Value",
+        )

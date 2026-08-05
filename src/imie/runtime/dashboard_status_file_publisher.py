@@ -137,6 +137,26 @@ def _normalize_sha256_digest(
 
     return normalized_digest
 
+def _normalize_non_negative_int(
+    value: object,
+    *,
+    field_name: str,
+) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+    ):
+        raise TypeError(
+            f"{field_name} must be an integer."
+        )
+
+    if value < 0:
+        raise ValueError(
+            f"{field_name} must not be negative."
+        )
+
+    return value
+
 
 def _validate_temporary_file_identity(
     *,
@@ -277,20 +297,16 @@ class TemporaryFileExpectations:
     def __post_init__(
         self,
     ) -> None:
-        if (
-            not isinstance(self.size, int)
-            or isinstance(self.size, bool)
-        ):
-            raise TypeError(
-                "Expected temporary file size must be "
-                "an integer."
-            )
-
-        if self.size < 0:
-            raise ValueError(
-                "Expected temporary file size must not "
-                "be negative."
-            )
+        object.__setattr__(
+            self,
+            "size",
+            _normalize_non_negative_int(
+                self.size,
+                field_name=(
+                    "Expected temporary file size"
+                ),
+            ),
+        )
 
         object.__setattr__(
             self,
