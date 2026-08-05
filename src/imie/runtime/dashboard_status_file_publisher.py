@@ -1921,7 +1921,6 @@ class DashboardStatusFilePublisher:
             destination_path=self.path,
         )
 
-
     def _validate_temporary_file(
         self,
         temporary_path: Path,
@@ -1936,17 +1935,10 @@ class DashboardStatusFilePublisher:
                 "by this publisher."
             )
 
-        try:
-            temporary_status = (
-                temporary_path.lstat()
+        temporary_status = (
+            _validated_temporary_path_status(
+                temporary_path
             )
-        except FileNotFoundError as error:
-            raise FileNotFoundError(
-                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
-            ) from error
-
-        _validate_temporary_file_status(
-            temporary_status
         )
 
         try:
@@ -1999,6 +1991,7 @@ class DashboardStatusFilePublisher:
             ),
             digest=actual_digest,
         )
+
 
     @staticmethod
     def _directory_open_flags(
@@ -2356,6 +2349,22 @@ def _validated_open_file_status(
     status = os.fstat(
         file.fileno()
     )
+
+    _validate_temporary_file_status(
+        status
+    )
+
+    return status
+
+def _validated_temporary_path_status(
+    path: Path,
+) -> os.stat_result:
+    try:
+        status = path.lstat()
+    except FileNotFoundError as error:
+        raise FileNotFoundError(
+            _TEMPORARY_FILE_DISAPPEARED_MESSAGE
+        ) from error
 
     _validate_temporary_file_status(
         status
