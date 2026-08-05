@@ -33,6 +33,11 @@ from imie.runtime.runtime_health_summary import (
     RuntimeHealthSummary,
 )
 
+type TemporaryFileIdentity = tuple[
+    int,
+    int,
+]
+
 type TemporaryFileFingerprint = tuple[
     int,
     int,
@@ -52,16 +57,28 @@ _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE = (
     "after payload validation."
 )
 
+def _temporary_file_identity(
+    status: os.stat_result,
+) -> TemporaryFileIdentity:
+    return (
+        status.st_dev,
+        status.st_ino,
+    )
+
 
 def _temporary_file_fingerprint(
     status: os.stat_result,
 ) -> TemporaryFileFingerprint:
+    identity = _temporary_file_identity(
+        status
+    )
+
     return (
-        status.st_dev,
-        status.st_ino,
+        *identity,
         status.st_size,
         status.st_mtime_ns,
     )
+
 
 def _validate_temporary_file_fingerprint(
     *,
@@ -127,12 +144,14 @@ def _validate_temporary_file_identity(
     opened_status: os.stat_result,
 ) -> None:
     expected_identity = (
-        expected_status.st_dev,
-        expected_status.st_ino,
+        _temporary_file_identity(
+            expected_status
+        )
     )
     opened_identity = (
-        opened_status.st_dev,
-        opened_status.st_ino,
+        _temporary_file_identity(
+            opened_status
+        )
     )
 
     if opened_identity != expected_identity:
@@ -140,6 +159,7 @@ def _validate_temporary_file_identity(
             "Dashboard temporary file changed "
             "before payload validation."
         )
+
 
 def _validate_temporary_file_size(
     *,

@@ -68,6 +68,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_temporary_file_fingerprint,
     _validate_sha256_digest_match,
     _validate_temporary_file_size,
+    TemporaryFileIdentity,
+    _temporary_file_identity,
 )
 
 
@@ -10308,3 +10310,46 @@ def test_temporary_file_size_validation_rejects_mismatch(
             status=path.stat(),
             expected_size=1,
         )
+
+def test_temporary_file_identity_contains_device_and_inode(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"dashboard"
+    )
+
+    status = path.stat()
+
+    identity = _temporary_file_identity(
+        status
+    )
+
+    assert identity == (
+        status.st_dev,
+        status.st_ino,
+    )
+
+
+def test_temporary_file_fingerprint_starts_with_identity(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"dashboard"
+    )
+
+    status = path.stat()
+
+    identity = _temporary_file_identity(
+        status
+    )
+    fingerprint = (
+        _temporary_file_fingerprint(
+            status
+        )
+    )
+
+    assert fingerprint[:2] == identity
