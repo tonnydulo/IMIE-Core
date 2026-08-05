@@ -41,6 +41,10 @@ type TemporaryFileFingerprint = tuple[
 ]
 
 _SHA256_READ_CHUNK_SIZE = 64 * 1024
+_TEMPORARY_FILE_DISAPPEARED_MESSAGE = (
+    "Dashboard temporary file disappeared "
+    "before publication."
+)
 
 def _temporary_file_fingerprint(
     status: os.stat_result,
@@ -1803,6 +1807,7 @@ class DashboardStatusFilePublisher:
             self._sync_parent_directory()
             return
 
+
     def _is_owned_temporary_path(
         self,
         path: Path,
@@ -1836,6 +1841,8 @@ class DashboardStatusFilePublisher:
                 for character in token
             )
         )
+
+
     def _validate_temporary_file(
         self,
         temporary_path: Path,
@@ -1856,8 +1863,7 @@ class DashboardStatusFilePublisher:
             )
         except FileNotFoundError as error:
             raise FileNotFoundError(
-                "Dashboard temporary file disappeared "
-                "before publication."
+                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
             ) from error
 
         _validate_temporary_file_status(
@@ -1900,8 +1906,7 @@ class DashboardStatusFilePublisher:
 
         except FileNotFoundError as error:
             raise FileNotFoundError(
-                "Dashboard temporary file disappeared "
-                "before publication."
+                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
             ) from error
 
         if not hmac.compare_digest(
@@ -2254,8 +2259,7 @@ class DashboardStatusFilePublisher:
 
         except FileNotFoundError as error:
             raise FileNotFoundError(
-                "Dashboard temporary file disappeared "
-                "before publication."
+                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
             ) from error
 
         if not hmac.compare_digest(
