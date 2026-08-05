@@ -41,10 +41,17 @@ type TemporaryFileFingerprint = tuple[
 ]
 
 _SHA256_READ_CHUNK_SIZE = 64 * 1024
+
 _TEMPORARY_FILE_DISAPPEARED_MESSAGE = (
     "Dashboard temporary file disappeared "
     "before publication."
 )
+
+_TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE = (
+    "Dashboard temporary file changed "
+    "after payload validation."
+)
+
 
 def _temporary_file_fingerprint(
     status: os.stat_result,
@@ -2247,8 +2254,7 @@ class DashboardStatusFilePublisher:
                     != expected_snapshot.fingerprint
                 ):
                     raise ValueError(
-                        "Dashboard temporary file changed "
-                        "after payload validation."
+                        _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
                     )
 
                 current_digest = (
@@ -2267,8 +2273,7 @@ class DashboardStatusFilePublisher:
             expected_snapshot.digest,
         ):
             raise ValueError(
-                "Dashboard temporary file changed "
-                "after payload validation."
+                _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
             )
 
 def _validate_temporary_file_status(
