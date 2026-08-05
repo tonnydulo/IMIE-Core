@@ -62,6 +62,16 @@ _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE = (
     "before payload validation."
 )
 
+_TEMPORARY_FILE_SIZE_MISMATCH_MESSAGE = (
+    "Dashboard temporary file size does not "
+    "match the serialized payload."
+)
+
+_TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE = (
+    "Dashboard temporary file digest does not "
+    "match the serialized payload."
+)
+
 def _temporary_file_identity(
     status: os.stat_result,
 ) -> TemporaryFileIdentity:
@@ -235,6 +245,16 @@ def _validate_temporary_file_size(
         raise ValueError(
             "Dashboard temporary file size does not "
             "match the serialized payload."
+        )
+
+def _validate_temporary_file_size(
+    *,
+    status: os.stat_result,
+    expected_size: int,
+) -> None:
+    if status.st_size != expected_size:
+        raise ValueError(
+            _TEMPORARY_FILE_SIZE_MISMATCH_MESSAGE
         )
 
 
@@ -1983,8 +2003,7 @@ class DashboardStatusFilePublisher:
             actual_digest=actual_digest,
             expected_digest=expectations.digest,
             error_message=(
-                "Dashboard temporary file digest does not "
-                "match the serialized payload."
+                _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE
             ),
         )
 

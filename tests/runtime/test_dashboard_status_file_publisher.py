@@ -76,6 +76,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validated_temporary_path_status,
     _open_temporary_file,
     _validate_owned_temporary_path_for_destination,
+    _TEMPORARY_FILE_SIZE_MISMATCH_MESSAGE,
+    _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE,
 )
 
 
@@ -10597,3 +10599,22 @@ def test_validate_owned_temporary_path_rejects_unowned_path(
             destination_path=destination_path,
             error_message="Temporary path is invalid.",
         )
+
+def test_temporary_file_size_mismatch_message() -> None:
+    assert (
+        _TEMPORARY_FILE_SIZE_MISMATCH_MESSAGE
+        == (
+            "Dashboard temporary file size does not "
+            "match the serialized payload."
+        )
+    )
+
+
+def test_temporary_file_digest_mismatch_message() -> None:
+    assert (
+        _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE
+        == (
+            "Dashboard temporary file digest does not "
+            "match the serialized payload."
+        )
+    )
