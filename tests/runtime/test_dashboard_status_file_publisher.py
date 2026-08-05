@@ -82,6 +82,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_FILE_HARD_LINK_MESSAGE,
     _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE,
     _GENERATED_TEMPORARY_PATH_NOT_OWNED_MESSAGE,
+    _TEMPORARY_FILE_PATH_NOT_OWNED_MESSAGE,
     _existing_destination_status,
     _is_final_attempt,
 )
@@ -10507,6 +10508,15 @@ def test_temporary_file_changed_before_validation_message() -> None:
         == (
             "Dashboard temporary file changed "
             "before payload validation."
+        )
+    )
+
+def test_temporary_file_path_not_owned_message() -> None:
+    assert (
+        _TEMPORARY_FILE_PATH_NOT_OWNED_MESSAGE
+        == (
+            "Dashboard temporary file path is not owned "
+            "by this publisher."
         )
     )
 
