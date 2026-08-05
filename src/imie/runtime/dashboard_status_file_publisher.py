@@ -1941,38 +1941,30 @@ class DashboardStatusFilePublisher:
             )
         )
 
-        try:
-            with open(
-                temporary_path,
-                "rb",
-                buffering=0,
-            ) as temporary_file:
-                opened_status = (
-                    _validated_open_file_status(
-                        temporary_file
-                    )
+        with _open_temporary_file(
+            temporary_path
+        ) as temporary_file:
+            opened_status = (
+                _validated_open_file_status(
+                    temporary_file
                 )
+            )
 
-                _validate_temporary_file_identity(
-                    expected_status=temporary_status,
-                    opened_status=opened_status,
+            _validate_temporary_file_identity(
+                expected_status=temporary_status,
+                opened_status=opened_status,
+            )
+
+            _validate_temporary_file_size(
+                status=opened_status,
+                expected_size=expectations.size,
+            )
+
+            actual_digest = (
+                _calculate_open_file_sha256(
+                    temporary_file
                 )
-
-                _validate_temporary_file_size(
-                    status=opened_status,
-                    expected_size=expectations.size,
-                )
-
-                actual_digest = (
-                    _calculate_open_file_sha256(
-                        temporary_file
-                    )
-                )
-
-        except FileNotFoundError as error:
-            raise FileNotFoundError(
-                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
-            ) from error
+            )
 
         _validate_sha256_digest_match(
             actual_digest=actual_digest,
@@ -2288,35 +2280,27 @@ class DashboardStatusFilePublisher:
         *,
         expected_snapshot: TemporaryFileValidationSnapshot,
     ) -> None:
-        try:
-            with open(
-                temporary_path,
-                "rb",
-                buffering=0,
-            ) as temporary_file:
-                current_status = (
-                    _validated_open_file_status(
-                        temporary_file
-                    )
+        with _open_temporary_file(
+            temporary_path
+        ) as temporary_file:
+            current_status = (
+                _validated_open_file_status(
+                    temporary_file
                 )
+            )
 
-                _validate_temporary_file_fingerprint(
-                    status=current_status,
-                    expected_fingerprint=(
-                        expected_snapshot.fingerprint
-                    ),
+            _validate_temporary_file_fingerprint(
+                status=current_status,
+                expected_fingerprint=(
+                    expected_snapshot.fingerprint
+                ),
+            )
+
+            current_digest = (
+                _calculate_open_file_sha256(
+                    temporary_file
                 )
-
-                current_digest = (
-                    _calculate_open_file_sha256(
-                        temporary_file
-                    )
-                )
-
-        except FileNotFoundError as error:
-            raise FileNotFoundError(
-                _TEMPORARY_FILE_DISAPPEARED_MESSAGE
-            ) from error
+            )
 
         _validate_sha256_digest_match(
             actual_digest=current_digest,
@@ -2371,6 +2355,20 @@ def _validated_temporary_path_status(
     )
 
     return status
+
+def _open_temporary_file(
+    path: Path,
+) -> BinaryIO:
+    try:
+        return open(
+            path,
+            "rb",
+            buffering=0,
+        )
+    except FileNotFoundError as error:
+        raise FileNotFoundError(
+            _TEMPORARY_FILE_DISAPPEARED_MESSAGE
+        ) from error
 
 def _is_owned_temporary_path(
     *,

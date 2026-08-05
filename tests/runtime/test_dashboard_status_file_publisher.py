@@ -74,6 +74,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_temporary_file_fingerprint,
     _TEMPORARY_FILE_CHANGED_BEFORE_VALIDATION_MESSAGE,
     _validated_temporary_path_status,
+    _open_temporary_file,
 )
 
 
@@ -10531,5 +10532,33 @@ def test_validated_temporary_path_status_rejects_missing_file(
         match="disappeared before publication",
     ):
         _validated_temporary_path_status(
+            path
+        )
+
+def test_open_temporary_file_opens_existing_file(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_bytes(
+        b"dashboard"
+    )
+
+    with _open_temporary_file(
+        path
+    ) as temporary_file:
+        assert temporary_file.read() == b"dashboard"
+
+
+def test_open_temporary_file_rejects_missing_file(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "missing.json"
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="disappeared before publication",
+    ):
+        _open_temporary_file(
             path
         )
