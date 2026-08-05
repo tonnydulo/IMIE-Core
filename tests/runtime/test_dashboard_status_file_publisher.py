@@ -64,6 +64,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_temporary_file_identity,
     _temporary_file_fingerprint,
     _is_owned_temporary_path,
+    _validated_open_file_status,
 )
 
 
@@ -10124,3 +10125,67 @@ def test_owned_temporary_path_helper_rejects_other_directory(
         path=temporary_path,
         destination_path=destination_path,
     ) is False
+
+def test_validated_open_file_status_returns_regular_file_status(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "temporary.json"
+
+    path.write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    expected_size = len(
+        path.read_bytes()
+    )
+
+    with open(
+        path,
+        "rb",
+        buffering=0,
+    ) as file:
+        status = _validated_open_file_status(
+            file
+        )
+
+    assert stat.S_ISREG(
+        status.st_mode
+    )
+    assert status.st_size == expected_size
+
+
+def test_validated_open_file_status_rejects_invalid_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeBinaryFile:
+        @staticmethod
+        def fileno() -> int:
+            return 123
+
+    monkeypatch.setattr(
+        os,
+        "fstat",
+        lambda descriptor: os.stat_result(
+            (
+                stat.S_IFDIR,
+                1,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            )
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="must be a regular file",
+    ):
+        _validated_open_file_status(
+            FakeBinaryFile()  # type: ignore[arg-type]
+        )

@@ -1827,30 +1827,6 @@ class DashboardStatusFilePublisher:
             destination_path=self.path,
         )
 
-        if (
-            path.parent != self.path.parent
-            or path == self.path
-            or not path.name.startswith(
-                prefix
-            )
-            or not path.name.endswith(
-                suffix
-            )
-        ):
-            return False
-
-        token = path.name[
-            len(prefix):
-            -len(suffix)
-        ]
-
-        return (
-            len(token) == 32
-            and all(
-                character in "0123456789abcdef"
-                for character in token
-            )
-        )
 
     def _validate_temporary_file(
         self,
@@ -1885,17 +1861,15 @@ class DashboardStatusFilePublisher:
                 "rb",
                 buffering=0,
             ) as temporary_file:
-                opened_status = os.fstat(
-                    temporary_file.fileno()
+                opened_status = (
+                    _validated_open_file_status(
+                        temporary_file
+                    )
                 )
 
                 _validate_temporary_file_identity(
                     expected_status=temporary_status,
                     opened_status=opened_status,
-                )
-
-                _validate_temporary_file_status(
-                    opened_status
                 )
 
                 if (
@@ -2237,12 +2211,10 @@ class DashboardStatusFilePublisher:
                 "rb",
                 buffering=0,
             ) as temporary_file:
-                current_status = os.fstat(
-                    temporary_file.fileno()
-                )
-
-                _validate_temporary_file_status(
-                    current_status
+                current_status = (
+                    _validated_open_file_status(
+                        temporary_file
+                    )
                 )
 
                 current_fingerprint = (
@@ -2294,6 +2266,19 @@ def _validate_temporary_file_status(
             "Dashboard temporary file must have "
             "exactly one hard link."
         )
+
+def _validated_open_file_status(
+    file: BinaryIO,
+) -> os.stat_result:
+    status = os.fstat(
+        file.fileno()
+    )
+
+    _validate_temporary_file_status(
+        status
+    )
+
+    return status
 
 def _is_owned_temporary_path(
     *,
