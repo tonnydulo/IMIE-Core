@@ -82,6 +82,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_FILE_HARD_LINK_MESSAGE,
     _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE,
     _existing_destination_status,
+    _is_final_attempt,
 )
 
 
@@ -10694,3 +10695,29 @@ def test_existing_destination_status_rejects_non_regular_path(
         _existing_destination_status(
             tmp_path
         )
+
+@pytest.mark.parametrize(
+    (
+        "attempt",
+        "maximum_attempts",
+        "expected",
+    ),
+    [
+        (1, 3, False),
+        (2, 3, False),
+        (3, 3, True),
+        (4, 3, True),
+    ],
+)
+def test_is_final_attempt(
+    attempt: int,
+    maximum_attempts: int,
+    expected: bool,
+) -> None:
+    assert (
+        _is_final_attempt(
+            attempt=attempt,
+            maximum_attempts=maximum_attempts,
+        )
+        is expected
+    )

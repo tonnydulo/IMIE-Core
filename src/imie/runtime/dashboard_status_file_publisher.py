@@ -1913,9 +1913,11 @@ class DashboardStatusFilePublisher:
                 ):
                     raise
 
-                if (
-                    attempt
-                    >= self._REPLACE_MAX_ATTEMPTS
+                if _is_final_attempt(
+                    attempt=attempt,
+                    maximum_attempts=(
+                        self._REPLACE_MAX_ATTEMPTS
+                    ),
                 ):
                     raise
 
@@ -2119,9 +2121,11 @@ class DashboardStatusFilePublisher:
                     )
 
             except FileExistsError:
-                if (
-                    attempt
-                    >= self._TEMPORARY_PATH_MAX_ATTEMPTS
+                if _is_final_attempt(
+                    attempt=attempt,
+                    maximum_attempts=(
+                        self._TEMPORARY_PATH_MAX_ATTEMPTS
+                    ),
                 ):
                     raise
 
@@ -2399,6 +2403,13 @@ def _existing_destination_status(
         )
 
     return status
+
+def _is_final_attempt(
+    *,
+    attempt: int,
+    maximum_attempts: int,
+) -> bool:
+    return attempt >= maximum_attempts
 
 def _open_temporary_file(
     path: Path,
