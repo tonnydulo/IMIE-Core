@@ -63,6 +63,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_temporary_file_status,
     _validate_temporary_file_identity,
     _temporary_file_fingerprint,
+    _is_owned_temporary_path,
 )
 
 
@@ -10079,3 +10080,47 @@ def test_temporary_file_fingerprint_changes_when_size_changes(
     assert second_fingerprint[2] == len(
         b"longer"
     )
+
+def test_owned_temporary_path_helper_accepts_valid_path(
+    tmp_path: Path,
+) -> None:
+    destination_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / (
+            ".dashboard.json."
+            "0123456789abcdef0123456789abcdef"
+            ".tmp"
+        )
+    )
+
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=destination_path,
+    ) is True
+
+
+def test_owned_temporary_path_helper_rejects_other_directory(
+    tmp_path: Path,
+) -> None:
+    destination_path = (
+        tmp_path
+        / "dashboard.json"
+    )
+    temporary_path = (
+        tmp_path
+        / "other"
+        / (
+            ".dashboard.json."
+            "0123456789abcdef0123456789abcdef"
+            ".tmp"
+        )
+    )
+
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=destination_path,
+    ) is False

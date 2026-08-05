@@ -63,6 +63,7 @@ def _temporary_file_fingerprint(
         status.st_mtime_ns,
     )
 
+
 def _normalize_sha256_digest(
     value: object,
     *,
@@ -104,6 +105,7 @@ def _normalize_sha256_digest(
 
     return normalized_digest
 
+
 def _validate_temporary_file_identity(
     *,
     expected_status: os.stat_result,
@@ -143,6 +145,7 @@ def _calculate_open_file_sha256(
         )
 
     return digest.hexdigest()
+
 
 @dataclass(
     frozen=True,
@@ -1819,10 +1822,10 @@ class DashboardStatusFilePublisher:
         self,
         path: Path,
     ) -> bool:
-        prefix = (
-            f".{self.path.name}."
+        return _is_owned_temporary_path(
+            path=path,
+            destination_path=self.path,
         )
-        suffix = ".tmp"
 
         if (
             path.parent != self.path.parent
@@ -1848,7 +1851,6 @@ class DashboardStatusFilePublisher:
                 for character in token
             )
         )
-
 
     def _validate_temporary_file(
         self,
@@ -2292,3 +2294,39 @@ def _validate_temporary_file_status(
             "Dashboard temporary file must have "
             "exactly one hard link."
         )
+
+def _is_owned_temporary_path(
+    *,
+    path: Path,
+    destination_path: Path,
+) -> bool:
+    prefix = (
+        f".{destination_path.name}."
+    )
+    suffix = ".tmp"
+
+    if (
+        path.parent != destination_path.parent
+        or path == destination_path
+        or not path.name.startswith(
+            prefix
+        )
+        or not path.name.endswith(
+            suffix
+        )
+    ):
+        return False
+
+    token = path.name[
+        len(prefix):
+        -len(suffix)
+    ]
+
+    return (
+        len(token) == 32
+        and all(
+            character in "0123456789abcdef"
+            for character in token
+        )
+    )
+
