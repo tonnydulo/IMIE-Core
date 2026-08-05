@@ -66,6 +66,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _is_owned_temporary_path,
     _validated_open_file_status,
     _validate_temporary_file_fingerprint,
+    _validate_sha256_digest_match,
 )
 
 
@@ -10240,4 +10241,34 @@ def test_temporary_file_fingerprint_validation_rejects_change(
             expected_fingerprint=(
                 expected_fingerprint
             ),
+        )
+
+def test_sha256_digest_match_accepts_equal_digests() -> None:
+    digest = hashlib.sha256(
+        b"dashboard"
+    ).hexdigest()
+
+    _validate_sha256_digest_match(
+        actual_digest=digest,
+        expected_digest=digest,
+        error_message="Digest mismatch.",
+    )
+
+
+def test_sha256_digest_match_rejects_different_digests() -> None:
+    actual_digest = hashlib.sha256(
+        b"actual"
+    ).hexdigest()
+    expected_digest = hashlib.sha256(
+        b"expected"
+    ).hexdigest()
+
+    with pytest.raises(
+        ValueError,
+        match="Digest mismatch",
+    ):
+        _validate_sha256_digest_match(
+            actual_digest=actual_digest,
+            expected_digest=expected_digest,
+            error_message="Digest mismatch.",
         )

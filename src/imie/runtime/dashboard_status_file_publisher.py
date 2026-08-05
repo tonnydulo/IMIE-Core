@@ -161,6 +161,20 @@ def _calculate_open_file_sha256(
 
     return digest.hexdigest()
 
+def _validate_sha256_digest_match(
+    *,
+    actual_digest: str,
+    expected_digest: str,
+    error_message: str,
+) -> None:
+    if not hmac.compare_digest(
+        actual_digest,
+        expected_digest,
+    ):
+        raise ValueError(
+            error_message
+        )
+
 
 @dataclass(
     frozen=True,
@@ -1907,14 +1921,14 @@ class DashboardStatusFilePublisher:
                 _TEMPORARY_FILE_DISAPPEARED_MESSAGE
             ) from error
 
-        if not hmac.compare_digest(
-            actual_digest,
-            expectations.digest,
-        ):
-            raise ValueError(
+        _validate_sha256_digest_match(
+            actual_digest=actual_digest,
+            expected_digest=expectations.digest,
+            error_message=(
                 "Dashboard temporary file digest does not "
                 "match the serialized payload."
-            )
+            ),
+        )
 
         return TemporaryFileValidationSnapshot(
             fingerprint=(
