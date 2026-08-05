@@ -80,6 +80,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_FILE_DIGEST_MISMATCH_MESSAGE,
     _TEMPORARY_FILE_NOT_REGULAR_MESSAGE,
     _TEMPORARY_FILE_HARD_LINK_MESSAGE,
+    _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE,
 )
 
 
@@ -10637,5 +10638,14 @@ def test_temporary_file_hard_link_message() -> None:
         == (
             "Dashboard temporary file must have "
             "exactly one hard link."
+        )
+    )
+
+def test_existing_destination_not_regular_message() -> None:
+    assert (
+        _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE
+        == (
+            "Existing dashboard destination must be "
+            "a regular file."
         )
     )

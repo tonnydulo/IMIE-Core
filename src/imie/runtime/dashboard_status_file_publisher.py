@@ -82,6 +82,11 @@ _TEMPORARY_FILE_HARD_LINK_MESSAGE = (
     "exactly one hard link."
 )
 
+_EXISTING_DESTINATION_NOT_REGULAR_MESSAGE = (
+    "Existing dashboard destination must be "
+    "a regular file."
+)
+
 def _temporary_file_identity(
     status: os.stat_result,
 ) -> TemporaryFileIdentity:
@@ -1795,8 +1800,7 @@ class DashboardStatusFilePublisher:
             destination_status.st_mode
         ):
             raise ValueError(
-                "Existing dashboard destination must be "
-                "a regular file."
+                _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE
             )
 
         destination_mode = stat.S_IMODE(
