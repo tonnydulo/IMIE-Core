@@ -71,6 +71,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     TemporaryFileIdentity,
     _temporary_file_identity,
     _normalize_non_negative_int,
+    _normalize_temporary_file_fingerprint,
 )
 
 
@@ -10400,4 +10401,90 @@ def test_normalize_non_negative_int_rejects_negative_value() -> None:
         _normalize_non_negative_int(
             -1,
             field_name="Value",
+        )
+
+def test_normalize_temporary_file_fingerprint_accepts_valid_value() -> None:
+    fingerprint = (
+        1,
+        2,
+        3,
+        4,
+    )
+
+    assert _normalize_temporary_file_fingerprint(
+        fingerprint
+    ) == fingerprint
+
+
+def test_normalize_temporary_file_fingerprint_rejects_non_tuple() -> None:
+    with pytest.raises(
+        TypeError,
+        match="fingerprint must be a tuple",
+    ):
+        _normalize_temporary_file_fingerprint(
+            [1, 2, 3, 4]
+        )
+
+
+def test_normalize_temporary_file_fingerprint_rejects_wrong_length() -> None:
+    with pytest.raises(
+        ValueError,
+        match="exactly four values",
+    ):
+        _normalize_temporary_file_fingerprint(
+            (
+                1,
+                2,
+                3,
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        (
+            True,
+            2,
+            3,
+            4,
+        ),
+        (
+            1.5,
+            2,
+            3,
+            4,
+        ),
+        (
+            "1",
+            2,
+            3,
+            4,
+        ),
+    ],
+)
+def test_normalize_temporary_file_fingerprint_rejects_non_integer_values(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="fingerprint values must be integers",
+    ):
+        _normalize_temporary_file_fingerprint(
+            value
+        )
+
+
+def test_normalize_temporary_file_fingerprint_rejects_negative_value() -> None:
+    with pytest.raises(
+        ValueError,
+        match="fingerprint values must not be negative",
+    ):
+        _normalize_temporary_file_fingerprint(
+            (
+                1,
+                2,
+                -1,
+                4,
+            )
         )

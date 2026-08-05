@@ -79,6 +79,47 @@ def _temporary_file_fingerprint(
         status.st_mtime_ns,
     )
 
+def _normalize_temporary_file_fingerprint(
+    value: object,
+) -> TemporaryFileFingerprint:
+    if not isinstance(
+        value,
+        tuple,
+    ):
+        raise TypeError(
+            "Temporary file fingerprint must be "
+            "a tuple."
+        )
+
+    if len(value) != 4:
+        raise ValueError(
+            "Temporary file fingerprint must contain "
+            "exactly four values."
+        )
+
+    if any(
+        (
+            not isinstance(item, int)
+            or isinstance(item, bool)
+        )
+        for item in value
+    ):
+        raise TypeError(
+            "Temporary file fingerprint values must "
+            "be integers."
+        )
+
+    if any(
+        item < 0
+        for item in value
+    ):
+        raise ValueError(
+            "Temporary file fingerprint values must "
+            "not be negative."
+        )
+
+    return value
+
 
 def _validate_temporary_file_fingerprint(
     *,
@@ -239,41 +280,13 @@ class TemporaryFileValidationSnapshot:
     def __post_init__(
         self,
     ) -> None:
-        if not isinstance(
-            self.fingerprint,
-            tuple,
-        ):
-            raise TypeError(
-                "Temporary file fingerprint must be "
-                "a tuple."
-            )
-
-        if len(self.fingerprint) != 4:
-            raise ValueError(
-                "Temporary file fingerprint must contain "
-                "exactly four values."
-            )
-
-        if any(
-            (
-                not isinstance(value, int)
-                or isinstance(value, bool)
-            )
-            for value in self.fingerprint
-        ):
-            raise TypeError(
-                "Temporary file fingerprint values must "
-                "be integers."
-            )
-
-        if any(
-            value < 0
-            for value in self.fingerprint
-        ):
-            raise ValueError(
-                "Temporary file fingerprint values must "
-                "not be negative."
-            )
+        object.__setattr__(
+            self,
+            "fingerprint",
+            _normalize_temporary_file_fingerprint(
+                self.fingerprint
+            ),
+        )
 
         object.__setattr__(
             self,
