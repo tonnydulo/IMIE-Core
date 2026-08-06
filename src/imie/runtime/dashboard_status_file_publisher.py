@@ -2296,15 +2296,11 @@ class DashboardStatusFilePublisher:
         cls,
         result: AnalysisCycleResult,
     ) -> str | None:
-        market_session = (
-            result.market_session
-        )
-
-        if market_session is None:
+        if result.market_session is None:
             return None
 
         return cls._display_value(
-            market_session.state
+            result.market_session.state
         )
 
     @classmethod
@@ -2312,15 +2308,11 @@ class DashboardStatusFilePublisher:
         cls,
         result: AnalysisCycleResult,
     ) -> str | None:
-        decision_result = (
-            result.decision
-        )
-
-        if decision_result is None:
+        if result.decision is None:
             return None
 
         return cls._display_value(
-            decision_result.decision
+            result.decision.decision
         )
 
     def _validate_temporary_file_snapshot(
