@@ -611,27 +611,41 @@ class DashboardStatusFilePublisher:
         self,
         market_session: str | None,
     ) -> None:
-        normalized = self._normalize_optional_text(
+        self._update_optional_text(
             field_name="market_session",
+            attribute_name="_market_session",
             value=market_session,
         )
 
+    def _update_optional_text(
+        self,
+        *,
+        field_name: str,
+        attribute_name: str,
+        value: object,
+    ) -> None:
+        normalized = self._normalize_optional_text(
+            field_name=field_name,
+            value=value,
+        )
+
         with self._lock:
-            self._market_session = normalized
+            setattr(
+                self,
+                attribute_name,
+                normalized,
+            )
             self._write_if_ready()
 
     def update_latest_decision(
         self,
         latest_decision: str | None,
     ) -> None:
-        normalized = self._normalize_optional_text(
+        self._update_optional_text(
             field_name="latest_decision",
+            attribute_name="_latest_decision",
             value=latest_decision,
         )
-
-        with self._lock:
-            self._latest_decision = normalized
-            self._write_if_ready()
 
     def build_status(
         self,
