@@ -92,6 +92,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _require_instance,
     _normalize_optional_non_negative_int,
     _normalize_output_path,
+    _normalize_required_text
 )
 
 
@@ -11090,3 +11091,26 @@ def test_publisher_normalizes_symbol_and_timeframe(
 
     assert payload["symbol"] == "NVDA"
     assert payload["timeframe"] == "2m"
+
+@pytest.mark.parametrize(
+    (
+        "value",
+        "expected",
+    ),
+    [
+        ("NVDA", "NVDA"),
+        ("  nvda  ", "nvda"),
+        ("\t2m\n", "2m"),
+    ],
+)
+def test_normalize_required_text(
+    value: object,
+    expected: str,
+) -> None:
+    assert (
+        _normalize_required_text(
+            value,
+            field_name="value",
+        )
+        == expected
+    )

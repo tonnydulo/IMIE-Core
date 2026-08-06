@@ -275,6 +275,28 @@ def _normalize_output_path(
         value
     )
 
+def _normalize_required_text(
+    value: object,
+    *,
+    field_name: str,
+) -> str:
+    if not isinstance(
+        value,
+        str,
+    ):
+        raise TypeError(
+            f"{field_name} must be a string."
+        )
+
+    normalized = value.strip()
+
+    if not normalized:
+        raise ValueError(
+            f"{field_name} cannot be empty."
+        )
+
+    return normalized
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -497,14 +519,14 @@ class DashboardStatusFilePublisher:
             path
         )
 
-        self._symbol = self._normalize_required_text(
+        self._symbol = _normalize_required_text(
+            symbol,
             field_name="symbol",
-            value=symbol,
         ).upper()
 
-        self._timeframe = self._normalize_required_text(
+        self._timeframe = _normalize_required_text(
+            timeframe,
             field_name="timeframe",
-            value=timeframe,
         ).lower()
 
         indent = _normalize_optional_non_negative_int(
@@ -2247,29 +2269,6 @@ class DashboardStatusFilePublisher:
         except OSError:
             if not suppress_errors:
                 raise
-
-    @staticmethod
-    def _normalize_required_text(
-        *,
-        field_name: str,
-        value: object,
-    ) -> str:
-        if not isinstance(
-            value,
-            str,
-        ):
-            raise TypeError(
-                f"{field_name} must be a string."
-            )
-
-        normalized = value.strip()
-
-        if not normalized:
-            raise ValueError(
-                f"{field_name} cannot be empty."
-            )
-
-        return normalized
 
     @staticmethod
     def _normalize_optional_text(
