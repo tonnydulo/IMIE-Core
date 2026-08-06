@@ -2154,9 +2154,6 @@ class DashboardStatusFilePublisher:
 
             return temporary_path
 
-        raise RuntimeError(
-            "Temporary dashboard payload write failed."
-        )
 
     @classmethod
     def _is_transient_replace_error(
