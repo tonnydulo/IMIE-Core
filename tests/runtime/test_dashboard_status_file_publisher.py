@@ -1,4 +1,4 @@
-import json
+﻿import json
 
 import os
 
@@ -96,6 +96,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_optional_text,
     _display_value,
     _is_owned_temporary_path,
+    _directory_open_flags,
 )
 
 
@@ -5532,7 +5533,7 @@ def test_parent_directory_is_synced_after_atomic_replace(
         assert Path(path) == tmp_path
         assert (
             flags
-            == publisher._directory_open_flags()
+            == _directory_open_flags()
         )
 
         events.append(
@@ -7017,8 +7018,7 @@ def test_directory_close_failure_propagates_after_unsupported_fsync(
 def test_directory_open_flags_include_read_only(
 ) -> None:
     flags = (
-        DashboardStatusFilePublisher
-        ._directory_open_flags()
+        _directory_open_flags()
     )
 
     expected_flags = (
@@ -7050,8 +7050,7 @@ def test_directory_open_flags_include_directory_flag_when_available(
     )
 
     flags = (
-        DashboardStatusFilePublisher
-        ._directory_open_flags()
+        _directory_open_flags()
     )
 
     expected_flags = (
@@ -7076,8 +7075,7 @@ def test_directory_open_flags_fall_back_without_directory_flag(
     )
 
     flags = (
-        DashboardStatusFilePublisher
-        ._directory_open_flags()
+        _directory_open_flags()
     )
 
     expected_flags = (
@@ -7223,8 +7221,7 @@ def test_directory_open_flags_include_close_on_exec_when_available(
     )
 
     flags = (
-        DashboardStatusFilePublisher
-        ._directory_open_flags()
+        _directory_open_flags()
     )
 
     assert (
@@ -7248,8 +7245,7 @@ def test_directory_open_flags_fall_back_without_close_on_exec(
     )
 
     flags = (
-        DashboardStatusFilePublisher
-        ._directory_open_flags()
+        _directory_open_flags()
     )
 
     expected_flags = (
@@ -8787,7 +8783,7 @@ def test_temporary_payload_size_uses_utf8_bytes(
     )
 
     contents = (
-        '{"message": "café"}\n'
+        '{"message": "cafÃ©"}\n'
     )
     contents_bytes = (
         contents.encode(

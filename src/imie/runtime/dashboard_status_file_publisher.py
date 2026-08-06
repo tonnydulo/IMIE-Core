@@ -131,6 +131,21 @@ def _temporary_file_identity(
         status.st_ino,
     )
 
+def _directory_open_flags() -> int:
+    return (
+        os.O_RDONLY
+        | getattr(
+            os,
+            "O_DIRECTORY",
+            0,
+        )
+        | getattr(
+            os,
+            "O_CLOEXEC",
+            0,
+        )
+    )
+
 
 def _temporary_file_fingerprint(
     status: os.stat_result,
@@ -2135,24 +2150,6 @@ class DashboardStatusFilePublisher:
             digest=actual_digest,
         )
 
-
-    @staticmethod
-    def _directory_open_flags(
-    ) -> int:
-        return (
-            os.O_RDONLY
-            | getattr(
-                os,
-                "O_DIRECTORY",
-                0,
-            )
-            | getattr(
-                os,
-                "O_CLOEXEC",
-                0,
-            )
-        )
-
     @staticmethod
     def _supports_directory_fsync(
     ) -> bool:
@@ -2167,7 +2164,7 @@ class DashboardStatusFilePublisher:
         try:
             directory_descriptor = os.open(
                 self.path.parent,
-                self._directory_open_flags(),
+                _directory_open_flags(),
             )
 
         except OSError as error:
