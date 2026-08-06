@@ -249,6 +249,21 @@ def _normalize_non_negative_int(
 
     return value
 
+def _require_instance(
+    value: object,
+    *,
+    expected_type: type,
+    field_name: str,
+) -> None:
+    if not isinstance(
+        value,
+        expected_type,
+    ):
+        raise TypeError(
+            f"{field_name} must be a "
+            f"{expected_type.__name__}."
+        )
+
 
 def _validate_temporary_file_identity(
     *,
@@ -556,13 +571,11 @@ class DashboardStatusFilePublisher:
         self,
         summary: RuntimeHealthSummary,
     ) -> None:
-        if not isinstance(
+        _require_instance(
             summary,
-            RuntimeHealthSummary,
-        ):
-            raise TypeError(
-                "summary must be a RuntimeHealthSummary."
-            )
+            expected_type=RuntimeHealthSummary,
+            field_name="summary",
+        )
 
         with self._lock:
             self._health = summary
@@ -572,13 +585,11 @@ class DashboardStatusFilePublisher:
         self,
         result: AnalysisCycleResult,
     ) -> None:
-        if not isinstance(
+        _require_instance(
             result,
-            AnalysisCycleResult,
-        ):
-            raise TypeError(
-                "result must be an AnalysisCycleResult."
-            )
+            expected_type=AnalysisCycleResult,
+            field_name="result",
+        )
 
         with self._lock:
             self._latest_cycle = result
@@ -590,9 +601,7 @@ class DashboardStatusFilePublisher:
             )
 
             if market_session is not None:
-                self._market_session = (
-                    market_session
-                )
+                self._market_session = market_session
 
             latest_decision = (
                 self._decision_from_result(
@@ -601,9 +610,7 @@ class DashboardStatusFilePublisher:
             )
 
             if latest_decision is not None:
-                self._latest_decision = (
-                    latest_decision
-                )
+                self._latest_decision = latest_decision
 
             self._write_if_ready()
 

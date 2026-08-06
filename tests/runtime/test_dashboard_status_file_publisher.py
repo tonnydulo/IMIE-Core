@@ -89,6 +89,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _existing_destination_status,
     _is_final_attempt,
     _sha256_digest_value_error,
+    _require_instance,
 )
 
 
@@ -10799,3 +10800,24 @@ def test_display_value_normalization(
         )
         == expected
     )
+
+def test_require_instance_accepts_expected_type() -> None:
+    value = make_health()
+
+    _require_instance(
+        value,
+        expected_type=RuntimeHealthSummary,
+        field_name="summary",
+    )
+
+
+def test_require_instance_rejects_wrong_type() -> None:
+    with pytest.raises(
+        TypeError,
+        match="summary must be a RuntimeHealthSummary",
+    ):
+        _require_instance(
+            object(),
+            expected_type=RuntimeHealthSummary,
+            field_name="summary",
+        )
