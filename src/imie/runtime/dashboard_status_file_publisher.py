@@ -2262,33 +2262,13 @@ class DashboardStatusFilePublisher:
             value,
             Enum,
         ):
-            enum_value = value.value
-
-            if isinstance(
-                enum_value,
-                str,
-            ):
-                normalized = (
-                    enum_value.strip()
-                )
-
-                return (
-                    normalized
-                    or None
-                )
-
-            return str(
-                enum_value
-            )
+            value = value.value
 
         normalized = str(
             value
         ).strip()
 
-        return (
-            normalized
-            or None
-        )
+        return normalized or None
 
     @classmethod
     def _market_session_from_result(

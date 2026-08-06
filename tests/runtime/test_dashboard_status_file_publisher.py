@@ -4,6 +4,8 @@ import os
 
 import stat
 
+from enum import Enum
+
 import hmac
 
 import hashlib
@@ -10761,4 +10763,39 @@ def test_sha256_digest_value_error_uses_field_name() -> None:
     assert str(error) == (
         "Test digest must be a "
         "64-character SHA-256 hexadecimal value."
+    )
+
+class StringDisplayEnum(Enum):
+    VALUE = "  READY  "
+    EMPTY = "   "
+
+
+class IntegerDisplayEnum(Enum):
+    VALUE = 7
+
+
+@pytest.mark.parametrize(
+    (
+        "value",
+        "expected",
+    ),
+    [
+        (None, None),
+        ("  READY  ", "READY"),
+        ("   ", None),
+        (123, "123"),
+        (StringDisplayEnum.VALUE, "READY"),
+        (StringDisplayEnum.EMPTY, None),
+        (IntegerDisplayEnum.VALUE, "7"),
+    ],
+)
+def test_display_value_normalization(
+    value: object | None,
+    expected: str | None,
+) -> None:
+    assert (
+        DashboardStatusFilePublisher._display_value(
+            value
+        )
+        == expected
     )
