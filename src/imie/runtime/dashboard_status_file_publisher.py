@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 
@@ -2282,25 +2282,6 @@ class DashboardStatusFilePublisher:
         except OSError:
             if not suppress_errors:
                 raise
-
-    @staticmethod
-    def _display_value(
-        value: object | None,
-    ) -> str | None:
-        if value is None:
-            return None
-
-        if isinstance(
-            value,
-            Enum,
-        ):
-            value = value.value
-
-        normalized = str(
-            value
-        ).strip()
-
-        return normalized or None
 
     def _validate_temporary_file_snapshot(
         self,
