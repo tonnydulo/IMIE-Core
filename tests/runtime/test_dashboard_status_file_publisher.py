@@ -83,6 +83,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _EXISTING_DESTINATION_NOT_REGULAR_MESSAGE,
     _GENERATED_TEMPORARY_PATH_NOT_OWNED_MESSAGE,
     _TEMPORARY_FILE_PATH_NOT_OWNED_MESSAGE,
+    _TEMPORARY_CLEANUP_PATH_NOT_OWNED_MESSAGE,
     _existing_destination_status,
     _is_final_attempt,
 )
@@ -2635,6 +2636,15 @@ def test_publish_result_uses_singular_missing_confidence_message(
         == (
             "Confidence is unavailable for all "
             "1 enabled analyst domain."
+        )
+    )
+
+def test_temporary_cleanup_path_not_owned_message() -> None:
+    assert (
+        _TEMPORARY_CLEANUP_PATH_NOT_OWNED_MESSAGE
+        == (
+            "temporary_path is not owned by this "
+            "dashboard publisher."
         )
     )
 

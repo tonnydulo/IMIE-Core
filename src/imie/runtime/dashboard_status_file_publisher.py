@@ -97,6 +97,11 @@ _TEMPORARY_FILE_PATH_NOT_OWNED_MESSAGE = (
     "by this publisher."
 )
 
+_TEMPORARY_CLEANUP_PATH_NOT_OWNED_MESSAGE = (
+    "temporary_path is not owned by this "
+    "dashboard publisher."
+)
+
 def _temporary_file_identity(
     status: os.stat_result,
 ) -> TemporaryFileIdentity:
@@ -2186,8 +2191,7 @@ class DashboardStatusFilePublisher:
         self._validate_owned_temporary_path(
             temporary_path,
             error_message=(
-                "temporary_path is not owned by this "
-                "dashboard publisher."
+                _TEMPORARY_CLEANUP_PATH_NOT_OWNED_MESSAGE
             ),
         )
 
