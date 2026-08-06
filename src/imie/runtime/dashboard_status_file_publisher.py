@@ -249,6 +249,32 @@ def _normalize_non_negative_int(
 
     return value
 
+def _normalize_output_path(
+    value: object,
+) -> Path:
+    if not isinstance(
+        value,
+        str | Path,
+    ):
+        raise TypeError(
+            "path must be a string or Path."
+        )
+
+    if (
+        isinstance(
+            value,
+            str,
+        )
+        and not value.strip()
+    ):
+        raise ValueError(
+            "path cannot be empty."
+        )
+
+    return Path(
+        value
+    )
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -467,26 +493,7 @@ class DashboardStatusFilePublisher:
         indent: int | None = 2,
         create_parent_directories: bool = True,
     ) -> None:
-        if not isinstance(
-            path,
-            str | Path,
-        ):
-            raise TypeError(
-                "path must be a string or Path."
-            )
-
-        if (
-            isinstance(
-                path,
-                str,
-            )
-            and not path.strip()
-        ):
-            raise ValueError(
-                "path cannot be empty."
-            )
-
-        resolved_path = Path(
+        resolved_path = _normalize_output_path(
             path
         )
 

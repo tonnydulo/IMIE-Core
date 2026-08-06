@@ -90,7 +90,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _is_final_attempt,
     _sha256_digest_value_error,
     _require_instance,
-    _normalize_optional_non_negative_int
+    _normalize_optional_non_negative_int,
+    _normalize_output_path,
 )
 
 
@@ -955,6 +956,30 @@ def test_publish_result_populates_market_session(
     assert (
         payload["market_session"]
         == DEFAULT_SESSION_STATE.value
+    )
+
+@pytest.mark.parametrize(
+    (
+        "value",
+        "expected",
+    ),
+    [
+        ("dashboard.json", Path("dashboard.json")),
+        (
+            Path("output/dashboard.json"),
+            Path("output/dashboard.json"),
+        ),
+    ],
+)
+def test_normalize_output_path(
+    value: object,
+    expected: Path,
+) -> None:
+    assert (
+        _normalize_output_path(
+            value
+        )
+        == expected
     )
 
 def test_publish_result_populates_latest_decision(
