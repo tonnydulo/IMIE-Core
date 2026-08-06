@@ -45,6 +45,27 @@ type TemporaryFileFingerprint = tuple[
     int,
 ]
 
+_TRANSIENT_REPLACE_WINERRORS = frozenset(
+        {
+            5,
+            32,
+            33,
+        }
+    )
+
+_UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS = frozenset(
+    {
+        errno.EINVAL,
+        errno.ENOTSUP,
+        errno.EBADF,
+        getattr(
+            errno,
+            "EOPNOTSUPP",
+            errno.ENOTSUP,
+        ),
+    }
+)
+
 _SHA256_READ_CHUNK_SIZE = 64 * 1024
 
 _TEMPORARY_FILE_DISAPPEARED_MESSAGE = (
@@ -122,6 +143,27 @@ def _temporary_file_fingerprint(
         *identity,
         status.st_size,
         status.st_mtime_ns,
+    )
+
+def _is_transient_replace_error(
+    error: PermissionError,
+) -> bool:
+    return (
+        getattr(
+            error,
+            "winerror",
+            None,
+        )
+        in _TRANSIENT_REPLACE_WINERRORS
+    )
+
+
+def _is_unsupported_directory_fsync_error(
+    error: OSError,
+) -> bool:
+    return (
+        error.errno
+        in _UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
     )
 
 def _normalize_temporary_file_fingerprint(
@@ -524,25 +566,7 @@ class DashboardStatusFilePublisher:
     _REPLACE_MAX_ATTEMPTS = 3
     _REPLACE_RETRY_DELAY_SECONDS = 0.01
     _TEMPORARY_PATH_MAX_ATTEMPTS = 3
-    _TRANSIENT_REPLACE_WINERRORS = frozenset(
-        {
-            5,
-            32,
-            33,
-        }
-    )
-    _UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS = frozenset(
-        {
-            errno.EINVAL,
-            errno.ENOTSUP,
-            errno.EBADF,
-            getattr(
-                errno,
-                "EOPNOTSUPP",
-                errno.ENOTSUP,
-            ),
-        }
-    )
+
 
     def __init__(
         self,
@@ -2015,7 +2039,7 @@ class DashboardStatusFilePublisher:
                 )
 
             except PermissionError as error:
-                if not self._is_transient_replace_error(
+                if not _is_transient_replace_error(
                     error
                 ):
                     raise
@@ -2147,7 +2171,7 @@ class DashboardStatusFilePublisher:
             )
 
         except OSError as error:
-            if self._is_unsupported_directory_fsync_error(
+            if _is_unsupported_directory_fsync_error(
                 error
             ):
                 return
@@ -2163,7 +2187,7 @@ class DashboardStatusFilePublisher:
                 )
 
             except OSError as error:
-                if self._is_unsupported_directory_fsync_error(
+                if _is_unsupported_directory_fsync_error(
                     error
                 ):
                     return
@@ -2236,30 +2260,6 @@ class DashboardStatusFilePublisher:
 
             return temporary_path
 
-
-    @classmethod
-    def _is_transient_replace_error(
-        cls,
-        error: PermissionError,
-    ) -> bool:
-        return (
-            getattr(
-                error,
-                "winerror",
-                None,
-            )
-            in cls._TRANSIENT_REPLACE_WINERRORS
-        )
-
-    @classmethod
-    def _is_unsupported_directory_fsync_error(
-        cls,
-        error: OSError,
-    ) -> bool:
-        return (
-            error.errno
-            in cls._UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
-        )
 
     def _remove_temporary_file(
         self,
