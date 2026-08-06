@@ -475,16 +475,20 @@ class DashboardStatusFilePublisher:
                 "path must be a string or Path."
             )
 
-        resolved_path = Path(
-            path
-        )
-
-        if not str(
-            resolved_path
-        ).strip():
+        if (
+            isinstance(
+                path,
+                str,
+            )
+            and not path.strip()
+        ):
             raise ValueError(
                 "path cannot be empty."
             )
+
+        resolved_path = Path(
+            path
+        )
 
         self._symbol = self._normalize_required_text(
             field_name="symbol",

@@ -2744,6 +2744,81 @@ def test_publisher_rejects_negative_indent(
             indent=indent,
         )
 
+@pytest.mark.parametrize(
+    "path",
+    (
+        123,
+        1.5,
+        True,
+        object(),
+    ),
+)
+def test_publisher_rejects_invalid_path_type(
+    path: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="path must be a string or Path",
+    ):
+        DashboardStatusFilePublisher(
+            path=path,  # type: ignore[arg-type]
+            symbol="NVDA",
+            timeframe="2m",
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    (
+        "",
+        "   ",
+        "\t",
+        "\n",
+    ),
+)
+def test_publisher_rejects_empty_path(
+    path: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="path cannot be empty",
+    ):
+        DashboardStatusFilePublisher(
+            path=path,
+            symbol="NVDA",
+            timeframe="2m",
+        )
+
+
+@pytest.mark.parametrize(
+    "create_parent_directories",
+    (
+        0,
+        1,
+        "true",
+        None,
+        object(),
+    ),
+)
+def test_publisher_rejects_invalid_create_parent_directories(
+    tmp_path: Path,
+    create_parent_directories: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "create_parent_directories must be a bool"
+        ),
+    ):
+        DashboardStatusFilePublisher(
+            path=tmp_path / "dashboard.json",
+            symbol="NVDA",
+            timeframe="2m",
+            create_parent_directories=(
+                create_parent_directories  # type: ignore[arg-type]
+            ),
+        )
+
 def test_compact_publisher_output_uses_canonical_format(
     tmp_path: Path,
 ) -> None:
