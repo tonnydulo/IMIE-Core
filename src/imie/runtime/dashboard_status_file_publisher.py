@@ -10,8 +10,6 @@ import hmac
 
 import hashlib
 
-from collections.abc import Callable
-
 from time import sleep
 
 from enum import Enum
@@ -678,53 +676,32 @@ class DashboardStatusFilePublisher:
 
             self._write_if_ready()
 
+
     def update_market_session(
         self,
         market_session: str | None,
     ) -> None:
-        def update(
-            normalized: str | None,
-        ) -> None:
-            self._market_session = normalized
-
-        self._update_optional_text(
-            field_name="market_session",
-            value=market_session,
-            update=update,
-        )
-
-    def _update_optional_text(
-        self,
-        *,
-        field_name: str,
-        value: object,
-        update: Callable[[str | None], None],
-    ) -> None:
         normalized = _normalize_optional_text(
-            value,
-            field_name=field_name,
+            market_session,
+            field_name="market_session",
         )
 
         with self._lock:
-            update(
-                normalized
-            )
+            self._market_session = normalized
             self._write_if_ready()
 
     def update_latest_decision(
         self,
         latest_decision: str | None,
     ) -> None:
-        def update(
-            normalized: str | None,
-        ) -> None:
-            self._latest_decision = normalized
-
-        self._update_optional_text(
+        normalized = _normalize_optional_text(
+            latest_decision,
             field_name="latest_decision",
-            value=latest_decision,
-            update=update,
         )
+
+        with self._lock:
+            self._latest_decision = normalized
+            self._write_if_ready()
 
     def build_status(
         self,
