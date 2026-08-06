@@ -86,6 +86,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _TEMPORARY_CLEANUP_PATH_NOT_OWNED_MESSAGE,
     _existing_destination_status,
     _is_final_attempt,
+    _sha256_digest_value_error,
 )
 
 
@@ -10750,4 +10751,14 @@ def test_generated_temporary_path_not_owned_message() -> None:
             "Generated temporary path is not owned by "
             "this dashboard publisher."
         )
+    )
+
+def test_sha256_digest_value_error_uses_field_name() -> None:
+    error = _sha256_digest_value_error(
+        field_name="Test digest"
+    )
+
+    assert str(error) == (
+        "Test digest must be a "
+        "64-character SHA-256 hexadecimal value."
     )

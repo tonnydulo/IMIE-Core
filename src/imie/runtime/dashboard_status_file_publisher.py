@@ -182,6 +182,15 @@ def _validate_temporary_file_fingerprint(
             _TEMPORARY_FILE_CHANGED_AFTER_VALIDATION_MESSAGE
         )
 
+def _sha256_digest_value_error(
+    *,
+    field_name: str,
+) -> ValueError:
+    return ValueError(
+        f"{field_name} must be a "
+        "64-character SHA-256 hexadecimal value."
+    )
+
 def _normalize_sha256_digest(
     value: object,
     *,
@@ -200,9 +209,8 @@ def _normalize_sha256_digest(
     )
 
     if len(normalized_digest) != 64:
-        raise ValueError(
-            f"{field_name} must be a "
-            "64-character SHA-256 hexadecimal value."
+        raise _sha256_digest_value_error(
+            field_name=field_name
         )
 
     try:
@@ -210,15 +218,13 @@ def _normalize_sha256_digest(
             normalized_digest
         )
     except ValueError as error:
-        raise ValueError(
-            f"{field_name} must be a "
-            "64-character SHA-256 hexadecimal value."
+        raise _sha256_digest_value_error(
+            field_name=field_name
         ) from error
 
     if len(digest_bytes) != 32:
-        raise ValueError(
-            f"{field_name} must be a "
-            "64-character SHA-256 hexadecimal value."
+        raise _sha256_digest_value_error(
+            field_name=field_name
         )
 
     return normalized_digest
