@@ -10994,3 +10994,99 @@ def test_normalize_optional_non_negative_int(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "kwargs",
+    ),
+    [
+        (
+            "symbol",
+            {
+                "symbol": 123,
+                "timeframe": "2m",
+            },
+        ),
+        (
+            "timeframe",
+            {
+                "symbol": "NVDA",
+                "timeframe": 123,
+            },
+        ),
+    ],
+)
+def test_publisher_rejects_invalid_required_text_type(
+    tmp_path: Path,
+    field_name: str,
+    kwargs: dict[str, object],
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match=rf"{field_name} must be a string",
+    ):
+        DashboardStatusFilePublisher(
+            path=tmp_path / "dashboard.json",
+            **kwargs,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    (
+        "field_name",
+        "kwargs",
+    ),
+    [
+        (
+            "symbol",
+            {
+                "symbol": "   ",
+                "timeframe": "2m",
+            },
+        ),
+        (
+            "timeframe",
+            {
+                "symbol": "NVDA",
+                "timeframe": "   ",
+            },
+        ),
+    ],
+)
+def test_publisher_rejects_empty_required_text(
+    tmp_path: Path,
+    field_name: str,
+    kwargs: dict[str, object],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"{field_name} cannot be empty",
+    ):
+        DashboardStatusFilePublisher(
+            path=tmp_path / "dashboard.json",
+            **kwargs,  # type: ignore[arg-type]
+        )
+
+def test_publisher_normalizes_symbol_and_timeframe(
+    tmp_path: Path,
+) -> None:
+    publisher = DashboardStatusFilePublisher(
+        path=tmp_path / "dashboard.json",
+        symbol="  nvda  ",
+        timeframe="  2M  ",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    payload = json.loads(
+        publisher.path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["symbol"] == "NVDA"
+    assert payload["timeframe"] == "2m"
