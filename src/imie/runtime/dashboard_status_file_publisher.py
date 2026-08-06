@@ -674,23 +674,21 @@ class DashboardStatusFilePublisher:
         with self._lock:
             self._latest_cycle = result
 
-            market_session = (
-                self._market_session_from_result(
-                    result
+            if result.market_session is not None:
+                market_session = _display_value(
+                    result.market_session.state
                 )
-            )
 
-            if market_session is not None:
-                self._market_session = market_session
+                if market_session is not None:
+                    self._market_session = market_session
 
-            latest_decision = (
-                self._decision_from_result(
-                    result
+            if result.decision is not None:
+                latest_decision = _display_value(
+                    result.decision.decision
                 )
-            )
 
-            if latest_decision is not None:
-                self._latest_decision = latest_decision
+                if latest_decision is not None:
+                    self._latest_decision = latest_decision
 
             self._write_if_ready()
 
@@ -2313,28 +2311,6 @@ class DashboardStatusFilePublisher:
         ).strip()
 
         return normalized or None
-
-    @staticmethod
-    def _market_session_from_result(
-        result: AnalysisCycleResult,
-    ) -> str | None:
-        if result.market_session is None:
-            return None
-
-        return _display_value(
-            result.market_session.state
-        )
-
-    @staticmethod
-    def _decision_from_result(
-        result: AnalysisCycleResult,
-    ) -> str | None:
-        if result.decision is None:
-            return None
-
-        return _display_value(
-            result.decision.decision
-        )
 
     def _validate_temporary_file_snapshot(
         self,
