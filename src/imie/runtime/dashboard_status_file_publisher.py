@@ -317,6 +317,24 @@ def _normalize_optional_text(
 
     return normalized or None
 
+def _display_value(
+    value: object | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    if isinstance(
+        value,
+        Enum,
+    ):
+        value = value.value
+
+    normalized = str(
+        value
+    ).strip()
+
+    return normalized or None
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -1239,7 +1257,7 @@ class DashboardStatusFilePublisher:
                 else {}
             ),
             trade_direction=(
-                self._display_value(
+                _display_value(
                     trade_plan.direction
                 )
                 if trade_plan is not None
@@ -2296,27 +2314,25 @@ class DashboardStatusFilePublisher:
 
         return normalized or None
 
-    @classmethod
+    @staticmethod
     def _market_session_from_result(
-        cls,
         result: AnalysisCycleResult,
     ) -> str | None:
         if result.market_session is None:
             return None
 
-        return cls._display_value(
+        return _display_value(
             result.market_session.state
         )
 
-    @classmethod
+    @staticmethod
     def _decision_from_result(
-        cls,
         result: AnalysisCycleResult,
     ) -> str | None:
         if result.decision is None:
             return None
 
-        return cls._display_value(
+        return _display_value(
             result.decision.decision
         )
 

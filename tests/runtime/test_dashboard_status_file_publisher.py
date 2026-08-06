@@ -94,6 +94,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_output_path,
     _normalize_required_text,
     _normalize_optional_text,
+    _display_value,
 )
 
 
@@ -10947,7 +10948,7 @@ def test_display_value_normalization(
     expected: str | None,
 ) -> None:
     assert (
-        DashboardStatusFilePublisher._display_value(
+        _display_value(
             value
         )
         == expected
