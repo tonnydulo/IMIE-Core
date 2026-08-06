@@ -90,6 +90,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _is_final_attempt,
     _sha256_digest_value_error,
     _require_instance,
+    _normalize_optional_non_negative_int
 )
 
 
@@ -2693,6 +2694,55 @@ def test_written_file_matches_dashboard_status_json(
     assert output_path.read_text(
         encoding="utf-8",
     ) == expected
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        True,
+        False,
+        1.5,
+        "2",
+        object(),
+    ),
+)
+def test_publisher_rejects_invalid_indent_type(
+    tmp_path: Path,
+    indent: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="indent must be an int or None",
+    ):
+        DashboardStatusFilePublisher(
+            path=tmp_path / "dashboard.json",
+            symbol="NVDA",
+            timeframe="2m",
+            indent=indent,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "indent",
+    (
+        -1,
+        -2,
+        -100,
+    ),
+)
+def test_publisher_rejects_negative_indent(
+    tmp_path: Path,
+    indent: int,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="indent cannot be negative",
+    ):
+        DashboardStatusFilePublisher(
+            path=tmp_path / "dashboard.json",
+            symbol="NVDA",
+            timeframe="2m",
+            indent=indent,
+        )
 
 def test_compact_publisher_output_uses_canonical_format(
     tmp_path: Path,
@@ -10821,3 +10871,26 @@ def test_require_instance_rejects_wrong_type() -> None:
             expected_type=RuntimeHealthSummary,
             field_name="summary",
         )
+
+@pytest.mark.parametrize(
+    (
+        "value",
+        "expected",
+    ),
+    [
+        (None, None),
+        (0, 0),
+        (2, 2),
+    ],
+)
+def test_normalize_optional_non_negative_int(
+    value: object,
+    expected: int | None,
+) -> None:
+    assert (
+        _normalize_optional_non_negative_int(
+            value,
+            field_name="indent",
+        )
+        == expected
+    )

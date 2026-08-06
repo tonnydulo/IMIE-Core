@@ -249,6 +249,35 @@ def _normalize_non_negative_int(
 
     return value
 
+def _normalize_optional_non_negative_int(
+    value: object,
+    *,
+    field_name: str,
+) -> int | None:
+    if value is None:
+        return None
+
+    if (
+        not isinstance(
+            value,
+            int,
+        )
+        or isinstance(
+            value,
+            bool,
+        )
+    ):
+        raise TypeError(
+            f"{field_name} must be an int or None."
+        )
+
+    if value < 0:
+        raise ValueError(
+            f"{field_name} cannot be negative."
+        )
+
+    return value
+
 def _require_instance(
     value: object,
     *,
@@ -467,30 +496,10 @@ class DashboardStatusFilePublisher:
             value=timeframe,
         ).lower()
 
-        if (
-            indent is not None
-            and (
-                isinstance(
-                    indent,
-                    bool,
-                )
-                or not isinstance(
-                    indent,
-                    int,
-                )
-            )
-        ):
-            raise TypeError(
-                "indent must be an int or None."
-            )
-
-        if (
-            indent is not None
-            and indent < 0
-        ):
-            raise ValueError(
-                "indent cannot be negative."
-            )
+        indent = _normalize_optional_non_negative_int(
+            indent,
+            field_name="indent",
+        )
 
         if not isinstance(
             create_parent_directories,
