@@ -2037,16 +2037,6 @@ class DashboardStatusFilePublisher:
             self._sync_parent_directory()
             return
 
-
-    def _is_owned_temporary_path(
-        self,
-        path: Path,
-    ) -> bool:
-        return _is_owned_temporary_path(
-            path=path,
-            destination_path=self.path,
-        )
-
     def _validate_owned_temporary_path(
         self,
         path: Path,

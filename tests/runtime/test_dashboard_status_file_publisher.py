@@ -95,6 +95,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_required_text,
     _normalize_optional_text,
     _display_value,
+    _is_owned_temporary_path,
 )
 
 
@@ -6322,8 +6323,9 @@ def test_publisher_recognizes_owned_temporary_path(
         )
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is True
 
 def test_dashboard_destination_is_not_owned_temporary_path(
@@ -6340,8 +6342,9 @@ def test_dashboard_destination_is_not_owned_temporary_path(
         timeframe="2m",
     )
 
-    assert publisher._is_owned_temporary_path(
-        output_path
+    assert _is_owned_temporary_path(
+        path=output_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_in_other_directory_is_not_owned(
@@ -6367,8 +6370,9 @@ def test_temporary_path_in_other_directory_is_not_owned(
         / ".dashboard.json.abc123.tmp"
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_for_other_dashboard_is_not_owned(
@@ -6388,8 +6392,9 @@ def test_temporary_path_for_other_dashboard_is_not_owned(
         / ".other-dashboard.json.abc123.tmp"
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_cleanup_refuses_dashboard_destination(
@@ -6626,8 +6631,9 @@ def test_generated_temporary_path_has_owned_uuid_format(
         publisher._build_temporary_path()
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is True
 
 def test_temporary_path_with_empty_token_is_not_owned(
@@ -6647,8 +6653,9 @@ def test_temporary_path_with_empty_token_is_not_owned(
         / ".dashboard.json..tmp"
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_with_short_token_is_not_owned(
@@ -6668,8 +6675,9 @@ def test_temporary_path_with_short_token_is_not_owned(
         / ".dashboard.json.abc123.tmp"
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_with_long_token_is_not_owned(
@@ -6692,8 +6700,9 @@ def test_temporary_path_with_long_token_is_not_owned(
         )
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_with_non_hex_token_is_not_owned(
@@ -6716,8 +6725,9 @@ def test_temporary_path_with_non_hex_token_is_not_owned(
         )
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_with_uppercase_token_is_not_owned(
@@ -6740,8 +6750,9 @@ def test_temporary_path_with_uppercase_token_is_not_owned(
         )
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_temporary_path_with_extra_segment_is_not_owned(
@@ -6764,8 +6775,9 @@ def test_temporary_path_with_extra_segment_is_not_owned(
         )
     )
 
-    assert publisher._is_owned_temporary_path(
-        temporary_path
+    assert _is_owned_temporary_path(
+        path=temporary_path,
+        destination_path=publisher.path,
     ) is False
 
 def test_directory_close_failure_does_not_mask_fsync_failure(
@@ -7950,8 +7962,9 @@ def test_completed_temporary_file_is_validated_before_publication(
         validated_paths[0]
     )
 
-    assert publisher._is_owned_temporary_path(
-        validated_path
+    assert _is_owned_temporary_path(
+        path=validated_path,
+        destination_path=publisher.path,
     ) is True
 
     assert validated_path.exists() is False
