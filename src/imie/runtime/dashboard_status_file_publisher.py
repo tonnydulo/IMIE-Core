@@ -10,6 +10,8 @@ import hmac
 
 import hashlib
 
+from collections.abc import Callable
+
 from time import sleep
 
 from enum import Enum
@@ -680,18 +682,23 @@ class DashboardStatusFilePublisher:
         self,
         market_session: str | None,
     ) -> None:
+        def update(
+            normalized: str | None,
+        ) -> None:
+            self._market_session = normalized
+
         self._update_optional_text(
             field_name="market_session",
-            attribute_name="_market_session",
             value=market_session,
+            update=update,
         )
 
     def _update_optional_text(
         self,
         *,
         field_name: str,
-        attribute_name: str,
         value: object,
+        update: Callable[[str | None], None],
     ) -> None:
         normalized = _normalize_optional_text(
             value,
@@ -699,10 +706,8 @@ class DashboardStatusFilePublisher:
         )
 
         with self._lock:
-            setattr(
-                self,
-                attribute_name,
-                normalized,
+            update(
+                normalized
             )
             self._write_if_ready()
 
@@ -710,10 +715,15 @@ class DashboardStatusFilePublisher:
         self,
         latest_decision: str | None,
     ) -> None:
+        def update(
+            normalized: str | None,
+        ) -> None:
+            self._latest_decision = normalized
+
         self._update_optional_text(
             field_name="latest_decision",
-            attribute_name="_latest_decision",
             value=latest_decision,
+            update=update,
         )
 
     def build_status(
