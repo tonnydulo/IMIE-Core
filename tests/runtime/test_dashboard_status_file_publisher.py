@@ -92,7 +92,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _require_instance,
     _normalize_optional_non_negative_int,
     _normalize_output_path,
-    _normalize_required_text
+    _normalize_required_text,
+    _normalize_optional_text,
 )
 
 
@@ -11114,3 +11115,49 @@ def test_normalize_required_text(
         )
         == expected
     )
+
+@pytest.mark.parametrize(
+    (
+        "value",
+        "expected",
+    ),
+    [
+        (None, None),
+        ("READY", "READY"),
+        ("  READY  ", "READY"),
+        ("", None),
+        ("   ", None),
+    ],
+)
+def test_normalize_optional_text(
+    value: object,
+    expected: str | None,
+) -> None:
+    assert (
+        _normalize_optional_text(
+            value,
+            field_name="value",
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        123,
+        True,
+        object(),
+    ),
+)
+def test_normalize_optional_text_rejects_invalid_type(
+    value: object,
+) -> None:
+    with pytest.raises(
+        TypeError,
+        match="value must be a string or None",
+    ):
+        _normalize_optional_text(
+            value,
+            field_name="value",
+        )

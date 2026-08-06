@@ -297,6 +297,26 @@ def _normalize_required_text(
 
     return normalized
 
+def _normalize_optional_text(
+    value: object,
+    *,
+    field_name: str,
+) -> str | None:
+    if value is None:
+        return None
+
+    if not isinstance(
+        value,
+        str,
+    ):
+        raise TypeError(
+            f"{field_name} must be a string or None."
+        )
+
+    normalized = value.strip()
+
+    return normalized or None
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -673,9 +693,9 @@ class DashboardStatusFilePublisher:
         attribute_name: str,
         value: object,
     ) -> None:
-        normalized = self._normalize_optional_text(
+        normalized = _normalize_optional_text(
+            value,
             field_name=field_name,
-            value=value,
         )
 
         with self._lock:
@@ -2269,27 +2289,6 @@ class DashboardStatusFilePublisher:
         except OSError:
             if not suppress_errors:
                 raise
-
-    @staticmethod
-    def _normalize_optional_text(
-        *,
-        field_name: str,
-        value: object,
-    ) -> str | None:
-        if value is None:
-            return None
-
-        if not isinstance(
-            value,
-            str,
-        ):
-            raise TypeError(
-                f"{field_name} must be a string or None."
-            )
-
-        normalized = value.strip()
-
-        return normalized or None
 
     @staticmethod
     def _display_value(
