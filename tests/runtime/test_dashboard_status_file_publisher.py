@@ -103,6 +103,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _analyst_confidence_metrics,
     _analyst_coverage_percentages,
     _analyst_confidence_coverage_status,
+    _enabled_analyst_confidence_coverage_status,
     _analyst_confidence_values
 )
 
@@ -11511,4 +11512,73 @@ def test_analyst_confidence_coverage_status(
     assert _analyst_confidence_coverage_status(
         analyst_domain_count=analyst_domain_count,
         analyst_confidence_count=analyst_confidence_count,
+    ) == expected
+
+@pytest.mark.parametrize(
+    (
+        "analyst_domain_count",
+        "analyst_enabled_count",
+        "analyst_enabled_confidence_count",
+        "expected",
+    ),
+    [
+        (
+            0,
+            0,
+            0,
+            (
+                "UNAVAILABLE",
+                "No analyst domains are available.",
+            ),
+        ),
+        (
+            3,
+            0,
+            0,
+            (
+                "DISABLED",
+                "No analyst domains are enabled.",
+            ),
+        ),
+        (
+            3,
+            2,
+            0,
+            (
+                "MISSING",
+                "Confidence is unavailable for all 2 enabled analyst domains.",
+            ),
+        ),
+        (
+            3,
+            2,
+            1,
+            (
+                "PARTIAL",
+                "Confidence is available for 1 of 2 enabled analyst domains.",
+            ),
+        ),
+        (
+            3,
+            1,
+            1,
+            (
+                "COMPLETE",
+                "Confidence is available for all 1 enabled analyst domain.",
+            ),
+        ),
+    ],
+)
+def test_enabled_analyst_confidence_coverage_status(
+    analyst_domain_count: int,
+    analyst_enabled_count: int,
+    analyst_enabled_confidence_count: int,
+    expected: tuple[str, str],
+) -> None:
+    assert _enabled_analyst_confidence_coverage_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_enabled_confidence_count=(
+            analyst_enabled_confidence_count
+        ),
     ) == expected
