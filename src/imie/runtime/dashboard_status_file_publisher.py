@@ -1471,6 +1471,17 @@ class DashboardStatusFilePublisher:
             acceptance
         )
 
+        (
+            trend_analyst,
+            trend_opinion,
+            trend_confidence,
+            trend_enabled,
+            trend_evidence,
+            trend_warnings,
+        ) = _trend_dashboard_values(
+            trend
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1790,41 +1801,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            trend_analyst=(
-                trend.analyst
-                if trend is not None
-                else None
-            ),
-            trend_opinion=(
-                trend.opinion
-                if trend is not None
-                else None
-            ),
-            trend_confidence=(
-                trend.confidence
-                if trend is not None
-                else None
-            ),
-            trend_enabled=(
-                trend.enabled
-                if trend is not None
-                else None
-            ),
-            trend_evidence=(
-                tuple(
-                    trend.evidence
-                )
-                if trend is not None
-                else ()
-            ),
-            trend_warnings=(
-                tuple(
-                    trend.warnings
-                )
-                if trend is not None
-                else ()
-            ),
-
             structure_analyst=structure_analyst,
             structure_opinion=structure_opinion,
             structure_confidence=structure_confidence,
@@ -1879,6 +1855,13 @@ class DashboardStatusFilePublisher:
             acceptance_reason=acceptance_reason,
             acceptance_evidence=acceptance_evidence,
             acceptance_warnings=acceptance_warnings,
+
+            trend_analyst=trend_analyst,
+            trend_opinion=trend_opinion,
+            trend_confidence=trend_confidence,
+            trend_enabled=trend_enabled,
+            trend_evidence=trend_evidence,
+            trend_warnings=trend_warnings,
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2708,4 +2691,33 @@ def _acceptance_dashboard_values(
         acceptance.reason,
         tuple(acceptance.evidence),
         tuple(acceptance.warnings),
+    )
+
+def _trend_dashboard_values(
+    trend: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+]:
+    if trend is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            (),
+            (),
+        )
+
+    return (
+        trend.analyst,
+        trend.opinion,
+        trend.confidence,
+        trend.enabled,
+        tuple(trend.evidence),
+        tuple(trend.warnings),
     )
