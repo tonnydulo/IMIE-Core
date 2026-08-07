@@ -131,6 +131,7 @@ def _temporary_file_identity(
         status.st_ino,
     )
 
+
 def _directory_open_flags() -> int:
     return (
         os.O_RDONLY
@@ -160,6 +161,7 @@ def _temporary_file_fingerprint(
         status.st_mtime_ns,
     )
 
+
 def _is_transient_replace_error(
     error: PermissionError,
 ) -> bool:
@@ -180,6 +182,7 @@ def _is_unsupported_directory_fsync_error(
         error.errno
         in _UNSUPPORTED_DIRECTORY_FSYNC_ERRNOS
     )
+
 
 def _normalize_temporary_file_fingerprint(
     value: object,
@@ -535,6 +538,7 @@ class TemporaryFileValidationSnapshot:
             ),
         )
 
+
 @dataclass(
     frozen=True,
     slots=True,
@@ -567,6 +571,7 @@ class TemporaryFileExpectations:
                 ),
             ),
         )
+
 
 class DashboardStatusFilePublisher:
     """
@@ -2088,7 +2093,6 @@ class DashboardStatusFilePublisher:
             error_message=error_message,
         )
 
-
     def _validate_temporary_file(
         self,
         temporary_path: Path,
@@ -2256,7 +2260,6 @@ class DashboardStatusFilePublisher:
                 raise
 
             return temporary_path
-
 
     def _remove_temporary_file(
         self,
