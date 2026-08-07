@@ -1259,22 +1259,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
-        trade_plan = (
-            decision_result.trade_plan
-            if decision_result is not None
-            else None
-        )
-
-        institutional_context = (
-            decision_result.institutional_context
-            if decision_result is not None
-            else None
-        )
-
-        analyst_summary = (
-            decision_result.analyst_summary
-            if decision_result is not None
-            else {}
+        (
+            trade_plan,
+            institutional_context,
+            analyst_summary,
+        ) = _decision_dashboard_sources(
+            decision_result
         )
 
         (
@@ -2800,4 +2790,24 @@ def _analyst_summary_sources(
         analyst_summary.get("PRESSURE"),
         analyst_summary.get("PARTICIPATION"),
         analyst_summary.get("VALUE"),
+    )
+
+def _decision_dashboard_sources(
+    decision_result: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    dict[str, dict[str, object]],
+]:
+    if decision_result is None:
+        return (
+            None,
+            None,
+            {},
+        )
+
+    return (
+        decision_result.trade_plan,
+        decision_result.institutional_context,
+        decision_result.analyst_summary,
     )
