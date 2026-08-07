@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 
@@ -1524,6 +1524,8 @@ class DashboardStatusFilePublisher:
             confluence_bullish_count,
             confluence_bearish_count,
             confluence_neutral_count,
+            confluence_unknown_count,
+            confluence_domain_count,
         ) = _institutional_confluence_dashboard_values(
             institutional_confluence
         )
@@ -1671,16 +1673,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            confluence_unknown_count=(
-                institutional_confluence.unknown_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_domain_count=(
-                institutional_confluence.domain_count
-                if institutional_confluence is not None
-                else None
-            ),
 
             structure_analyst=structure_analyst,
             structure_opinion=structure_opinion,
@@ -1789,6 +1781,8 @@ class DashboardStatusFilePublisher:
             confluence_bullish_count=confluence_bullish_count,
             confluence_bearish_count=confluence_bearish_count,
             confluence_neutral_count=confluence_neutral_count,
+            confluence_unknown_count=confluence_unknown_count,
+            confluence_domain_count=confluence_domain_count,
 
 
             analyst_domain_count=(
@@ -2738,9 +2732,15 @@ def _institutional_confluence_dashboard_values(
     object | None,
     object | None,
     object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
 ]:
     if institutional_confluence is None:
         return (
+            None,
+            None,
             None,
             None,
             None,
@@ -2774,4 +2774,6 @@ def _institutional_confluence_dashboard_values(
         institutional_confluence.bullish_count,
         institutional_confluence.bearish_count,
         institutional_confluence.neutral_count,
+        institutional_confluence.unknown_count,
+        institutional_confluence.domain_count,
     )
