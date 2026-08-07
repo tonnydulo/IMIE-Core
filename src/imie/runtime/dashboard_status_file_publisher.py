@@ -1271,41 +1271,6 @@ class DashboardStatusFilePublisher:
             else None
         )
 
-        institutional_bias = (
-            institutional_context.institutional_bias
-            if institutional_context is not None
-            else None
-        )
-
-        market_phase = (
-            institutional_context.market_phase
-            if institutional_context is not None
-            else None
-        )
-
-        institutional_confluence = (
-            institutional_context.institutional_confluence
-            if institutional_context is not None
-            else None
-        )
-
-        setup_lifecycle = (
-            institutional_context.setup_lifecycle
-            if institutional_context is not None
-            else None
-        )
-
-        acceptance = (
-            institutional_context.acceptance
-            if institutional_context is not None
-            else None
-        )
-
-        trend = (
-            institutional_context.trend
-            if institutional_context is not None
-            else None
-        )
 
         structure_summary = (
             decision_result.analyst_summary.get(
@@ -1371,6 +1336,17 @@ class DashboardStatusFilePublisher:
 
         analyst_metrics = _build_analyst_dashboard_metrics(
             analyst_summary
+        )
+
+        (
+            institutional_bias,
+            market_phase,
+            institutional_confluence,
+            setup_lifecycle,
+            acceptance,
+            trend,
+        ) = _institutional_context_dashboard_sources(
+            institutional_context
         )
 
         (
@@ -2819,4 +2795,33 @@ def _cycle_dashboard_values(
         cycle.started_at,
         cycle.completed_at,
         cycle.error_type,
+    )
+
+def _institutional_context_dashboard_sources(
+    institutional_context: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+]:
+    if institutional_context is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+    return (
+        institutional_context.institutional_bias,
+        institutional_context.market_phase,
+        institutional_context.institutional_confluence,
+        institutional_context.setup_lifecycle,
+        institutional_context.acceptance,
+        institutional_context.trend,
     )
