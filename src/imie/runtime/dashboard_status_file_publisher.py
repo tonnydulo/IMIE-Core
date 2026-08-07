@@ -535,6 +535,67 @@ def _analyst_confidence_metrics(
         analyst_enabled_average_confidence,
     )
 
+def _analyst_coverage_percentages(
+    *,
+    analyst_domain_count: int,
+    analyst_enabled_count: int,
+    analyst_resolved_count: int,
+    analyst_enabled_resolved_count: int,
+    analyst_confidence_count: int,
+    analyst_enabled_confidence_count: int,
+) -> tuple[
+    float,
+    float,
+    float,
+    float,
+]:
+    analyst_confidence_coverage_percentage = (
+        (
+            analyst_confidence_count
+            / analyst_domain_count
+        )
+        * 100.0
+        if analyst_domain_count > 0
+        else 0.0
+    )
+
+    analyst_enabled_confidence_coverage_percentage = (
+        (
+            analyst_enabled_confidence_count
+            / analyst_enabled_count
+        )
+        * 100.0
+        if analyst_enabled_count > 0
+        else 0.0
+    )
+
+    analyst_coverage_percentage = (
+        (
+            analyst_resolved_count
+            / analyst_domain_count
+        )
+        * 100.0
+        if analyst_domain_count > 0
+        else 0.0
+    )
+
+    analyst_operational_percentage = (
+        (
+            analyst_enabled_resolved_count
+            / analyst_enabled_count
+        )
+        * 100.0
+        if analyst_enabled_count > 0
+        else 0.0
+    )
+
+    return (
+        analyst_confidence_coverage_percentage,
+        analyst_enabled_confidence_coverage_percentage,
+        analyst_coverage_percentage,
+        analyst_operational_percentage,
+    )
+
 def _analyst_resolution_counts(
     analyst_summary: dict[str, dict[str, object]],
 ) -> tuple[
@@ -1114,24 +1175,22 @@ class DashboardStatusFilePublisher:
             ),
         )
 
-        analyst_confidence_coverage_percentage = (
-            (
-                analyst_confidence_count
-                / analyst_domain_count
-            )
-            * 100.0
-            if analyst_domain_count > 0
-            else 0.0
-        )
-
-        analyst_enabled_confidence_coverage_percentage = (
-            (
+        (
+            analyst_confidence_coverage_percentage,
+            analyst_enabled_confidence_coverage_percentage,
+            analyst_coverage_percentage,
+            analyst_operational_percentage,
+        ) = _analyst_coverage_percentages(
+            analyst_domain_count=analyst_domain_count,
+            analyst_enabled_count=analyst_enabled_count,
+            analyst_resolved_count=analyst_resolved_count,
+            analyst_enabled_resolved_count=(
+                analyst_enabled_resolved_count
+            ),
+            analyst_confidence_count=analyst_confidence_count,
+            analyst_enabled_confidence_count=(
                 analyst_enabled_confidence_count
-                / analyst_enabled_count
-            )
-            * 100.0
-            if analyst_enabled_count > 0
-            else 0.0
+            ),
         )
 
         analyst_domain_label = (
@@ -1238,26 +1297,6 @@ class DashboardStatusFilePublisher:
                 f"{analyst_enabled_count} "
                 f"{enabled_analyst_domain_label}."
             )
-
-        analyst_coverage_percentage = (
-            (
-                analyst_resolved_count
-                / analyst_domain_count
-            )
-            * 100.0
-            if analyst_domain_count > 0
-            else 0.0
-        )
-
-        analyst_operational_percentage = (
-            (
-                analyst_enabled_resolved_count
-                / analyst_enabled_count
-            )
-            * 100.0
-            if analyst_enabled_count > 0
-            else 0.0
-        )
 
         if analyst_domain_count == 0:
             analyst_coverage_state = "UNAVAILABLE"

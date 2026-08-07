@@ -101,6 +101,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _has_resolved_analyst_opinion,
     _analyst_resolution_counts,
     _analyst_confidence_metrics,
+    _analyst_coverage_percentages,
     _analyst_confidence_values
 )
 
@@ -11423,4 +11424,39 @@ def test_analyst_confidence_metrics_without_confidence() -> None:
         2,
         None,
         None,
+    )
+
+def test_analyst_coverage_percentages() -> None:
+    result = _analyst_coverage_percentages(
+        analyst_domain_count=4,
+        analyst_enabled_count=3,
+        analyst_resolved_count=3,
+        analyst_enabled_resolved_count=2,
+        analyst_confidence_count=2,
+        analyst_enabled_confidence_count=1,
+    )
+
+    assert result == pytest.approx(
+        (
+            50.0,
+            100.0 / 3.0,
+            75.0,
+            200.0 / 3.0,
+        )
+    )
+
+
+def test_analyst_coverage_percentages_without_domains() -> None:
+    assert _analyst_coverage_percentages(
+        analyst_domain_count=0,
+        analyst_enabled_count=0,
+        analyst_resolved_count=0,
+        analyst_enabled_resolved_count=0,
+        analyst_confidence_count=0,
+        analyst_enabled_confidence_count=0,
+    ) == (
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     )
