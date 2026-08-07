@@ -474,6 +474,67 @@ def _analyst_confidence_values(
         tuple(enabled_confidences),
     )
 
+def _analyst_confidence_metrics(
+    *,
+    analyst_domain_count: int,
+    analyst_enabled_count: int,
+    analyst_confidences: tuple[float, ...],
+    analyst_enabled_confidences: tuple[float, ...],
+) -> tuple[
+    int,
+    int,
+    int,
+    int,
+    float | None,
+    float | None,
+]:
+    analyst_confidence_count = len(
+        analyst_confidences
+    )
+
+    analyst_enabled_confidence_count = len(
+        analyst_enabled_confidences
+    )
+
+    analyst_missing_confidence_count = max(
+        0,
+        analyst_domain_count
+        - analyst_confidence_count,
+    )
+
+    analyst_enabled_missing_confidence_count = max(
+        0,
+        analyst_enabled_count
+        - analyst_enabled_confidence_count,
+    )
+
+    analyst_average_confidence = (
+        sum(
+            analyst_confidences
+        )
+        / analyst_confidence_count
+        if analyst_confidences
+        else None
+    )
+
+    analyst_enabled_average_confidence = (
+        sum(
+            analyst_enabled_confidences
+        )
+        / analyst_enabled_confidence_count
+        if analyst_enabled_confidences
+        else None
+    )
+
+    return (
+        analyst_confidence_count,
+        analyst_enabled_confidence_count,
+        analyst_missing_confidence_count,
+        analyst_enabled_missing_confidence_count,
+        analyst_average_confidence,
+        analyst_enabled_average_confidence,
+    )
+
 def _analyst_resolution_counts(
     analyst_summary: dict[str, dict[str, object]],
 ) -> tuple[
@@ -1037,46 +1098,20 @@ class DashboardStatusFilePublisher:
             analyst_summary
         )
 
-        analyst_confidence_count = len(
-            analyst_confidences
-        )
-
-        analyst_enabled_confidence_count = len(
-            analyst_enabled_confidences
-        )
-
-        analyst_missing_confidence_count = max(
-            0,
-            analyst_domain_count
-            - analyst_confidence_count,
-        )
-
-        analyst_enabled_missing_confidence_count = max(
-            0,
-            analyst_enabled_count
-            - analyst_enabled_confidence_count,
-        )
-
-        analyst_average_confidence = (
-            sum(
-                analyst_confidences
-            )
-            / len(
-                analyst_confidences
-            )
-            if analyst_confidences
-            else None
-        )
-
-        analyst_enabled_average_confidence = (
-            sum(
+        (
+            analyst_confidence_count,
+            analyst_enabled_confidence_count,
+            analyst_missing_confidence_count,
+            analyst_enabled_missing_confidence_count,
+            analyst_average_confidence,
+            analyst_enabled_average_confidence,
+        ) = _analyst_confidence_metrics(
+            analyst_domain_count=analyst_domain_count,
+            analyst_enabled_count=analyst_enabled_count,
+            analyst_confidences=analyst_confidences,
+            analyst_enabled_confidences=(
                 analyst_enabled_confidences
-            )
-            / len(
-                analyst_enabled_confidences
-            )
-            if analyst_enabled_confidences
-            else None
+            ),
         )
 
         analyst_confidence_coverage_percentage = (

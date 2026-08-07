@@ -100,6 +100,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _analyst_confidence_value,
     _has_resolved_analyst_opinion,
     _analyst_resolution_counts,
+    _analyst_confidence_metrics,
     _analyst_confidence_values
 )
 
@@ -11384,4 +11385,42 @@ def test_analyst_resolution_counts_empty_summary() -> None:
         0,
         0,
         0,
+    )
+
+def test_analyst_confidence_metrics() -> None:
+    assert _analyst_confidence_metrics(
+        analyst_domain_count=4,
+        analyst_enabled_count=3,
+        analyst_confidences=(
+            80.0,
+            60.0,
+            40.0,
+        ),
+        analyst_enabled_confidences=(
+            80.0,
+            40.0,
+        ),
+    ) == (
+        3,
+        2,
+        1,
+        1,
+        60.0,
+        60.0,
+    )
+
+
+def test_analyst_confidence_metrics_without_confidence() -> None:
+    assert _analyst_confidence_metrics(
+        analyst_domain_count=3,
+        analyst_enabled_count=2,
+        analyst_confidences=(),
+        analyst_enabled_confidences=(),
+    ) == (
+        0,
+        0,
+        3,
+        2,
+        None,
+        None,
     )
