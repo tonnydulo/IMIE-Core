@@ -99,6 +99,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _directory_open_flags,
     _analyst_confidence_value,
     _has_resolved_analyst_opinion,
+    _analyst_resolution_counts,
     _analyst_confidence_values
 )
 
@@ -11341,4 +11342,46 @@ def test_analyst_confidence_values_empty_summary() -> None:
     ) == (
         (),
         (),
+    )
+
+def test_analyst_resolution_counts() -> None:
+    analyst_summary = {
+        "STRUCTURE": {
+            "enabled": True,
+            "opinion": "BULLISH",
+        },
+        "LIQUIDITY": {
+            "enabled": True,
+            "opinion": "",
+        },
+        "ORDER_BLOCK": {
+            "enabled": False,
+            "opinion": "BEARISH",
+        },
+        "AUCTION": {
+            "enabled": False,
+            "opinion": None,
+        },
+    }
+
+    assert _analyst_resolution_counts(
+        analyst_summary
+    ) == (
+        4,
+        2,
+        2,
+        1,
+        1,
+    )
+
+
+def test_analyst_resolution_counts_empty_summary() -> None:
+    assert _analyst_resolution_counts(
+        {}
+    ) == (
+        0,
+        0,
+        0,
+        0,
+        0,
     )

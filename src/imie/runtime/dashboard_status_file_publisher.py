@@ -474,6 +474,57 @@ def _analyst_confidence_values(
         tuple(enabled_confidences),
     )
 
+def _analyst_resolution_counts(
+    analyst_summary: dict[str, dict[str, object]],
+) -> tuple[
+    int,
+    int,
+    int,
+    int,
+    int,
+]:
+    analyst_domain_count = len(
+        analyst_summary
+    )
+
+    analyst_enabled_count = sum(
+        1
+        for details in analyst_summary.values()
+        if details.get("enabled") is True
+    )
+
+    analyst_resolved_count = sum(
+        1
+        for details in analyst_summary.values()
+        if _has_resolved_analyst_opinion(
+            details
+        )
+    )
+
+    analyst_enabled_resolved_count = sum(
+        1
+        for details in analyst_summary.values()
+        if (
+            details.get("enabled") is True
+            and _has_resolved_analyst_opinion(
+                details
+            )
+        )
+    )
+
+    analyst_enabled_unresolved_count = (
+        analyst_enabled_count
+        - analyst_enabled_resolved_count
+    )
+
+    return (
+        analyst_domain_count,
+        analyst_enabled_count,
+        analyst_resolved_count,
+        analyst_enabled_resolved_count,
+        analyst_enabled_unresolved_count,
+    )
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -969,38 +1020,14 @@ class DashboardStatusFilePublisher:
             else {}
         )
 
-        analyst_domain_count = len(
+        (
+            analyst_domain_count,
+            analyst_enabled_count,
+            analyst_resolved_count,
+            analyst_enabled_resolved_count,
+            analyst_enabled_unresolved_count,
+        ) = _analyst_resolution_counts(
             analyst_summary
-        )
-
-        analyst_enabled_count = sum(
-            1
-            for details in analyst_summary.values()
-            if details.get("enabled") is True
-        )
-
-        analyst_resolved_count = sum(
-            1
-            for details in analyst_summary.values()
-            if _has_resolved_analyst_opinion(
-                details
-            )
-        )
-
-        analyst_enabled_resolved_count = sum(
-            1
-            for details in analyst_summary.values()
-            if (
-                details.get("enabled") is True
-                and _has_resolved_analyst_opinion(
-                    details
-                )
-            )
-        )
-
-        analyst_enabled_unresolved_count = (
-            analyst_enabled_count
-            - analyst_enabled_resolved_count
         )
 
         (
