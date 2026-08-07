@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 
@@ -1271,67 +1271,22 @@ class DashboardStatusFilePublisher:
             else None
         )
 
-
-        structure_summary = (
-            decision_result.analyst_summary.get(
-                "STRUCTURE"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        liquidity_summary = (
-            decision_result.analyst_summary.get(
-                "LIQUIDITY"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        order_block_summary = (
-            decision_result.analyst_summary.get(
-                "ORDER_BLOCK"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        auction_summary = (
-            decision_result.analyst_summary.get(
-                "AUCTION"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        pressure_summary = (
-            decision_result.analyst_summary.get(
-                "PRESSURE"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        participation_summary = (
-            decision_result.analyst_summary.get(
-                "PARTICIPATION"
-            )
-            if decision_result is not None
-            else None
-        )
-
-        value_summary = (
-            decision_result.analyst_summary.get(
-                "VALUE"
-            )
-            if decision_result is not None
-            else None
-        )
-
         analyst_summary = (
             decision_result.analyst_summary
             if decision_result is not None
             else {}
+        )
+
+        (
+            structure_summary,
+            liquidity_summary,
+            order_block_summary,
+            auction_summary,
+            pressure_summary,
+            participation_summary,
+            value_summary,
+        ) = _analyst_summary_sources(
+            analyst_summary
         )
 
         analyst_metrics = _build_analyst_dashboard_metrics(
@@ -2824,4 +2779,25 @@ def _institutional_context_dashboard_sources(
         institutional_context.setup_lifecycle,
         institutional_context.acceptance,
         institutional_context.trend,
+    )
+
+def _analyst_summary_sources(
+    analyst_summary: dict[str, dict[str, object]],
+) -> tuple[
+    dict[str, object] | None,
+    dict[str, object] | None,
+    dict[str, object] | None,
+    dict[str, object] | None,
+    dict[str, object] | None,
+    dict[str, object] | None,
+    dict[str, object] | None,
+]:
+    return (
+        analyst_summary.get("STRUCTURE"),
+        analyst_summary.get("LIQUIDITY"),
+        analyst_summary.get("ORDER_BLOCK"),
+        analyst_summary.get("AUCTION"),
+        analyst_summary.get("PRESSURE"),
+        analyst_summary.get("PARTICIPATION"),
+        analyst_summary.get("VALUE"),
     )
