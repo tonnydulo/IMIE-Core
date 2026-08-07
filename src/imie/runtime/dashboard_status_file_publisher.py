@@ -1530,6 +1530,23 @@ class DashboardStatusFilePublisher:
             institutional_confluence
         )
 
+        (
+            trade_direction,
+            trade_plan_valid,
+            trade_entry,
+            trade_stop,
+            trade_target1,
+            trade_target2,
+            trade_rr1,
+            trade_rr2,
+            trade_quality,
+            trade_narrative,
+            trade_reasons,
+            trade_warnings,
+        ) = _trade_plan_dashboard_values(
+            trade_plan
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1604,75 +1621,6 @@ class DashboardStatusFilePublisher:
                 if decision_result is not None
                 else {}
             ),
-            trade_direction=(
-                _display_value(
-                    trade_plan.direction
-                )
-                if trade_plan is not None
-                else None
-            ),
-
-            trade_plan_valid=(
-                trade_plan.valid
-                if trade_plan is not None
-                else None
-            ),
-            trade_entry=(
-                trade_plan.entry
-                if trade_plan is not None
-                else None
-            ),
-            trade_stop=(
-                trade_plan.stop
-                if trade_plan is not None
-                else None
-            ),
-            trade_target1=(
-                trade_plan.target1
-                if trade_plan is not None
-                else None
-            ),
-            trade_target2=(
-                trade_plan.target2
-                if trade_plan is not None
-                else None
-            ),
-            trade_rr1=(
-                trade_plan.rr1
-                if trade_plan is not None
-                else None
-            ),
-            trade_rr2=(
-                trade_plan.rr2
-                if trade_plan is not None
-                else None
-            ),
-            trade_quality=(
-                trade_plan.quality
-                if trade_plan is not None
-                else None
-            ),
-
-            trade_narrative=(
-                trade_plan.narrative
-                if trade_plan is not None
-                else None
-            ),
-            trade_reasons=(
-                tuple(
-                    trade_plan.reasons
-                )
-                if trade_plan is not None
-                else ()
-            ),
-            trade_warnings=(
-                tuple(
-                    trade_plan.warnings
-                )
-                if trade_plan is not None
-                else ()
-            ),
-
 
             structure_analyst=structure_analyst,
             structure_opinion=structure_opinion,
@@ -1783,6 +1731,19 @@ class DashboardStatusFilePublisher:
             confluence_neutral_count=confluence_neutral_count,
             confluence_unknown_count=confluence_unknown_count,
             confluence_domain_count=confluence_domain_count,
+
+            trade_direction=trade_direction,
+            trade_plan_valid=trade_plan_valid,
+            trade_entry=trade_entry,
+            trade_stop=trade_stop,
+            trade_target1=trade_target1,
+            trade_target2=trade_target2,
+            trade_rr1=trade_rr1,
+            trade_rr2=trade_rr2,
+            trade_quality=trade_quality,
+            trade_narrative=trade_narrative,
+            trade_reasons=trade_reasons,
+            trade_warnings=trade_warnings,
 
 
             analyst_domain_count=(
@@ -2776,4 +2737,51 @@ def _institutional_confluence_dashboard_values(
         institutional_confluence.neutral_count,
         institutional_confluence.unknown_count,
         institutional_confluence.domain_count,
+    )
+
+def _trade_plan_dashboard_values(
+    trade_plan: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+]:
+    if trade_plan is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+            (),
+        )
+
+    return (
+        _display_value(trade_plan.direction),
+        trade_plan.valid,
+        trade_plan.entry,
+        trade_plan.stop,
+        trade_plan.target1,
+        trade_plan.target2,
+        trade_plan.rr1,
+        trade_plan.rr2,
+        trade_plan.quality,
+        trade_plan.narrative,
+        tuple(trade_plan.reasons),
+        tuple(trade_plan.warnings),
     )
