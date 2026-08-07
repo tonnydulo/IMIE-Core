@@ -1547,6 +1547,17 @@ class DashboardStatusFilePublisher:
             trade_plan
         )
 
+        (
+            decision_confidence,
+            decision_actionable,
+            decision_recommendation,
+            decision_reasons,
+            decision_warnings,
+            decision_analyst_summary,
+        ) = _decision_result_dashboard_values(
+            decision_result
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1581,46 +1592,6 @@ class DashboardStatusFilePublisher:
             ),
             market_session=self._market_session,
             latest_decision=self._latest_decision,
-            decision_confidence=(
-                float(
-                    decision_result.confidence
-                )
-                if decision_result is not None
-                else None
-            ),
-            decision_actionable=(
-                decision_result.actionable
-                if decision_result is not None
-                else None
-            ),
-            decision_recommendation=(
-                decision_result.recommendation
-                if decision_result is not None
-                else None
-            ),
-            decision_reasons=(
-                tuple(
-                    decision_result.reasons
-                )
-                if decision_result is not None
-                else ()
-            ),
-            decision_warnings=(
-                tuple(
-                    decision_result.warnings
-                )
-                if decision_result is not None
-                else ()
-            ),
-            analyst_summary=(
-                {
-                    analyst_id: dict(details)
-                    for analyst_id, details
-                    in decision_result.analyst_summary.items()
-                }
-                if decision_result is not None
-                else {}
-            ),
 
             structure_analyst=structure_analyst,
             structure_opinion=structure_opinion,
@@ -1744,6 +1715,13 @@ class DashboardStatusFilePublisher:
             trade_narrative=trade_narrative,
             trade_reasons=trade_reasons,
             trade_warnings=trade_warnings,
+
+            decision_confidence=decision_confidence,
+            decision_actionable=decision_actionable,
+            decision_recommendation=decision_recommendation,
+            decision_reasons=decision_reasons,
+            decision_warnings=decision_warnings,
+            analyst_summary=decision_analyst_summary,
 
 
             analyst_domain_count=(
@@ -2784,4 +2762,37 @@ def _trade_plan_dashboard_values(
         trade_plan.narrative,
         tuple(trade_plan.reasons),
         tuple(trade_plan.warnings),
+    )
+
+def _decision_result_dashboard_values(
+    decision_result: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+    dict[str, dict[str, object]],
+]:
+    if decision_result is None:
+        return (
+            None,
+            None,
+            None,
+            (),
+            (),
+            {},
+        )
+
+    return (
+        float(decision_result.confidence),
+        decision_result.actionable,
+        decision_result.recommendation,
+        tuple(decision_result.reasons),
+        tuple(decision_result.warnings),
+        {
+            analyst_id: dict(details)
+            for analyst_id, details
+            in decision_result.analyst_summary.items()
+        },
     )
