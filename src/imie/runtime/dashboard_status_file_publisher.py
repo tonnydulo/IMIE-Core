@@ -596,6 +596,53 @@ def _analyst_coverage_percentages(
         analyst_operational_percentage,
     )
 
+def _analyst_confidence_coverage_status(
+    *,
+    analyst_domain_count: int,
+    analyst_confidence_count: int,
+) -> tuple[str, str]:
+    analyst_domain_label = (
+        "analyst domain"
+        if analyst_domain_count == 1
+        else "analyst domains"
+    )
+
+    if analyst_domain_count == 0:
+        return (
+            "UNAVAILABLE",
+            "No analyst domains are available.",
+        )
+
+    if analyst_confidence_count == 0:
+        return (
+            "MISSING",
+            (
+                "Confidence is unavailable for all "
+                f"{analyst_domain_count} "
+                f"{analyst_domain_label}."
+            ),
+        )
+
+    if analyst_confidence_count < analyst_domain_count:
+        return (
+            "PARTIAL",
+            (
+                "Confidence is available for "
+                f"{analyst_confidence_count} of "
+                f"{analyst_domain_count} "
+                f"{analyst_domain_label}."
+            ),
+        )
+
+    return (
+        "COMPLETE",
+        (
+            "Confidence is available for all "
+            f"{analyst_domain_count} "
+            f"{analyst_domain_label}."
+        ),
+    )
+
 def _analyst_resolution_counts(
     analyst_summary: dict[str, dict[str, object]],
 ) -> tuple[
@@ -1193,10 +1240,12 @@ class DashboardStatusFilePublisher:
             ),
         )
 
-        analyst_domain_label = (
-            "analyst domain"
-            if analyst_domain_count == 1
-            else "analyst domains"
+        (
+            analyst_confidence_coverage_state,
+            analyst_confidence_coverage_message,
+        ) = _analyst_confidence_coverage_status(
+            analyst_domain_count=analyst_domain_count,
+            analyst_confidence_count=analyst_confidence_count,
         )
 
         enabled_analyst_domain_label = (
@@ -1204,49 +1253,6 @@ class DashboardStatusFilePublisher:
             if analyst_enabled_count == 1
             else "enabled analyst domains"
         )
-
-        if analyst_domain_count == 0:
-            analyst_confidence_coverage_state = (
-                "UNAVAILABLE"
-            )
-            analyst_confidence_coverage_message = (
-                "No analyst domains are available."
-            )
-
-        elif analyst_confidence_count == 0:
-            analyst_confidence_coverage_state = (
-                "MISSING"
-            )
-            analyst_confidence_coverage_message = (
-                "Confidence is unavailable for all "
-                f"{analyst_domain_count} "
-                f"{analyst_domain_label}."
-            )
-
-        elif (
-            analyst_confidence_count
-            < analyst_domain_count
-        ):
-            analyst_confidence_coverage_state = (
-                "PARTIAL"
-            )
-            analyst_confidence_coverage_message = (
-                "Confidence is available for "
-                f"{analyst_confidence_count} of "
-                f"{analyst_domain_count} "
-                f"{analyst_domain_label}."
-            )
-
-        else:
-            analyst_confidence_coverage_state = (
-                "COMPLETE"
-            )
-            analyst_confidence_coverage_message = (
-                "Confidence is available for all "
-                f"{analyst_domain_count} "
-                f"{analyst_domain_label}."
-            )
-
 
         if analyst_domain_count == 0:
             analyst_enabled_confidence_coverage_state = (

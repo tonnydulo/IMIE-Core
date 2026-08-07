@@ -102,6 +102,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _analyst_resolution_counts,
     _analyst_confidence_metrics,
     _analyst_coverage_percentages,
+    _analyst_confidence_coverage_status,
     _analyst_confidence_values
 )
 
@@ -11460,3 +11461,54 @@ def test_analyst_coverage_percentages_without_domains() -> None:
         0.0,
         0.0,
     )
+
+@pytest.mark.parametrize(
+    (
+        "analyst_domain_count",
+        "analyst_confidence_count",
+        "expected",
+    ),
+    [
+        (
+            0,
+            0,
+            (
+                "UNAVAILABLE",
+                "No analyst domains are available.",
+            ),
+        ),
+        (
+            3,
+            0,
+            (
+                "MISSING",
+                "Confidence is unavailable for all 3 analyst domains.",
+            ),
+        ),
+        (
+            3,
+            2,
+            (
+                "PARTIAL",
+                "Confidence is available for 2 of 3 analyst domains.",
+            ),
+        ),
+        (
+            1,
+            1,
+            (
+                "COMPLETE",
+                "Confidence is available for all 1 analyst domain.",
+            ),
+        ),
+    ],
+)
+def test_analyst_confidence_coverage_status(
+    analyst_domain_count: int,
+    analyst_confidence_count: int,
+    expected: tuple[str, str],
+) -> None:
+    assert _analyst_confidence_coverage_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_confidence_count=analyst_confidence_count,
+    ) == expected
