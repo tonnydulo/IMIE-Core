@@ -1974,12 +1974,8 @@ class DashboardStatusFilePublisher:
             indent=self.indent
         )
 
-        serialized_payload = (
-            payload + "\n"
-        )
-
         serialized_payload_bytes = (
-            serialized_payload.encode(
+            (payload + "\n").encode(
                 "utf-8"
             )
         )
