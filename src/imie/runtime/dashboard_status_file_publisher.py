@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 
@@ -1496,6 +1496,18 @@ class DashboardStatusFilePublisher:
             institutional_bias
         )
 
+        (
+            market_phase_value,
+            market_phase_confidence,
+            market_phase_strength,
+            market_phase_agreement_count,
+            market_phase_conflict_count,
+            market_phase_supporting_domains,
+            market_phase_opposing_domains,
+        ) = _market_phase_dashboard_values(
+            market_phase
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1639,16 +1651,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            market_phase=(
-                market_phase.phase.value
-                if market_phase is not None
-                else None
-            ),
-            market_phase_confidence=(
-                market_phase.confidence
-                if market_phase is not None
-                else None
-            ),
             confluence_direction=(
                 institutional_confluence
                 .dominant_direction
@@ -1736,35 +1738,6 @@ class DashboardStatusFilePublisher:
                 if institutional_confluence is not None
                 else None
             ),
-            market_phase_strength=(
-                market_phase.strength
-                if market_phase is not None
-                else None
-            ),
-            market_phase_agreement_count=(
-                market_phase.agreement_count
-                if market_phase is not None
-                else None
-            ),
-            market_phase_conflict_count=(
-                market_phase.conflict_count
-                if market_phase is not None
-                else None
-            ),
-            market_phase_supporting_domains=(
-                tuple(
-                    market_phase.supporting_domains
-                )
-                if market_phase is not None
-                else ()
-            ),
-            market_phase_opposing_domains=(
-                tuple(
-                    market_phase.opposing_domains
-                )
-                if market_phase is not None
-                else ()
-            ),
 
             structure_analyst=structure_analyst,
             structure_opinion=structure_opinion,
@@ -1841,6 +1814,19 @@ class DashboardStatusFilePublisher:
             institutional_bias_opposing_domains=(
                 institutional_bias_opposing_domains
             ),
+
+            market_phase=market_phase_value,
+            market_phase_confidence=market_phase_confidence,
+            market_phase_strength=market_phase_strength,
+            market_phase_agreement_count=market_phase_agreement_count,
+            market_phase_conflict_count=market_phase_conflict_count,
+            market_phase_supporting_domains=(
+                market_phase_supporting_domains
+            ),
+            market_phase_opposing_domains=(
+                market_phase_opposing_domains
+            ),
+
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2737,4 +2723,36 @@ def _institutional_bias_dashboard_values(
         institutional_bias.conflict_count,
         tuple(institutional_bias.supporting_domains),
         tuple(institutional_bias.opposing_domains),
+    )
+
+def _market_phase_dashboard_values(
+    market_phase: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+]:
+    if market_phase is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+            (),
+        )
+
+    return (
+        market_phase.phase.value,
+        market_phase.confidence,
+        market_phase.strength,
+        market_phase.agreement_count,
+        market_phase.conflict_count,
+        tuple(market_phase.supporting_domains),
+        tuple(market_phase.opposing_domains),
     )
