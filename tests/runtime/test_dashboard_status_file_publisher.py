@@ -105,6 +105,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _analyst_confidence_coverage_status,
     _enabled_analyst_confidence_coverage_status,
     _analyst_resolution_coverage_status,
+    _analyst_operational_status,
     _analyst_confidence_values
 )
 
@@ -11636,4 +11637,82 @@ def test_analyst_resolution_coverage_status(
     assert _analyst_resolution_coverage_status(
         analyst_domain_count=analyst_domain_count,
         analyst_resolved_count=analyst_resolved_count,
+    ) == expected
+
+@pytest.mark.parametrize(
+    (
+        "analyst_domain_count",
+        "analyst_enabled_count",
+        "analyst_enabled_resolved_count",
+        "expected",
+    ),
+    [
+        (
+            0,
+            0,
+            0,
+            (
+                "UNAVAILABLE",
+                "No analyst domains are available.",
+            ),
+        ),
+        (
+            3,
+            0,
+            0,
+            (
+                "DISABLED",
+                "All analyst domains are disabled.",
+            ),
+        ),
+        (
+            3,
+            2,
+            0,
+            (
+                "UNRESOLVED",
+                (
+                    "Enabled analyst domains have not "
+                    "produced an opinion."
+                ),
+            ),
+        ),
+        (
+            3,
+            2,
+            1,
+            (
+                "DEGRADED",
+                (
+                    "1 of 2 enabled analyst domains "
+                    "have produced an opinion."
+                ),
+            ),
+        ),
+        (
+            3,
+            2,
+            2,
+            (
+                "OPERATIONAL",
+                (
+                    "All 2 enabled analyst domains "
+                    "have produced an opinion."
+                ),
+            ),
+        ),
+    ],
+)
+def test_analyst_operational_status(
+    analyst_domain_count: int,
+    analyst_enabled_count: int,
+    analyst_enabled_resolved_count: int,
+    expected: tuple[str, str],
+) -> None:
+    assert _analyst_operational_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_enabled_resolved_count=(
+            analyst_enabled_resolved_count
+        ),
     ) == expected

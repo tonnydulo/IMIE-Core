@@ -738,6 +738,54 @@ def _analyst_resolution_coverage_status(
         ),
     )
 
+def _analyst_operational_status(
+    *,
+    analyst_domain_count: int,
+    analyst_enabled_count: int,
+    analyst_enabled_resolved_count: int,
+) -> tuple[str, str]:
+    if analyst_domain_count == 0:
+        return (
+            "UNAVAILABLE",
+            "No analyst domains are available.",
+        )
+
+    if analyst_enabled_count == 0:
+        return (
+            "DISABLED",
+            "All analyst domains are disabled.",
+        )
+
+    if analyst_enabled_resolved_count == 0:
+        return (
+            "UNRESOLVED",
+            (
+                "Enabled analyst domains have not "
+                "produced an opinion."
+            ),
+        )
+
+    if (
+        analyst_enabled_resolved_count
+        < analyst_enabled_count
+    ):
+        return (
+            "DEGRADED",
+            (
+                f"{analyst_enabled_resolved_count} of "
+                f"{analyst_enabled_count} enabled analyst "
+                "domains have produced an opinion."
+            ),
+        )
+
+    return (
+        "OPERATIONAL",
+        (
+            f"All {analyst_enabled_count} enabled analyst "
+            "domains have produced an opinion."
+        ),
+    )
+
 def _analyst_resolution_counts(
     analyst_summary: dict[str, dict[str, object]],
 ) -> tuple[
@@ -1362,38 +1410,16 @@ class DashboardStatusFilePublisher:
             analyst_resolved_count=analyst_resolved_count,
         )
 
-        if analyst_domain_count == 0:
-            analyst_operational_status = "UNAVAILABLE"
-            analyst_operational_message = (
-                "No analyst domains are available."
-            )
-        elif analyst_enabled_count == 0:
-            analyst_operational_status = "DISABLED"
-            analyst_operational_message = (
-                "All analyst domains are disabled."
-            )
-        elif analyst_enabled_resolved_count == 0:
-            analyst_operational_status = "UNRESOLVED"
-            analyst_operational_message = (
-                "Enabled analyst domains have not "
-                "produced an opinion."
-            )
-        elif (
-            analyst_enabled_resolved_count
-            < analyst_enabled_count
-        ):
-            analyst_operational_status = "DEGRADED"
-            analyst_operational_message = (
-                f"{analyst_enabled_resolved_count} of "
-                f"{analyst_enabled_count} enabled analyst "
-                "domains have produced an opinion."
-            )
-        else:
-            analyst_operational_status = "OPERATIONAL"
-            analyst_operational_message = (
-                f"All {analyst_enabled_count} enabled analyst "
-                "domains have produced an opinion."
-            )
+        (
+            analyst_operational_status,
+            analyst_operational_message,
+        ) = _analyst_operational_status(
+            analyst_domain_count=analyst_domain_count,
+            analyst_enabled_count=analyst_enabled_count,
+            analyst_enabled_resolved_count=(
+                analyst_enabled_resolved_count
+            ),
+        )
 
         return RuntimeDashboardStatus(
             health=self._health,
