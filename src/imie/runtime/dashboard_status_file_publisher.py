@@ -1369,93 +1369,8 @@ class DashboardStatusFilePublisher:
             else {}
         )
 
-        (
-            analyst_domain_count,
-            analyst_enabled_count,
-            analyst_resolved_count,
-            analyst_enabled_resolved_count,
-            analyst_enabled_unresolved_count,
-        ) = _analyst_resolution_counts(
+        analyst_metrics = _build_analyst_dashboard_metrics(
             analyst_summary
-        )
-
-        (
-            analyst_confidences,
-            analyst_enabled_confidences,
-        ) = _analyst_confidence_values(
-            analyst_summary
-        )
-
-        (
-            analyst_confidence_count,
-            analyst_enabled_confidence_count,
-            analyst_missing_confidence_count,
-            analyst_enabled_missing_confidence_count,
-            analyst_average_confidence,
-            analyst_enabled_average_confidence,
-        ) = _analyst_confidence_metrics(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_confidences=analyst_confidences,
-            analyst_enabled_confidences=(
-                analyst_enabled_confidences
-            ),
-        )
-
-        (
-            analyst_confidence_coverage_percentage,
-            analyst_enabled_confidence_coverage_percentage,
-            analyst_coverage_percentage,
-            analyst_operational_percentage,
-        ) = _analyst_coverage_percentages(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_resolved_count=analyst_resolved_count,
-            analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
-            ),
-            analyst_confidence_count=analyst_confidence_count,
-            analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
-            ),
-        )
-
-        (
-            analyst_confidence_coverage_state,
-            analyst_confidence_coverage_message,
-        ) = _analyst_confidence_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_confidence_count=analyst_confidence_count,
-        )
-
-        (
-            analyst_enabled_confidence_coverage_state,
-            analyst_enabled_confidence_coverage_message,
-        ) = _enabled_analyst_confidence_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
-            ),
-        )
-
-        (
-            analyst_coverage_state,
-            analyst_coverage_message,
-        ) = _analyst_resolution_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_resolved_count=analyst_resolved_count,
-        )
-
-        (
-            analyst_operational_status,
-            analyst_operational_message,
-        ) = _analyst_operational_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
-            ),
         )
 
         return RuntimeDashboardStatus(
@@ -2094,73 +2009,73 @@ class DashboardStatusFilePublisher:
             ),
 
             analyst_domain_count=(
-                analyst_domain_count
+                analyst_metrics.domain_count
             ),
             analyst_enabled_count=(
-                analyst_enabled_count
+                analyst_metrics.enabled_count
             ),
             analyst_resolved_count=(
-                analyst_resolved_count
+                analyst_metrics.resolved_count
             ),
             analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
+                analyst_metrics.enabled_resolved_count
             ),
             analyst_enabled_unresolved_count=(
-                analyst_enabled_unresolved_count
+                analyst_metrics.enabled_unresolved_count
             ),
             analyst_confidence_count=(
-                analyst_confidence_count
+                analyst_metrics.confidence_count
             ),
             analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
+                analyst_metrics.enabled_confidence_count
             ),
             analyst_missing_confidence_count=(
-                analyst_missing_confidence_count
+                analyst_metrics.missing_confidence_count
             ),
             analyst_enabled_missing_confidence_count=(
-                analyst_enabled_missing_confidence_count
+                analyst_metrics.enabled_missing_confidence_count
             ),
             analyst_average_confidence=(
-                analyst_average_confidence
+                analyst_metrics.average_confidence
             ),
             analyst_confidence_coverage_percentage=(
-                analyst_confidence_coverage_percentage
+                analyst_metrics.confidence_coverage_percentage
             ),
             analyst_enabled_confidence_coverage_percentage=(
-                analyst_enabled_confidence_coverage_percentage
+                analyst_metrics.enabled_confidence_coverage_percentage
             ),
             analyst_confidence_coverage_state=(
-                analyst_confidence_coverage_state
+                analyst_metrics.confidence_coverage_state
             ),
             analyst_confidence_coverage_message=(
-                analyst_confidence_coverage_message
+                analyst_metrics.confidence_coverage_message
             ),
             analyst_enabled_confidence_coverage_state=(
-                analyst_enabled_confidence_coverage_state
+                analyst_metrics.enabled_confidence_coverage_state
             ),
             analyst_enabled_confidence_coverage_message=(
-                analyst_enabled_confidence_coverage_message
+                analyst_metrics.enabled_confidence_coverage_message
             ),
             analyst_coverage_percentage=(
-                analyst_coverage_percentage
+                analyst_metrics.coverage_percentage
             ),
             analyst_coverage_state=(
-                analyst_coverage_state
+                analyst_metrics.coverage_state
             ),
             analyst_coverage_message=(
-                analyst_coverage_message
+                analyst_metrics.coverage_message
             ),
             analyst_operational_status=(
-                analyst_operational_status
+                analyst_metrics.operational_status
             ),
             analyst_operational_message=(
-                analyst_operational_message
+                analyst_metrics.operational_message
             ),
             analyst_operational_percentage=(
-                analyst_operational_percentage
+                analyst_metrics.operational_percentage
             ),
             analyst_enabled_average_confidence=(
-                analyst_enabled_average_confidence
+                analyst_metrics.enabled_average_confidence
             ),
             latest_error_type=(
                 cycle.error_type
