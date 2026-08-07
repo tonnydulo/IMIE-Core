@@ -700,6 +700,44 @@ def _enabled_analyst_confidence_coverage_status(
         ),
     )
 
+def _analyst_resolution_coverage_status(
+    *,
+    analyst_domain_count: int,
+    analyst_resolved_count: int,
+) -> tuple[str, str]:
+    if analyst_domain_count == 0:
+        return (
+            "UNAVAILABLE",
+            "No analyst domains are available.",
+        )
+
+    if analyst_resolved_count == 0:
+        return (
+            "UNRESOLVED",
+            (
+                "Analyst domains are available, but none "
+                "have produced an opinion."
+            ),
+        )
+
+    if analyst_resolved_count < analyst_domain_count:
+        return (
+            "PARTIAL",
+            (
+                f"{analyst_resolved_count} of "
+                f"{analyst_domain_count} analyst domains "
+                "have produced an opinion."
+            ),
+        )
+
+    return (
+        "COMPLETE",
+        (
+            f"All {analyst_domain_count} analyst domains "
+            "have produced an opinion."
+        ),
+    )
+
 def _analyst_resolution_counts(
     analyst_summary: dict[str, dict[str, object]],
 ) -> tuple[
@@ -1316,30 +1354,13 @@ class DashboardStatusFilePublisher:
             ),
         )
 
-        if analyst_domain_count == 0:
-            analyst_coverage_state = "UNAVAILABLE"
-            analyst_coverage_message = (
-                "No analyst domains are available."
-            )
-        elif analyst_resolved_count == 0:
-            analyst_coverage_state = "UNRESOLVED"
-            analyst_coverage_message = (
-                "Analyst domains are available, but none "
-                "have produced an opinion."
-            )
-        elif analyst_resolved_count < analyst_domain_count:
-            analyst_coverage_state = "PARTIAL"
-            analyst_coverage_message = (
-                f"{analyst_resolved_count} of "
-                f"{analyst_domain_count} analyst domains "
-                "have produced an opinion."
-            )
-        else:
-            analyst_coverage_state = "COMPLETE"
-            analyst_coverage_message = (
-                f"All {analyst_domain_count} analyst domains "
-                "have produced an opinion."
-            )
+        (
+            analyst_coverage_state,
+            analyst_coverage_message,
+        ) = _analyst_resolution_coverage_status(
+            analyst_domain_count=analyst_domain_count,
+            analyst_resolved_count=analyst_resolved_count,
+        )
 
         if analyst_domain_count == 0:
             analyst_operational_status = "UNAVAILABLE"
