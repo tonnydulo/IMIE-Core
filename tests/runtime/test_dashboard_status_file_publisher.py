@@ -98,7 +98,8 @@ from imie.runtime.dashboard_status_file_publisher import (
     _is_owned_temporary_path,
     _directory_open_flags,
     _analyst_confidence_value,
-    _has_resolved_analyst_opinion
+    _has_resolved_analyst_opinion,
+    _analyst_confidence_values
 )
 
 
@@ -11296,3 +11297,48 @@ def test_normalize_optional_text_rejects_invalid_type(
             value,
             field_name="value",
         )
+
+def test_analyst_confidence_values() -> None:
+    analyst_summary = {
+        "STRUCTURE": {
+            "enabled": True,
+            "confidence_available": True,
+            "confidence": 80,
+        },
+        "LIQUIDITY": {
+            "enabled": False,
+            "confidence_available": True,
+            "confidence": 60.5,
+        },
+        "ORDER_BLOCK": {
+            "enabled": True,
+            "confidence_available": False,
+            "confidence": 90,
+        },
+        "AUCTION": {
+            "enabled": True,
+            "confidence_available": True,
+            "confidence": True,
+        },
+    }
+
+    assert _analyst_confidence_values(
+        analyst_summary
+    ) == (
+        (
+            80.0,
+            60.5,
+        ),
+        (
+            80.0,
+        ),
+    )
+
+
+def test_analyst_confidence_values_empty_summary() -> None:
+    assert _analyst_confidence_values(
+        {}
+    ) == (
+        (),
+        (),
+    )

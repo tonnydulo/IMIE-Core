@@ -443,6 +443,37 @@ def _analyst_confidence_value(
         confidence
     )
 
+def _analyst_confidence_values(
+    analyst_summary: dict[str, dict[str, object]],
+) -> tuple[
+    tuple[float, ...],
+    tuple[float, ...],
+]:
+    confidences: list[float] = []
+    enabled_confidences: list[float] = []
+
+    for details in analyst_summary.values():
+        confidence = _analyst_confidence_value(
+            details
+        )
+
+        if confidence is None:
+            continue
+
+        confidences.append(
+            confidence
+        )
+
+        if details.get("enabled") is True:
+            enabled_confidences.append(
+                confidence
+            )
+
+    return (
+        tuple(confidences),
+        tuple(enabled_confidences),
+    )
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -972,27 +1003,12 @@ class DashboardStatusFilePublisher:
             - analyst_enabled_resolved_count
         )
 
-        analyst_confidences: list[float] = []
-        analyst_enabled_confidences: list[float] = []
-
-        for details in analyst_summary.values():
-            normalized_confidence = (
-                _analyst_confidence_value(
-                    details
-                )
-            )
-
-            if normalized_confidence is None:
-                continue
-
-            analyst_confidences.append(
-                normalized_confidence
-            )
-
-            if details.get("enabled") is True:
-                analyst_enabled_confidences.append(
-                    normalized_confidence
-                )
+        (
+            analyst_confidences,
+            analyst_enabled_confidences,
+        ) = _analyst_confidence_values(
+            analyst_summary
+        )
 
         analyst_confidence_count = len(
             analyst_confidences
