@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 
@@ -1508,6 +1508,26 @@ class DashboardStatusFilePublisher:
             market_phase
         )
 
+        (
+            confluence_direction,
+            confluence_score,
+            confluence_agreement_count,
+            confluence_conflict_count,
+            confluence_confidence_adjustment,
+            confluence_structure_support,
+            confluence_liquidity_support,
+            confluence_order_block_support,
+            confluence_auction_support,
+            confluence_pressure_support,
+            confluence_participation_support,
+            confluence_value_support,
+            confluence_bullish_count,
+            confluence_bearish_count,
+            confluence_neutral_count,
+        ) = _institutional_confluence_dashboard_values(
+            institutional_confluence
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1651,83 +1671,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            confluence_direction=(
-                institutional_confluence
-                .dominant_direction
-                .value
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_score=(
-                institutional_confluence.score
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_agreement_count=(
-                institutional_confluence.agreement_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_conflict_count=(
-                institutional_confluence.conflict_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_confidence_adjustment=(
-                institutional_confluence.confidence_adjustment
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_structure_support=(
-                institutional_confluence.structure_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_liquidity_support=(
-                institutional_confluence.liquidity_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_order_block_support=(
-                institutional_confluence.order_block_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_auction_support=(
-                institutional_confluence.auction_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_pressure_support=(
-                institutional_confluence.pressure_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_participation_support=(
-                institutional_confluence.participation_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_value_support=(
-                institutional_confluence.value_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_bullish_count=(
-                institutional_confluence.bullish_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_bearish_count=(
-                institutional_confluence.bearish_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_neutral_count=(
-                institutional_confluence.neutral_count
-                if institutional_confluence is not None
-                else None
-            ),
             confluence_unknown_count=(
                 institutional_confluence.unknown_count
                 if institutional_confluence is not None
@@ -1826,6 +1769,26 @@ class DashboardStatusFilePublisher:
             market_phase_opposing_domains=(
                 market_phase_opposing_domains
             ),
+
+            confluence_direction=confluence_direction,
+            confluence_score=confluence_score,
+            confluence_agreement_count=confluence_agreement_count,
+            confluence_conflict_count=confluence_conflict_count,
+            confluence_confidence_adjustment=(
+                confluence_confidence_adjustment
+            ),
+            confluence_structure_support=confluence_structure_support,
+            confluence_liquidity_support=confluence_liquidity_support,
+            confluence_order_block_support=confluence_order_block_support,
+            confluence_auction_support=confluence_auction_support,
+            confluence_pressure_support=confluence_pressure_support,
+            confluence_participation_support=(
+                confluence_participation_support
+            ),
+            confluence_value_support=confluence_value_support,
+            confluence_bullish_count=confluence_bullish_count,
+            confluence_bearish_count=confluence_bearish_count,
+            confluence_neutral_count=confluence_neutral_count,
 
 
             analyst_domain_count=(
@@ -2755,4 +2718,60 @@ def _market_phase_dashboard_values(
         market_phase.conflict_count,
         tuple(market_phase.supporting_domains),
         tuple(market_phase.opposing_domains),
+    )
+
+def _institutional_confluence_dashboard_values(
+    institutional_confluence: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+]:
+    if institutional_confluence is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+    return (
+        institutional_confluence.dominant_direction.value,
+        institutional_confluence.score,
+        institutional_confluence.agreement_count,
+        institutional_confluence.conflict_count,
+        institutional_confluence.confidence_adjustment,
+        institutional_confluence.structure_support,
+        institutional_confluence.liquidity_support,
+        institutional_confluence.order_block_support,
+        institutional_confluence.auction_support,
+        institutional_confluence.pressure_support,
+        institutional_confluence.participation_support,
+        institutional_confluence.value_support,
+        institutional_confluence.bullish_count,
+        institutional_confluence.bearish_count,
+        institutional_confluence.neutral_count,
     )
