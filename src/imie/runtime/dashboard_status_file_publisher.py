@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 
@@ -1443,6 +1443,17 @@ class DashboardStatusFilePublisher:
             analyst_summary=value_summary,
         )
 
+        (
+            setup_lifecycle_state,
+            setup_lifecycle_direction,
+            setup_lifecycle_confidence,
+            setup_lifecycle_atr_distance,
+            setup_lifecycle_action,
+            setup_lifecycle_reason,
+        ) = _setup_lifecycle_dashboard_values(
+            setup_lifecycle
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1762,36 +1773,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            setup_lifecycle_state=(
-                setup_lifecycle.state
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_direction=(
-                setup_lifecycle.direction
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_confidence=(
-                setup_lifecycle.confidence
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_atr_distance=(
-                setup_lifecycle.atr_distance
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_action=(
-                setup_lifecycle.action
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_reason=(
-                setup_lifecycle.reason
-                if setup_lifecycle is not None
-                else None
-            ),
             acceptance_confirmed=(
                 acceptance.accepted
                 if acceptance is not None
@@ -1926,6 +1907,13 @@ class DashboardStatusFilePublisher:
             value_opinion=value_opinion,
             value_confidence=value_confidence,
             value_enabled=value_enabled,
+
+            setup_lifecycle_state=setup_lifecycle_state,
+            setup_lifecycle_direction=setup_lifecycle_direction,
+            setup_lifecycle_confidence=setup_lifecycle_confidence,
+            setup_lifecycle_atr_distance=setup_lifecycle_atr_distance,
+            setup_lifecycle_action=setup_lifecycle_action,
+            setup_lifecycle_reason=setup_lifecycle_reason,
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2679,4 +2667,33 @@ def _analyst_domain_dashboard_values(
         analyst_summary.get("opinion"),
         analyst_summary.get("confidence"),
         analyst_summary.get("enabled"),
+    )
+
+def _setup_lifecycle_dashboard_values(
+    setup_lifecycle: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+]:
+    if setup_lifecycle is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+    return (
+        setup_lifecycle.state,
+        setup_lifecycle.direction,
+        setup_lifecycle.confidence,
+        setup_lifecycle.atr_distance,
+        setup_lifecycle.action,
+        setup_lifecycle.reason,
     )
