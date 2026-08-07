@@ -97,6 +97,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _display_value,
     _is_owned_temporary_path,
     _directory_open_flags,
+    _has_resolved_analyst_opinion
 )
 
 
@@ -5787,6 +5788,65 @@ def test_unsupported_directory_open_error_is_ignored(
     assert dashboard_temporary_files(
         tmp_path
     ) == []
+
+@pytest.mark.parametrize(
+    (
+        "details",
+        "expected",
+    ),
+    [
+        (
+            {},
+            False,
+        ),
+        (
+            {
+                "opinion": None,
+            },
+            False,
+        ),
+        (
+            {
+                "opinion": 100,
+            },
+            False,
+        ),
+        (
+            {
+                "opinion": "",
+            },
+            False,
+        ),
+        (
+            {
+                "opinion": "   ",
+            },
+            False,
+        ),
+        (
+            {
+                "opinion": "BULLISH",
+            },
+            True,
+        ),
+        (
+            {
+                "opinion": "  BEARISH  ",
+            },
+            True,
+        ),
+    ],
+)
+def test_has_resolved_analyst_opinion(
+    details: dict[str, object],
+    expected: bool,
+) -> None:
+    assert (
+        _has_resolved_analyst_opinion(
+            details
+        )
+        is expected
+    )
 
 def test_unsupported_directory_fsync_error_is_ignored(
     tmp_path: Path,

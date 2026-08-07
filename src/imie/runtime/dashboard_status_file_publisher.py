@@ -395,6 +395,23 @@ def _display_value(
 
     return normalized or None
 
+def _has_resolved_analyst_opinion(
+    details: dict[str, object],
+) -> bool:
+    opinion = details.get(
+        "opinion"
+    )
+
+    return (
+        isinstance(
+            opinion,
+            str,
+        )
+        and bool(
+            opinion.strip()
+        )
+    )
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -903,17 +920,8 @@ class DashboardStatusFilePublisher:
         analyst_resolved_count = sum(
             1
             for details in analyst_summary.values()
-            if (
-                isinstance(
-                    details.get("opinion"),
-                    str,
-                )
-                and bool(
-                    details.get(
-                        "opinion",
-                        "",
-                    ).strip()
-                )
+            if _has_resolved_analyst_opinion(
+                details
             )
         )
 
@@ -922,15 +930,8 @@ class DashboardStatusFilePublisher:
             for details in analyst_summary.values()
             if (
                 details.get("enabled") is True
-                and isinstance(
-                    details.get("opinion"),
-                    str,
-                )
-                and bool(
-                    details.get(
-                        "opinion",
-                        "",
-                    ).strip()
+                and _has_resolved_analyst_opinion(
+                    details
                 )
             )
         )
