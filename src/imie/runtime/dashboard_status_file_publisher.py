@@ -985,6 +985,42 @@ class TemporaryFileValidationSnapshot:
     frozen=True,
     slots=True,
 )
+class _AnalystDashboardMetrics:
+    domain_count: int
+    enabled_count: int
+    resolved_count: int
+    enabled_resolved_count: int
+    enabled_unresolved_count: int
+
+    confidence_count: int
+    enabled_confidence_count: int
+    missing_confidence_count: int
+    enabled_missing_confidence_count: int
+
+    average_confidence: float | None
+    enabled_average_confidence: float | None
+
+    confidence_coverage_percentage: float
+    enabled_confidence_coverage_percentage: float
+    coverage_percentage: float
+    operational_percentage: float
+
+    confidence_coverage_state: str
+    confidence_coverage_message: str
+
+    enabled_confidence_coverage_state: str
+    enabled_confidence_coverage_message: str
+
+    coverage_state: str
+    coverage_message: str
+
+    operational_status: str
+    operational_message: str
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
 class TemporaryFileExpectations:
     size: int
     digest: str
@@ -1332,805 +1368,10 @@ class DashboardStatusFilePublisher:
             else {}
         )
 
-        (
-            analyst_domain_count,
-            analyst_enabled_count,
-            analyst_resolved_count,
-            analyst_enabled_resolved_count,
-            analyst_enabled_unresolved_count,
-        ) = _analyst_resolution_counts(
+        analyst_metrics = _build_analyst_dashboard_metrics(
             analyst_summary
         )
-
-        (
-            analyst_confidences,
-            analyst_enabled_confidences,
-        ) = _analyst_confidence_values(
-            analyst_summary
-        )
-
-        (
-            analyst_confidence_count,
-            analyst_enabled_confidence_count,
-            analyst_missing_confidence_count,
-            analyst_enabled_missing_confidence_count,
-            analyst_average_confidence,
-            analyst_enabled_average_confidence,
-        ) = _analyst_confidence_metrics(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_confidences=analyst_confidences,
-            analyst_enabled_confidences=(
-                analyst_enabled_confidences
-            ),
-        )
-
-        (
-            analyst_confidence_coverage_percentage,
-            analyst_enabled_confidence_coverage_percentage,
-            analyst_coverage_percentage,
-            analyst_operational_percentage,
-        ) = _analyst_coverage_percentages(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_resolved_count=analyst_resolved_count,
-            analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
-            ),
-            analyst_confidence_count=analyst_confidence_count,
-            analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
-            ),
-        )
-
-        (
-            analyst_confidence_coverage_state,
-            analyst_confidence_coverage_message,
-        ) = _analyst_confidence_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_confidence_count=analyst_confidence_count,
-        )
-
-        (
-            analyst_enabled_confidence_coverage_state,
-            analyst_enabled_confidence_coverage_message,
-        ) = _enabled_analyst_confidence_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
-            ),
-        )
-
-        (
-            analyst_coverage_state,
-            analyst_coverage_message,
-        ) = _analyst_resolution_coverage_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_resolved_count=analyst_resolved_count,
-        )
-
-        (
-            analyst_operational_status,
-            analyst_operational_message,
-        ) = _analyst_operational_status(
-            analyst_domain_count=analyst_domain_count,
-            analyst_enabled_count=analyst_enabled_count,
-            analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
-            ),
-        )
-
-        return RuntimeDashboardStatus(
-            health=self._health,
-            symbol=(
-                cycle.symbol
-                if cycle is not None
-                else self._symbol
-            ),
-            timeframe=(
-                cycle.timeframe
-                if cycle is not None
-                else self._timeframe
-            ),
-            latest_cycle_status=(
-                cycle.status
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_message=(
-                cycle.message
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_started_at=(
-                cycle.started_at
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_completed_at=(
-                cycle.completed_at
-                if cycle is not None
-                else None
-            ),
-            market_session=self._market_session,
-            latest_decision=self._latest_decision,
-            decision_confidence=(
-                float(
-                    decision_result.confidence
-                )
-                if decision_result is not None
-                else None
-            ),
-            decision_actionable=(
-                decision_result.actionable
-                if decision_result is not None
-                else None
-            ),
-            decision_recommendation=(
-                decision_result.recommendation
-                if decision_result is not None
-                else None
-            ),
-            decision_reasons=(
-                tuple(
-                    decision_result.reasons
-                )
-                if decision_result is not None
-                else ()
-            ),
-            decision_warnings=(
-                tuple(
-                    decision_result.warnings
-                )
-                if decision_result is not None
-                else ()
-            ),
-            analyst_summary=(
-                {
-                    analyst_id: dict(details)
-                    for analyst_id, details
-                    in decision_result.analyst_summary.items()
-                }
-                if decision_result is not None
-                else {}
-            ),
-            trade_direction=(
-                _display_value(
-                    trade_plan.direction
-                )
-                if trade_plan is not None
-                else None
-            ),
-
-            trade_plan_valid=(
-                trade_plan.valid
-                if trade_plan is not None
-                else None
-            ),
-            trade_entry=(
-                trade_plan.entry
-                if trade_plan is not None
-                else None
-            ),
-            trade_stop=(
-                trade_plan.stop
-                if trade_plan is not None
-                else None
-            ),
-            trade_target1=(
-                trade_plan.target1
-                if trade_plan is not None
-                else None
-            ),
-            trade_target2=(
-                trade_plan.target2
-                if trade_plan is not None
-                else None
-            ),
-            trade_rr1=(
-                trade_plan.rr1
-                if trade_plan is not None
-                else None
-            ),
-            trade_rr2=(
-                trade_plan.rr2
-                if trade_plan is not None
-                else None
-            ),
-            trade_quality=(
-                trade_plan.quality
-                if trade_plan is not None
-                else None
-            ),
-
-            trade_narrative=(
-                trade_plan.narrative
-                if trade_plan is not None
-                else None
-            ),
-            trade_reasons=(
-                tuple(
-                    trade_plan.reasons
-                )
-                if trade_plan is not None
-                else ()
-            ),
-            trade_warnings=(
-                tuple(
-                    trade_plan.warnings
-                )
-                if trade_plan is not None
-                else ()
-            ),
-
-            institutional_bias=(
-                institutional_bias.direction.value
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_confidence=(
-                institutional_bias.confidence
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_strength=(
-                institutional_bias.strength
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_bullish_score=(
-                institutional_bias.bullish_score
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_bearish_score=(
-                institutional_bias.bearish_score
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_agreement_count=(
-                institutional_bias.agreement_count
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_conflict_count=(
-                institutional_bias.conflict_count
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_supporting_domains=(
-                tuple(
-                    institutional_bias.supporting_domains
-                )
-                if institutional_bias is not None
-                else ()
-            ),
-            institutional_bias_opposing_domains=(
-                tuple(
-                    institutional_bias.opposing_domains
-                )
-                if institutional_bias is not None
-                else ()
-            ),
-            market_phase=(
-                market_phase.phase.value
-                if market_phase is not None
-                else None
-            ),
-            market_phase_confidence=(
-                market_phase.confidence
-                if market_phase is not None
-                else None
-            ),
-            confluence_direction=(
-                institutional_confluence
-                .dominant_direction
-                .value
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_score=(
-                institutional_confluence.score
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_agreement_count=(
-                institutional_confluence.agreement_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_conflict_count=(
-                institutional_confluence.conflict_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_confidence_adjustment=(
-                institutional_confluence.confidence_adjustment
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_structure_support=(
-                institutional_confluence.structure_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_liquidity_support=(
-                institutional_confluence.liquidity_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_order_block_support=(
-                institutional_confluence.order_block_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_auction_support=(
-                institutional_confluence.auction_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_pressure_support=(
-                institutional_confluence.pressure_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_participation_support=(
-                institutional_confluence.participation_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_value_support=(
-                institutional_confluence.value_support
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_bullish_count=(
-                institutional_confluence.bullish_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_bearish_count=(
-                institutional_confluence.bearish_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_neutral_count=(
-                institutional_confluence.neutral_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_unknown_count=(
-                institutional_confluence.unknown_count
-                if institutional_confluence is not None
-                else None
-            ),
-            confluence_domain_count=(
-                institutional_confluence.domain_count
-                if institutional_confluence is not None
-                else None
-            ),
-            market_phase_strength=(
-                market_phase.strength
-                if market_phase is not None
-                else None
-            ),
-            market_phase_agreement_count=(
-                market_phase.agreement_count
-                if market_phase is not None
-                else None
-            ),
-            market_phase_conflict_count=(
-                market_phase.conflict_count
-                if market_phase is not None
-                else None
-            ),
-            market_phase_supporting_domains=(
-                tuple(
-                    market_phase.supporting_domains
-                )
-                if market_phase is not None
-                else ()
-            ),
-            market_phase_opposing_domains=(
-                tuple(
-                    market_phase.opposing_domains
-                )
-                if market_phase is not None
-                else ()
-            ),
-
-            setup_lifecycle_state=(
-                setup_lifecycle.state
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_direction=(
-                setup_lifecycle.direction
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_confidence=(
-                setup_lifecycle.confidence
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_atr_distance=(
-                setup_lifecycle.atr_distance
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_action=(
-                setup_lifecycle.action
-                if setup_lifecycle is not None
-                else None
-            ),
-            setup_lifecycle_reason=(
-                setup_lifecycle.reason
-                if setup_lifecycle is not None
-                else None
-            ),
-            acceptance_confirmed=(
-                acceptance.accepted
-                if acceptance is not None
-                else None
-            ),
-            acceptance_direction=(
-                acceptance.direction
-                if acceptance is not None
-                else None
-            ),
-            acceptance_level=(
-                acceptance.level
-                if acceptance is not None
-                else None
-            ),
-            acceptance_score=(
-                acceptance.score
-                if acceptance is not None
-                else None
-            ),
-            acceptance_confidence=(
-                acceptance.confidence
-                if acceptance is not None
-                else None
-            ),
-            acceptance_trigger_price=(
-                acceptance.trigger_price
-                if acceptance is not None
-                else None
-            ),
-            acceptance_previous_level=(
-                acceptance.previous_level
-                if acceptance is not None
-                else None
-            ),
-            acceptance_pullback_low=(
-                acceptance.pullback_low
-                if acceptance is not None
-                else None
-            ),
-            acceptance_pullback_high=(
-                acceptance.pullback_high
-                if acceptance is not None
-                else None
-            ),
-            acceptance_reason=(
-                acceptance.reason
-                if acceptance is not None
-                else None
-            ),
-            acceptance_evidence=(
-                tuple(
-                    acceptance.evidence
-                )
-                if acceptance is not None
-                else ()
-            ),
-            acceptance_warnings=(
-                tuple(
-                    acceptance.warnings
-                )
-                if acceptance is not None
-                else ()
-            ),
-
-            trend_analyst=(
-                trend.analyst
-                if trend is not None
-                else None
-            ),
-            trend_opinion=(
-                trend.opinion
-                if trend is not None
-                else None
-            ),
-            trend_confidence=(
-                trend.confidence
-                if trend is not None
-                else None
-            ),
-            trend_enabled=(
-                trend.enabled
-                if trend is not None
-                else None
-            ),
-            trend_evidence=(
-                tuple(
-                    trend.evidence
-                )
-                if trend is not None
-                else ()
-            ),
-            trend_warnings=(
-                tuple(
-                    trend.warnings
-                )
-                if trend is not None
-                else ()
-            ),
-
-            structure_analyst=(
-                "STRUCTURE"
-                if structure_summary is not None
-                else None
-            ),
-            structure_opinion=(
-                structure_summary.get(
-                    "opinion"
-                )
-                if structure_summary is not None
-                else None
-            ),
-            structure_confidence=(
-                structure_summary.get(
-                    "confidence"
-                )
-                if structure_summary is not None
-                else None
-            ),
-            structure_enabled=(
-                structure_summary.get(
-                    "enabled"
-                )
-                if structure_summary is not None
-                else None
-            ),
-
-            liquidity_analyst=(
-                "LIQUIDITY"
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_opinion=(
-                liquidity_summary.get(
-                    "opinion"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_confidence=(
-                liquidity_summary.get(
-                    "confidence"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_enabled=(
-                liquidity_summary.get(
-                    "enabled"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
-
-            order_block_analyst=(
-                "ORDER_BLOCK"
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_opinion=(
-                order_block_summary.get(
-                    "opinion"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_confidence=(
-                order_block_summary.get(
-                    "confidence"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_enabled=(
-                order_block_summary.get(
-                    "enabled"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            auction_analyst=(
-                "AUCTION"
-                if auction_summary is not None
-                else None
-            ),
-            auction_opinion=(
-                auction_summary.get(
-                    "opinion"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            auction_confidence=(
-                auction_summary.get(
-                    "confidence"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            auction_enabled=(
-                auction_summary.get(
-                    "enabled"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            pressure_analyst=(
-                "PRESSURE"
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_opinion=(
-                pressure_summary.get(
-                    "opinion"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_confidence=(
-                pressure_summary.get(
-                    "confidence"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_enabled=(
-                pressure_summary.get(
-                    "enabled"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            participation_analyst=(
-                "PARTICIPATION"
-                if participation_summary is not None
-                else None
-            ),
-            participation_opinion=(
-                participation_summary.get(
-                    "opinion"
-                )
-                if participation_summary is not None
-                else None
-            ),
-            participation_confidence=(
-                participation_summary.get(
-                    "confidence"
-                )
-                if participation_summary is not None
-                else None
-            ),
-            participation_enabled=(
-                participation_summary.get(
-                    "enabled"
-                )
-                if participation_summary is not None
-                else None
-            ),
-
-            value_analyst=(
-                "VALUE"
-                if value_summary is not None
-                else None
-            ),
-            value_opinion=(
-                value_summary.get(
-                    "opinion"
-                )
-                if value_summary is not None
-                else None
-            ),
-            value_confidence=(
-                value_summary.get(
-                    "confidence"
-                )
-                if value_summary is not None
-                else None
-            ),
-            value_enabled=(
-                value_summary.get(
-                    "enabled"
-                )
-                if value_summary is not None
-                else None
-            ),
-
-            analyst_domain_count=(
-                analyst_domain_count
-            ),
-            analyst_enabled_count=(
-                analyst_enabled_count
-            ),
-            analyst_resolved_count=(
-                analyst_resolved_count
-            ),
-            analyst_enabled_resolved_count=(
-                analyst_enabled_resolved_count
-            ),
-            analyst_enabled_unresolved_count=(
-                analyst_enabled_unresolved_count
-            ),
-            analyst_confidence_count=(
-                analyst_confidence_count
-            ),
-            analyst_enabled_confidence_count=(
-                analyst_enabled_confidence_count
-            ),
-            analyst_missing_confidence_count=(
-                analyst_missing_confidence_count
-            ),
-            analyst_enabled_missing_confidence_count=(
-                analyst_enabled_missing_confidence_count
-            ),
-            analyst_average_confidence=(
-                analyst_average_confidence
-            ),
-            analyst_confidence_coverage_percentage=(
-                analyst_confidence_coverage_percentage
-            ),
-            analyst_enabled_confidence_coverage_percentage=(
-                analyst_enabled_confidence_coverage_percentage
-            ),
-            analyst_confidence_coverage_state=(
-                analyst_confidence_coverage_state
-            ),
-            analyst_confidence_coverage_message=(
-                analyst_confidence_coverage_message
-            ),
-            analyst_enabled_confidence_coverage_state=(
-                analyst_enabled_confidence_coverage_state
-            ),
-            analyst_enabled_confidence_coverage_message=(
-                analyst_enabled_confidence_coverage_message
-            ),
-            analyst_coverage_percentage=(
-                analyst_coverage_percentage
-            ),
-            analyst_coverage_state=(
-                analyst_coverage_state
-            ),
-            analyst_coverage_message=(
-                analyst_coverage_message
-            ),
-            analyst_operational_status=(
-                analyst_operational_status
-            ),
-            analyst_operational_message=(
-                analyst_operational_message
-            ),
-            analyst_operational_percentage=(
-                analyst_operational_percentage
-            ),
-            analyst_enabled_average_confidence=(
-                analyst_enabled_average_confidence
-            ),
-            latest_error_type=(
-                cycle.error_type
-                if cycle is not None
-                else None
-            ),
-        )
+        
 
     def _apply_existing_destination_mode(
         self,
@@ -2641,4 +1882,146 @@ def _is_owned_temporary_path(
             character in "0123456789abcdef"
             for character in token
         )
+    )
+
+def _build_analyst_dashboard_metrics(
+    analyst_summary: dict[str, dict[str, object]],
+) -> _AnalystDashboardMetrics:
+    (
+        analyst_domain_count,
+        analyst_enabled_count,
+        analyst_resolved_count,
+        analyst_enabled_resolved_count,
+        analyst_enabled_unresolved_count,
+    ) = _analyst_resolution_counts(
+        analyst_summary
+    )
+
+    (
+        analyst_confidences,
+        analyst_enabled_confidences,
+    ) = _analyst_confidence_values(
+        analyst_summary
+    )
+
+    (
+        analyst_confidence_count,
+        analyst_enabled_confidence_count,
+        analyst_missing_confidence_count,
+        analyst_enabled_missing_confidence_count,
+        analyst_average_confidence,
+        analyst_enabled_average_confidence,
+    ) = _analyst_confidence_metrics(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_confidences=analyst_confidences,
+        analyst_enabled_confidences=(
+            analyst_enabled_confidences
+        ),
+    )
+
+    (
+        analyst_confidence_coverage_percentage,
+        analyst_enabled_confidence_coverage_percentage,
+        analyst_coverage_percentage,
+        analyst_operational_percentage,
+    ) = _analyst_coverage_percentages(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_resolved_count=analyst_resolved_count,
+        analyst_enabled_resolved_count=(
+            analyst_enabled_resolved_count
+        ),
+        analyst_confidence_count=analyst_confidence_count,
+        analyst_enabled_confidence_count=(
+            analyst_enabled_confidence_count
+        ),
+    )
+
+    (
+        analyst_confidence_coverage_state,
+        analyst_confidence_coverage_message,
+    ) = _analyst_confidence_coverage_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_confidence_count=analyst_confidence_count,
+    )
+
+    (
+        analyst_enabled_confidence_coverage_state,
+        analyst_enabled_confidence_coverage_message,
+    ) = _enabled_analyst_confidence_coverage_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_enabled_confidence_count=(
+            analyst_enabled_confidence_count
+        ),
+    )
+
+    (
+        analyst_coverage_state,
+        analyst_coverage_message,
+    ) = _analyst_resolution_coverage_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_resolved_count=analyst_resolved_count,
+    )
+
+    (
+        analyst_operational_status,
+        analyst_operational_message,
+    ) = _analyst_operational_status(
+        analyst_domain_count=analyst_domain_count,
+        analyst_enabled_count=analyst_enabled_count,
+        analyst_enabled_resolved_count=(
+            analyst_enabled_resolved_count
+        ),
+    )
+
+    return _AnalystDashboardMetrics(
+        domain_count=analyst_domain_count,
+        enabled_count=analyst_enabled_count,
+        resolved_count=analyst_resolved_count,
+        enabled_resolved_count=(
+            analyst_enabled_resolved_count
+        ),
+        enabled_unresolved_count=(
+            analyst_enabled_unresolved_count
+        ),
+        confidence_count=analyst_confidence_count,
+        enabled_confidence_count=(
+            analyst_enabled_confidence_count
+        ),
+        missing_confidence_count=(
+            analyst_missing_confidence_count
+        ),
+        enabled_missing_confidence_count=(
+            analyst_enabled_missing_confidence_count
+        ),
+        average_confidence=analyst_average_confidence,
+        enabled_average_confidence=(
+            analyst_enabled_average_confidence
+        ),
+        confidence_coverage_percentage=(
+            analyst_confidence_coverage_percentage
+        ),
+        enabled_confidence_coverage_percentage=(
+            analyst_enabled_confidence_coverage_percentage
+        ),
+        coverage_percentage=analyst_coverage_percentage,
+        operational_percentage=analyst_operational_percentage,
+        confidence_coverage_state=(
+            analyst_confidence_coverage_state
+        ),
+        confidence_coverage_message=(
+            analyst_confidence_coverage_message
+        ),
+        enabled_confidence_coverage_state=(
+            analyst_enabled_confidence_coverage_state
+        ),
+        enabled_confidence_coverage_message=(
+            analyst_enabled_confidence_coverage_message
+        ),
+        coverage_state=analyst_coverage_state,
+        coverage_message=analyst_coverage_message,
+        operational_status=analyst_operational_status,
+        operational_message=analyst_operational_message,
     )
