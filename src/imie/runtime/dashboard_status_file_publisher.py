@@ -1454,6 +1454,23 @@ class DashboardStatusFilePublisher:
             setup_lifecycle
         )
 
+        (
+            acceptance_confirmed,
+            acceptance_direction,
+            acceptance_level,
+            acceptance_score,
+            acceptance_confidence,
+            acceptance_trigger_price,
+            acceptance_previous_level,
+            acceptance_pullback_low,
+            acceptance_pullback_high,
+            acceptance_reason,
+            acceptance_evidence,
+            acceptance_warnings,
+        ) = _acceptance_dashboard_values(
+            acceptance
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1773,71 +1790,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            acceptance_confirmed=(
-                acceptance.accepted
-                if acceptance is not None
-                else None
-            ),
-            acceptance_direction=(
-                acceptance.direction
-                if acceptance is not None
-                else None
-            ),
-            acceptance_level=(
-                acceptance.level
-                if acceptance is not None
-                else None
-            ),
-            acceptance_score=(
-                acceptance.score
-                if acceptance is not None
-                else None
-            ),
-            acceptance_confidence=(
-                acceptance.confidence
-                if acceptance is not None
-                else None
-            ),
-            acceptance_trigger_price=(
-                acceptance.trigger_price
-                if acceptance is not None
-                else None
-            ),
-            acceptance_previous_level=(
-                acceptance.previous_level
-                if acceptance is not None
-                else None
-            ),
-            acceptance_pullback_low=(
-                acceptance.pullback_low
-                if acceptance is not None
-                else None
-            ),
-            acceptance_pullback_high=(
-                acceptance.pullback_high
-                if acceptance is not None
-                else None
-            ),
-            acceptance_reason=(
-                acceptance.reason
-                if acceptance is not None
-                else None
-            ),
-            acceptance_evidence=(
-                tuple(
-                    acceptance.evidence
-                )
-                if acceptance is not None
-                else ()
-            ),
-            acceptance_warnings=(
-                tuple(
-                    acceptance.warnings
-                )
-                if acceptance is not None
-                else ()
-            ),
-
             trend_analyst=(
                 trend.analyst
                 if trend is not None
@@ -1914,6 +1866,19 @@ class DashboardStatusFilePublisher:
             setup_lifecycle_atr_distance=setup_lifecycle_atr_distance,
             setup_lifecycle_action=setup_lifecycle_action,
             setup_lifecycle_reason=setup_lifecycle_reason,
+
+            acceptance_confirmed=acceptance_confirmed,
+            acceptance_direction=acceptance_direction,
+            acceptance_level=acceptance_level,
+            acceptance_score=acceptance_score,
+            acceptance_confidence=acceptance_confidence,
+            acceptance_trigger_price=acceptance_trigger_price,
+            acceptance_previous_level=acceptance_previous_level,
+            acceptance_pullback_low=acceptance_pullback_low,
+            acceptance_pullback_high=acceptance_pullback_high,
+            acceptance_reason=acceptance_reason,
+            acceptance_evidence=acceptance_evidence,
+            acceptance_warnings=acceptance_warnings,
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2696,4 +2661,51 @@ def _setup_lifecycle_dashboard_values(
         setup_lifecycle.atr_distance,
         setup_lifecycle.action,
         setup_lifecycle.reason,
+    )
+
+def _acceptance_dashboard_values(
+    acceptance: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+]:
+    if acceptance is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+            (),
+        )
+
+    return (
+        acceptance.accepted,
+        acceptance.direction,
+        acceptance.level,
+        acceptance.score,
+        acceptance.confidence,
+        acceptance.trigger_price,
+        acceptance.previous_level,
+        acceptance.pullback_low,
+        acceptance.pullback_high,
+        acceptance.reason,
+        tuple(acceptance.evidence),
+        tuple(acceptance.warnings),
     )
