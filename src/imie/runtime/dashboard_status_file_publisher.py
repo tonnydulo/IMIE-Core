@@ -1267,15 +1267,7 @@ class DashboardStatusFilePublisher:
             decision_result
         )
 
-        (
-            structure_summary,
-            liquidity_summary,
-            order_block_summary,
-            auction_summary,
-            pressure_summary,
-            participation_summary,
-            value_summary,
-        ) = _analyst_summary_sources(
+        analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
 
@@ -1299,70 +1291,56 @@ class DashboardStatusFilePublisher:
             structure_opinion,
             structure_confidence,
             structure_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="STRUCTURE",
-            analyst_summary=structure_summary,
-        )
+        ) = analyst_domain_values["STRUCTURE"]
 
         (
             liquidity_analyst,
             liquidity_opinion,
             liquidity_confidence,
             liquidity_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="LIQUIDITY",
-            analyst_summary=liquidity_summary,
-        )
+        ) = analyst_domain_values["LIQUIDITY"]
 
         (
             order_block_analyst,
             order_block_opinion,
             order_block_confidence,
             order_block_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="ORDER_BLOCK",
-            analyst_summary=order_block_summary,
-        )
+        ) = analyst_domain_values["ORDER_BLOCK"]
 
         (
             auction_analyst,
             auction_opinion,
             auction_confidence,
             auction_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="AUCTION",
-            analyst_summary=auction_summary,
-        )
+        ) = analyst_domain_values["AUCTION"]
 
         (
             pressure_analyst,
             pressure_opinion,
             pressure_confidence,
             pressure_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="PRESSURE",
-            analyst_summary=pressure_summary,
-        )
+        ) = analyst_domain_values["PRESSURE"]
 
         (
             participation_analyst,
             participation_opinion,
             participation_confidence,
             participation_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="PARTICIPATION",
-            analyst_summary=participation_summary,
-        )
+        ) = analyst_domain_values["PARTICIPATION"]
 
         (
             value_analyst,
             value_opinion,
             value_confidence,
             value_enabled,
-        ) = _analyst_domain_dashboard_values(
-            analyst_id="VALUE",
-            analyst_summary=value_summary,
-        )
+        ) = analyst_domain_values["VALUE"]
+
+        (
+            value_analyst,
+            value_opinion,
+            value_confidence,
+            value_enabled,
+        ) = analyst_domain_values["VALUE"]
 
         (
             setup_lifecycle_state,
@@ -2771,27 +2749,6 @@ def _institutional_context_dashboard_sources(
         institutional_context.trend,
     )
 
-def _analyst_summary_sources(
-    analyst_summary: dict[str, dict[str, object]],
-) -> tuple[
-    dict[str, object] | None,
-    dict[str, object] | None,
-    dict[str, object] | None,
-    dict[str, object] | None,
-    dict[str, object] | None,
-    dict[str, object] | None,
-    dict[str, object] | None,
-]:
-    return (
-        analyst_summary.get("STRUCTURE"),
-        analyst_summary.get("LIQUIDITY"),
-        analyst_summary.get("ORDER_BLOCK"),
-        analyst_summary.get("AUCTION"),
-        analyst_summary.get("PRESSURE"),
-        analyst_summary.get("PARTICIPATION"),
-        analyst_summary.get("VALUE"),
-    )
-
 def _decision_dashboard_sources(
     decision_result: object | None,
 ) -> tuple[
@@ -2811,3 +2768,32 @@ def _decision_dashboard_sources(
         decision_result.institutional_context,
         decision_result.analyst_summary,
     )
+
+def _analyst_domain_dashboard_map(
+    analyst_summary: dict[str, dict[str, object]],
+) -> dict[
+    str,
+    tuple[
+        str | None,
+        object | None,
+        object | None,
+        object | None,
+    ],
+]:
+    return {
+        analyst_id: _analyst_domain_dashboard_values(
+            analyst_id=analyst_id,
+            analyst_summary=analyst_summary.get(
+                analyst_id
+            ),
+        )
+        for analyst_id in (
+            "STRUCTURE",
+            "LIQUIDITY",
+            "ORDER_BLOCK",
+            "AUCTION",
+            "PRESSURE",
+            "PARTICIPATION",
+            "VALUE",
+        )
+    }
