@@ -1558,38 +1558,23 @@ class DashboardStatusFilePublisher:
             decision_result
         )
 
+        (
+            dashboard_symbol,
+            dashboard_timeframe,
+            latest_cycle_status,
+            latest_cycle_message,
+            latest_cycle_started_at,
+            latest_cycle_completed_at,
+            latest_error_type,
+        ) = _cycle_dashboard_values(
+            cycle,
+            fallback_symbol=self._symbol,
+            fallback_timeframe=self._timeframe,
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
-            symbol=(
-                cycle.symbol
-                if cycle is not None
-                else self._symbol
-            ),
-            timeframe=(
-                cycle.timeframe
-                if cycle is not None
-                else self._timeframe
-            ),
-            latest_cycle_status=(
-                cycle.status
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_message=(
-                cycle.message
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_started_at=(
-                cycle.started_at
-                if cycle is not None
-                else None
-            ),
-            latest_cycle_completed_at=(
-                cycle.completed_at
-                if cycle is not None
-                else None
-            ),
+
             market_session=self._market_session,
             latest_decision=self._latest_decision,
 
@@ -1723,6 +1708,14 @@ class DashboardStatusFilePublisher:
             decision_warnings=decision_warnings,
             analyst_summary=decision_analyst_summary,
 
+            symbol=dashboard_symbol,
+            timeframe=dashboard_timeframe,
+            latest_cycle_status=latest_cycle_status,
+            latest_cycle_message=latest_cycle_message,
+            latest_cycle_started_at=latest_cycle_started_at,
+            latest_cycle_completed_at=latest_cycle_completed_at,
+            latest_error_type=latest_error_type,
+
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -1793,11 +1786,7 @@ class DashboardStatusFilePublisher:
             analyst_enabled_average_confidence=(
                 analyst_metrics.enabled_average_confidence
             ),
-            latest_error_type=(
-                cycle.error_type
-                if cycle is not None
-                else None
-            ),
+
         )
 
     def _apply_existing_destination_mode(
@@ -2795,4 +2784,39 @@ def _decision_result_dashboard_values(
             for analyst_id, details
             in decision_result.analyst_summary.items()
         },
+    )
+
+def _cycle_dashboard_values(
+    cycle: object | None,
+    *,
+    fallback_symbol: str,
+    fallback_timeframe: str,
+) -> tuple[
+    object,
+    object,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+]:
+    if cycle is None:
+        return (
+            fallback_symbol,
+            fallback_timeframe,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+    return (
+        cycle.symbol,
+        cycle.timeframe,
+        cycle.status,
+        cycle.message,
+        cycle.started_at,
+        cycle.completed_at,
+        cycle.error_type,
     )
