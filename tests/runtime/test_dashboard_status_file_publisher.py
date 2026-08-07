@@ -105,6 +105,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _analyst_confidence_coverage_status,
     _enabled_analyst_confidence_coverage_status,
     _analyst_resolution_coverage_status,
+    _analyst_domain_dashboard_values,
     _analyst_operational_status,
     _analyst_confidence_values
 )
@@ -11716,3 +11717,32 @@ def test_analyst_operational_status(
             analyst_enabled_resolved_count
         ),
     ) == expected
+
+def test_analyst_domain_dashboard_values_returns_domain_fields() -> None:
+    analyst_summary = {
+        "opinion": "BULLISH",
+        "confidence": 82.5,
+        "enabled": True,
+    }
+
+    assert _analyst_domain_dashboard_values(
+        analyst_id="STRUCTURE",
+        analyst_summary=analyst_summary,
+    ) == (
+        "STRUCTURE",
+        "BULLISH",
+        82.5,
+        True,
+    )
+
+
+def test_analyst_domain_dashboard_values_returns_none_when_missing() -> None:
+    assert _analyst_domain_dashboard_values(
+        analyst_id="STRUCTURE",
+        analyst_summary=None,
+    ) == (
+        None,
+        None,
+        None,
+        None,
+    )

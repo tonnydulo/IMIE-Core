@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 
@@ -1373,6 +1373,76 @@ class DashboardStatusFilePublisher:
             analyst_summary
         )
 
+        (
+            structure_analyst,
+            structure_opinion,
+            structure_confidence,
+            structure_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="STRUCTURE",
+            analyst_summary=structure_summary,
+        )
+
+        (
+            liquidity_analyst,
+            liquidity_opinion,
+            liquidity_confidence,
+            liquidity_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="LIQUIDITY",
+            analyst_summary=liquidity_summary,
+        )
+
+        (
+            order_block_analyst,
+            order_block_opinion,
+            order_block_confidence,
+            order_block_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="ORDER_BLOCK",
+            analyst_summary=order_block_summary,
+        )
+
+        (
+            auction_analyst,
+            auction_opinion,
+            auction_confidence,
+            auction_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="AUCTION",
+            analyst_summary=auction_summary,
+        )
+
+        (
+            pressure_analyst,
+            pressure_opinion,
+            pressure_confidence,
+            pressure_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="PRESSURE",
+            analyst_summary=pressure_summary,
+        )
+
+        (
+            participation_analyst,
+            participation_opinion,
+            participation_confidence,
+            participation_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="PARTICIPATION",
+            analyst_summary=participation_summary,
+        )
+
+        (
+            value_analyst,
+            value_opinion,
+            value_confidence,
+            value_enabled,
+        ) = _analyst_domain_dashboard_values(
+            analyst_id="VALUE",
+            analyst_summary=value_summary,
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1822,191 +1892,40 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            structure_analyst=(
-                "STRUCTURE"
-                if structure_summary is not None
-                else None
-            ),
-            structure_opinion=(
-                structure_summary.get(
-                    "opinion"
-                )
-                if structure_summary is not None
-                else None
-            ),
-            structure_confidence=(
-                structure_summary.get(
-                    "confidence"
-                )
-                if structure_summary is not None
-                else None
-            ),
-            structure_enabled=(
-                structure_summary.get(
-                    "enabled"
-                )
-                if structure_summary is not None
-                else None
-            ),
+            structure_analyst=structure_analyst,
+            structure_opinion=structure_opinion,
+            structure_confidence=structure_confidence,
+            structure_enabled=structure_enabled,
 
-            liquidity_analyst=(
-                "LIQUIDITY"
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_opinion=(
-                liquidity_summary.get(
-                    "opinion"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_confidence=(
-                liquidity_summary.get(
-                    "confidence"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
-            liquidity_enabled=(
-                liquidity_summary.get(
-                    "enabled"
-                )
-                if liquidity_summary is not None
-                else None
-            ),
+            liquidity_analyst=liquidity_analyst,
+            liquidity_opinion=liquidity_opinion,
+            liquidity_confidence=liquidity_confidence,
+            liquidity_enabled=liquidity_enabled,
 
-            order_block_analyst=(
-                "ORDER_BLOCK"
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_opinion=(
-                order_block_summary.get(
-                    "opinion"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_confidence=(
-                order_block_summary.get(
-                    "confidence"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            order_block_enabled=(
-                order_block_summary.get(
-                    "enabled"
-                )
-                if order_block_summary is not None
-                else None
-            ),
-            auction_analyst=(
-                "AUCTION"
-                if auction_summary is not None
-                else None
-            ),
-            auction_opinion=(
-                auction_summary.get(
-                    "opinion"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            auction_confidence=(
-                auction_summary.get(
-                    "confidence"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            auction_enabled=(
-                auction_summary.get(
-                    "enabled"
-                )
-                if auction_summary is not None
-                else None
-            ),
-            pressure_analyst=(
-                "PRESSURE"
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_opinion=(
-                pressure_summary.get(
-                    "opinion"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_confidence=(
-                pressure_summary.get(
-                    "confidence"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            pressure_enabled=(
-                pressure_summary.get(
-                    "enabled"
-                )
-                if pressure_summary is not None
-                else None
-            ),
-            participation_analyst=(
-                "PARTICIPATION"
-                if participation_summary is not None
-                else None
-            ),
-            participation_opinion=(
-                participation_summary.get(
-                    "opinion"
-                )
-                if participation_summary is not None
-                else None
-            ),
-            participation_confidence=(
-                participation_summary.get(
-                    "confidence"
-                )
-                if participation_summary is not None
-                else None
-            ),
-            participation_enabled=(
-                participation_summary.get(
-                    "enabled"
-                )
-                if participation_summary is not None
-                else None
-            ),
+            order_block_analyst=order_block_analyst,
+            order_block_opinion=order_block_opinion,
+            order_block_confidence=order_block_confidence,
+            order_block_enabled=order_block_enabled,
 
-            value_analyst=(
-                "VALUE"
-                if value_summary is not None
-                else None
-            ),
-            value_opinion=(
-                value_summary.get(
-                    "opinion"
-                )
-                if value_summary is not None
-                else None
-            ),
-            value_confidence=(
-                value_summary.get(
-                    "confidence"
-                )
-                if value_summary is not None
-                else None
-            ),
-            value_enabled=(
-                value_summary.get(
-                    "enabled"
-                )
-                if value_summary is not None
-                else None
-            ),
+            auction_analyst=auction_analyst,
+            auction_opinion=auction_opinion,
+            auction_confidence=auction_confidence,
+            auction_enabled=auction_enabled,
+
+            pressure_analyst=pressure_analyst,
+            pressure_opinion=pressure_opinion,
+            pressure_confidence=pressure_confidence,
+            pressure_enabled=pressure_enabled,
+
+            participation_analyst=participation_analyst,
+            participation_opinion=participation_opinion,
+            participation_confidence=participation_confidence,
+            participation_enabled=participation_enabled,
+
+            value_analyst=value_analyst,
+            value_opinion=value_opinion,
+            value_confidence=value_confidence,
+            value_enabled=value_enabled,
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2735,4 +2654,29 @@ def _build_analyst_dashboard_metrics(
         coverage_message=analyst_coverage_message,
         operational_status=analyst_operational_status,
         operational_message=analyst_operational_message,
+    )
+
+def _analyst_domain_dashboard_values(
+    *,
+    analyst_id: str,
+    analyst_summary: dict[str, object] | None,
+) -> tuple[
+    str | None,
+    object | None,
+    object | None,
+    object | None,
+]:
+    if analyst_summary is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+        )
+
+    return (
+        analyst_id,
+        analyst_summary.get("opinion"),
+        analyst_summary.get("confidence"),
+        analyst_summary.get("enabled"),
     )
