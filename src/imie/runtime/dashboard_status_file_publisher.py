@@ -1482,6 +1482,20 @@ class DashboardStatusFilePublisher:
             trend
         )
 
+        (
+            institutional_bias_direction,
+            institutional_bias_confidence,
+            institutional_bias_strength,
+            institutional_bias_bullish_score,
+            institutional_bias_bearish_score,
+            institutional_bias_agreement_count,
+            institutional_bias_conflict_count,
+            institutional_bias_supporting_domains,
+            institutional_bias_opposing_domains,
+        ) = _institutional_bias_dashboard_values(
+            institutional_bias
+        )
+
         return RuntimeDashboardStatus(
             health=self._health,
             symbol=(
@@ -1625,55 +1639,6 @@ class DashboardStatusFilePublisher:
                 else ()
             ),
 
-            institutional_bias=(
-                institutional_bias.direction.value
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_confidence=(
-                institutional_bias.confidence
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_strength=(
-                institutional_bias.strength
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_bullish_score=(
-                institutional_bias.bullish_score
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_bearish_score=(
-                institutional_bias.bearish_score
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_agreement_count=(
-                institutional_bias.agreement_count
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_conflict_count=(
-                institutional_bias.conflict_count
-                if institutional_bias is not None
-                else None
-            ),
-            institutional_bias_supporting_domains=(
-                tuple(
-                    institutional_bias.supporting_domains
-                )
-                if institutional_bias is not None
-                else ()
-            ),
-            institutional_bias_opposing_domains=(
-                tuple(
-                    institutional_bias.opposing_domains
-                )
-                if institutional_bias is not None
-                else ()
-            ),
             market_phase=(
                 market_phase.phase.value
                 if market_phase is not None
@@ -1862,6 +1827,20 @@ class DashboardStatusFilePublisher:
             trend_enabled=trend_enabled,
             trend_evidence=trend_evidence,
             trend_warnings=trend_warnings,
+
+            institutional_bias=institutional_bias_direction,
+            institutional_bias_confidence=institutional_bias_confidence,
+            institutional_bias_strength=institutional_bias_strength,
+            institutional_bias_bullish_score=institutional_bias_bullish_score,
+            institutional_bias_bearish_score=institutional_bias_bearish_score,
+            institutional_bias_agreement_count=institutional_bias_agreement_count,
+            institutional_bias_conflict_count=institutional_bias_conflict_count,
+            institutional_bias_supporting_domains=(
+                institutional_bias_supporting_domains
+            ),
+            institutional_bias_opposing_domains=(
+                institutional_bias_opposing_domains
+            ),
 
             analyst_domain_count=(
                 analyst_metrics.domain_count
@@ -2720,4 +2699,42 @@ def _trend_dashboard_values(
         trend.enabled,
         tuple(trend.evidence),
         tuple(trend.warnings),
+    )
+
+def _institutional_bias_dashboard_values(
+    institutional_bias: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+    tuple[object, ...],
+]:
+    if institutional_bias is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+            (),
+        )
+
+    return (
+        institutional_bias.direction.value,
+        institutional_bias.confidence,
+        institutional_bias.strength,
+        institutional_bias.bullish_score,
+        institutional_bias.bearish_score,
+        institutional_bias.agreement_count,
+        institutional_bias.conflict_count,
+        tuple(institutional_bias.supporting_domains),
+        tuple(institutional_bias.opposing_domains),
     )
