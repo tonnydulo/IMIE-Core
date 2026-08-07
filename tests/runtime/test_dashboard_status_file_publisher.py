@@ -97,6 +97,7 @@ from imie.runtime.dashboard_status_file_publisher import (
     _display_value,
     _is_owned_temporary_path,
     _directory_open_flags,
+    _analyst_confidence_value,
     _has_resolved_analyst_opinion
 )
 
@@ -622,6 +623,70 @@ def test_publish_result_populates_decision_details(
 
     assert payload["decision_warnings"] == []
 
+@pytest.mark.parametrize(
+    (
+        "details",
+        "expected",
+    ),
+    [
+        (
+            {},
+            None,
+        ),
+        (
+            {
+                "confidence_available": False,
+                "confidence": 80,
+            },
+            None,
+        ),
+        (
+            {
+                "confidence_available": True,
+                "confidence": None,
+            },
+            None,
+        ),
+        (
+            {
+                "confidence_available": True,
+                "confidence": "80",
+            },
+            None,
+        ),
+        (
+            {
+                "confidence_available": True,
+                "confidence": True,
+            },
+            None,
+        ),
+        (
+            {
+                "confidence_available": True,
+                "confidence": 80,
+            },
+            80.0,
+        ),
+        (
+            {
+                "confidence_available": True,
+                "confidence": 72.5,
+            },
+            72.5,
+        ),
+    ],
+)
+def test_analyst_confidence_value(
+    details: dict[str, object],
+    expected: float | None,
+) -> None:
+    assert (
+        _analyst_confidence_value(
+            details
+        )
+        == expected
+    )
 
 def test_health_update_creates_dashboard_file(
     tmp_path: Path,

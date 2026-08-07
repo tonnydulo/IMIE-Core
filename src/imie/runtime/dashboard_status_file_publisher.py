@@ -412,6 +412,37 @@ def _has_resolved_analyst_opinion(
         )
     )
 
+def _analyst_confidence_value(
+    details: dict[str, object],
+) -> float | None:
+    confidence = details.get(
+        "confidence"
+    )
+
+    if (
+        details.get(
+            "confidence_available"
+        )
+        is not True
+    ):
+        return None
+
+    if (
+        not isinstance(
+            confidence,
+            int | float,
+        )
+        or isinstance(
+            confidence,
+            bool,
+        )
+    ):
+        return None
+
+    return float(
+        confidence
+    )
+
 def _normalize_optional_non_negative_int(
     value: object,
     *,
@@ -945,40 +976,23 @@ class DashboardStatusFilePublisher:
         analyst_enabled_confidences: list[float] = []
 
         for details in analyst_summary.values():
-            confidence = details.get(
-                "confidence"
+            normalized_confidence = (
+                _analyst_confidence_value(
+                    details
+                )
             )
 
-            confidence_available = (
-                details.get(
-                    "confidence_available"
-                )
-                is True
+            if normalized_confidence is None:
+                continue
+
+            analyst_confidences.append(
+                normalized_confidence
             )
 
-            if (
-                confidence_available
-                and isinstance(
-                    confidence,
-                    int | float,
-                )
-                and not isinstance(
-                    confidence,
-                    bool,
-                )
-            ):
-                normalized_confidence = float(
-                    confidence
-                )
-
-                analyst_confidences.append(
+            if details.get("enabled") is True:
+                analyst_enabled_confidences.append(
                     normalized_confidence
                 )
-
-                if details.get("enabled") is True:
-                    analyst_enabled_confidences.append(
-                        normalized_confidence
-                    )
 
         analyst_confidence_count = len(
             analyst_confidences
