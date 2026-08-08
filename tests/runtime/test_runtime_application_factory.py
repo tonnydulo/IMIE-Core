@@ -24,6 +24,7 @@ from imie.runtime import (
     RuntimeHealthTracker,
     RuntimeRunner,
     SingleAnalysisCycle,
+    MultiSymbolRuntimeApplication,
 )
 from imie.services import (
     MarketDataService,
@@ -642,4 +643,137 @@ def test_symbol_cycles_share_market_data_and_session_dependencies(
         assert (
             cycle.session_policy
             is application.cycle.session_policy
+        )
+
+def test_factory_creates_multi_symbol_application() -> None:
+    universe = RuntimeSymbolUniverse(
+        symbols=(
+            "NVDA",
+            "AMD",
+            "SPY",
+        )
+    )
+
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=universe,
+        )
+    )
+
+    assert isinstance(
+        application,
+        MultiSymbolRuntimeApplication,
+    )
+
+    assert application.universe is universe
+
+    assert tuple(
+        cycle.config.symbol
+        for cycle in application.cycles
+    ) == (
+        "NVDA",
+        "AMD",
+        "SPY",
+    )
+
+    assert (
+        application.runner.universe
+        is application.universe
+    )
+
+    assert (
+        application.runner.cycles
+        == application.cycles
+    )
+
+
+def test_multi_symbol_factory_shares_market_data() -> None:
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=RuntimeSymbolUniverse(
+                symbols=(
+                    "NVDA",
+                    "AMD",
+                    "SPY",
+                )
+            ),
+        )
+    )
+
+    for cycle in application.cycles:
+        assert (
+            cycle.market_data
+            is application.market_data
+        )
+
+
+def test_multi_symbol_factory_preserves_base_config() -> None:
+    config = RuntimeConfig(
+        symbol="NVDA",
+        timeframe="5m",
+        bar_limit=250,
+    )
+
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=RuntimeSymbolUniverse(
+                symbols=(
+                    "NVDA",
+                    "AMD",
+                )
+            ),
+            config=config,
+        )
+    )
+
+    assert tuple(
+        cycle.config.timeframe
+        for cycle in application.cycles
+    ) == (
+        "5m",
+        "5m",
+    )
+
+    assert tuple(
+        cycle.config.bar_limit
+        for cycle in application.cycles
+    ) == (
+        250,
+        250,
+    )
+
+
+def test_multi_symbol_factory_uses_first_symbol_as_default_config() -> None:
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=RuntimeSymbolUniverse(
+                symbols=(
+                    "AMD",
+                    "SPY",
+                )
+            ),
+        )
+    )
+
+    assert tuple(
+        cycle.config.symbol
+        for cycle in application.cycles
+    ) == (
+        "AMD",
+        "SPY",
+    )
+
+
+def test_multi_symbol_factory_requires_symbol_universe() -> None:
+    with pytest.raises(
+        TypeError,
+        match="RuntimeSymbolUniverse",
+    ):
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=object(),  # type: ignore[arg-type]
         )

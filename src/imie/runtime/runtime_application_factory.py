@@ -68,6 +68,12 @@ from imie.runtime.dashboard_status_file_publisher import (
 from imie.runtime.runtime_symbol_universe import (
     RuntimeSymbolUniverse,
 )
+from imie.runtime.multi_symbol_cycle_runner import (
+    MultiSymbolCycleRunner,
+)
+from imie.runtime.multi_symbol_runtime_application import (
+    MultiSymbolRuntimeApplication,
+)
 
 def _build_symbol_cycles(
     *,
@@ -100,6 +106,117 @@ class RuntimeApplicationFactory:
     The factory creates objects only. It does not connect, run,
     sleep, print, or fetch market data.
     """
+
+    @classmethod
+    def create_multi_symbol(
+        cls,
+        *,
+        settings: AppSettings,
+        universe: RuntimeSymbolUniverse,
+        config: RuntimeConfig | None = None,
+        session_policy: SessionPolicy | None = None,
+        calendar_years: tuple[int, ...] | None = None,
+    ) -> MultiSymbolRuntimeApplication:
+        if not isinstance(
+            settings,
+            AppSettings,
+        ):
+            raise TypeError(
+                "settings must be an AppSettings."
+            )
+
+        if not isinstance(
+            universe,
+            RuntimeSymbolUniverse,
+        ):
+            raise TypeError(
+                "universe must be a RuntimeSymbolUniverse."
+            )
+
+        if (
+            config is not None
+            and not isinstance(
+                config,
+                RuntimeConfig,
+            )
+        ):
+            raise TypeError(
+                "config must be a RuntimeConfig or None."
+            )
+
+        if (
+            session_policy is not None
+            and not isinstance(
+                session_policy,
+                SessionPolicy,
+            )
+        ):
+            raise TypeError(
+                "session_policy must be a SessionPolicy or None."
+            )
+
+        runtime_config = (
+            config
+            or RuntimeConfig(
+                symbol=universe.symbols[0],
+            )
+        )
+
+        resolved_calendar_years = (
+            calendar_years
+            if calendar_years is not None
+            else SUPPORTED_NYSE_CALENDAR_YEARS
+        )
+
+        if not isinstance(
+            resolved_calendar_years,
+            tuple,
+        ):
+            raise TypeError(
+                "calendar_years must be a tuple or None."
+            )
+
+        if not resolved_calendar_years:
+            raise ValueError(
+                "calendar_years cannot be empty."
+            )
+
+        market_data = MarketDataService(
+            settings.default_provider
+        )
+
+        market_session_clock = MarketSessionClock(
+            exchange_calendar=(
+                build_nyse_calendar(
+                    *resolved_calendar_years
+                )
+            )
+        )
+
+        resolved_session_policy = (
+            session_policy
+            or SessionPolicy()
+        )
+
+        cycles = _build_symbol_cycles(
+            universe=universe,
+            base_config=runtime_config,
+            market_data=market_data,
+            market_session_clock=market_session_clock,
+            session_policy=resolved_session_policy,
+        )
+
+        runner = MultiSymbolCycleRunner(
+            universe=universe,
+            cycles=cycles,
+        )
+
+        return MultiSymbolRuntimeApplication(
+            universe=universe,
+            market_data=market_data,
+            cycles=cycles,
+            runner=runner,
+        )
 
     @classmethod
     def create(
