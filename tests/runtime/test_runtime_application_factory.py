@@ -28,6 +28,12 @@ from imie.runtime import (
 from imie.services import (
     MarketDataService,
 )
+from imie.runtime.runtime_application_factory import (
+    _build_symbol_cycles,
+)
+from imie.runtime.runtime_symbol_universe import (
+    RuntimeSymbolUniverse,
+)
 
 
 def make_settings() -> AppSettings:
@@ -582,3 +588,58 @@ def test_factory_wires_health_status_file(
         .status_publisher
         is not None
     )
+
+def test_symbol_cycles_share_market_data_and_session_dependencies(
+    tmp_path: Path,
+) -> None:
+    application = RuntimeApplicationFactory.create(
+        settings=make_settings(),
+        config=RuntimeConfig(
+            symbol="NVDA",
+            timeframe="2m",
+        ),
+        history_file=(
+            tmp_path
+            / "cycles.jsonl"
+        ),
+    )
+
+    universe = RuntimeSymbolUniverse(
+        symbols=(
+            "NVDA",
+            "AMD",
+            "SPY",
+        )
+    )
+
+    cycles = _build_symbol_cycles(
+        universe=universe,
+        base_config=application.config,
+        market_data=application.market_data,
+        market_session_clock=(
+            application.cycle.market_session_clock
+        ),
+        session_policy=(
+            application.cycle.session_policy
+        ),
+    )
+
+    assert tuple(
+        cycle.config.symbol
+        for cycle in cycles
+    ) == (
+        "NVDA",
+        "AMD",
+        "SPY",
+    )
+
+    for cycle in cycles:
+        assert cycle.market_data is application.market_data
+        assert (
+            cycle.market_session_clock
+            is application.cycle.market_session_clock
+        )
+        assert (
+            cycle.session_policy
+            is application.cycle.session_policy
+        )

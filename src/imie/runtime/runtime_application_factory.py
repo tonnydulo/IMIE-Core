@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from dataclasses import replace
+
 from imie.config.settings import (
     AppSettings,
 )
@@ -63,6 +65,33 @@ from imie.runtime.json_lines_health_publisher import (
 from imie.runtime.dashboard_status_file_publisher import (
     DashboardStatusFilePublisher,
 )
+from imie.runtime.runtime_symbol_universe import (
+    RuntimeSymbolUniverse,
+)
+
+def _build_symbol_cycles(
+    *,
+    universe: RuntimeSymbolUniverse,
+    base_config: RuntimeConfig,
+    market_data: MarketDataService,
+    market_session_clock: MarketSessionClock,
+    session_policy: SessionPolicy,
+) -> tuple[
+    SingleAnalysisCycle,
+    ...,
+]:
+    return tuple(
+        SingleAnalysisCycle(
+            config=replace(
+                base_config,
+                symbol=symbol,
+            ),
+            market_data=market_data,
+            market_session_clock=market_session_clock,
+            session_policy=session_policy,
+        )
+        for symbol in universe.symbols
+    )
 
 class RuntimeApplicationFactory:
     """
