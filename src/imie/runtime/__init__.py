@@ -138,7 +138,9 @@ from imie.runtime.runtime_dashboard_status import (
 from imie.runtime.dashboard_status_file_publisher import (
     DashboardStatusFilePublisher,
 )
-
+from imie.runtime.runtime_symbol_universe import (
+    RuntimeSymbolUniverse,
+)
 
 __all__ = [
     "AnalysisCycleResult",
@@ -195,4 +197,5 @@ __all__ = [
     "create_dashboard_server",
     "read_health_status",
     "run_dashboard",
+    "RuntimeSymbolUniverse",
 ]
