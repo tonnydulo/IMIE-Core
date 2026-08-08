@@ -22,6 +22,7 @@ from imie.runtime import (
     RuntimeApplication,
     RuntimeApplicationFactory,
     RuntimeConfig,
+    RuntimeSymbolUniverse,
     SessionPolicy,
     SessionPolicyConfig,
 )
@@ -43,6 +44,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--symbol",
         default="NVDA",
         help="Market symbol to analyze. Default: NVDA.",
+    )
+
+    parser.add_argument(
+        "--symbols",
+        nargs="+",
+        default=None,
+        help=(
+            "Market symbols to include in the runtime symbol universe. "
+            "Example: --symbols NVDA AMD SPY."
+        ),
     )
 
     parser.add_argument(
@@ -279,6 +290,28 @@ def build_runtime_config(
         heartbeat_interval_seconds=(
             arguments.heartbeat_seconds
         ),
+    )
+
+def build_runtime_symbol_universe(
+    arguments: argparse.Namespace,
+) -> RuntimeSymbolUniverse:
+    symbols = getattr(
+        arguments,
+        "symbols",
+        None,
+    )
+
+    if symbols is None:
+        return RuntimeSymbolUniverse(
+            symbols=(
+                arguments.symbol,
+            )
+        )
+
+    return RuntimeSymbolUniverse(
+        symbols=tuple(
+            symbols
+        )
     )
 
 

@@ -18,6 +18,7 @@ from imie.runtime_cli import (
     build_application,
     build_parser,
     build_runtime_config,
+    build_runtime_symbol_universe,
     build_session_policy,
     main,
     publish_one_shot_result,
@@ -118,6 +119,7 @@ def test_parser_defaults() -> None:
     )
 
     assert arguments.symbol == "NVDA"
+    assert arguments.symbols is None
     assert arguments.timeframe == "2m"
     assert arguments.bar_limit == 500
     assert arguments.poll_seconds == 5.0
@@ -1084,4 +1086,44 @@ def test_build_application_passes_health_status_options(
         is False
     )
 
+def test_runtime_symbol_universe_uses_symbol_by_default() -> None:
+    parser = build_parser()
 
+    arguments = parser.parse_args(
+        [
+            "--symbol",
+            "AMD",
+        ]
+    )
+
+    universe = build_runtime_symbol_universe(
+        arguments
+    )
+
+    assert universe.symbols == (
+        "AMD",
+    )
+
+
+def test_runtime_symbol_universe_uses_symbols_argument() -> None:
+    parser = build_parser()
+
+    arguments = parser.parse_args(
+        [
+            "--symbols",
+            "NVDA",
+            "amd",
+            "SPY",
+            "nvda",
+        ]
+    )
+
+    universe = build_runtime_symbol_universe(
+        arguments
+    )
+
+    assert universe.symbols == (
+        "NVDA",
+        "AMD",
+        "SPY",
+    )
