@@ -60,6 +60,10 @@ def test_factory_creates_complete_application(
     )
 
     assert application.config is config
+    assert application.config.symbol == "SPY"
+
+    assert application.cycle.config is config
+    assert application.cycle.config.symbol == "SPY"
 
     assert isinstance(
         application.market_data,
