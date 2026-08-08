@@ -3,11 +3,15 @@ import pytest
 from imie.config.settings import (
     AppSettings,
 )
+
+from imie.providers.mock_provider import MockProvider
+
 from imie.runtime import (
     MultiSymbolCycleRunner,
     RuntimeConfig,
     RuntimeSymbolUniverse,
     SingleAnalysisCycle,
+    MultiSymbolRuntimeRunner
 )
 from imie.runtime.multi_symbol_runtime_application import (
     MultiSymbolRuntimeApplication,
@@ -46,16 +50,22 @@ def make_application() -> MultiSymbolRuntimeApplication:
         for symbol in universe
     )
 
-    runner = MultiSymbolCycleRunner(
+    cycle_runner = MultiSymbolCycleRunner(
         universe=universe,
         cycles=cycles,
+    )
+
+    one_shot_runner = MultiSymbolRuntimeRunner(
+        market_data=market_data,
+        runner=cycle_runner,
     )
 
     return MultiSymbolRuntimeApplication(
         universe=universe,
         market_data=market_data,
         cycles=cycles,
-        runner=runner,
+        cycle_runner=cycle_runner,
+        one_shot_runner=one_shot_runner,
     )
 
 
@@ -78,7 +88,7 @@ def test_application_preserves_multi_symbol_dependencies() -> None:
     )
 
     assert (
-        application.runner.cycles
+        application.cycle_runner.cycles
         == application.cycles
     )
 
@@ -100,7 +110,8 @@ def test_application_requires_runtime_symbol_universe() -> None:
             universe=object(),  # type: ignore[arg-type]
             market_data=application.market_data,
             cycles=application.cycles,
-            runner=application.runner,
+            cycle_runner=application.cycle_runner,
+            one_shot_runner=application.one_shot_runner,
         )
 
 
@@ -115,7 +126,8 @@ def test_application_requires_market_data_service() -> None:
             universe=application.universe,
             market_data=object(),  # type: ignore[arg-type]
             cycles=application.cycles,
-            runner=application.runner,
+            cycle_runner=application.cycle_runner,
+            one_shot_runner=application.one_shot_runner,
         )
 
 
@@ -136,28 +148,36 @@ def test_application_rejects_mismatched_cycle_symbols() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=cycles,
-            runner=application.runner,
+            cycle_runner=application.cycle_runner,
+            one_shot_runner=application.one_shot_runner,
         )
 
 
 def test_application_requires_shared_market_data() -> None:
     application = make_application()
 
-    other_market_data = make_market_data()
-
-    cycles = (
-        SingleAnalysisCycle(
-            config=RuntimeConfig(
-                symbol="NVDA",
-            ),
-            market_data=other_market_data,
-        ),
-        *application.cycles[1:],
+    other_market_data = MarketDataService(
+        "mock"
     )
 
-    runner = MultiSymbolCycleRunner(
+    cycles = tuple(
+        SingleAnalysisCycle(
+            config=cycle.config,
+            market_data=other_market_data,
+            market_session_clock=cycle.market_session_clock,
+            session_policy=cycle.session_policy,
+        )
+        for cycle in application.cycles
+    )
+
+    cycle_runner = MultiSymbolCycleRunner(
         universe=application.universe,
         cycles=cycles,
+    )
+
+    one_shot_runner = MultiSymbolRuntimeRunner(
+        market_data=application.market_data,
+        runner=cycle_runner,
     )
 
     with pytest.raises(
@@ -168,7 +188,8 @@ def test_application_requires_shared_market_data() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=cycles,
-            runner=runner,
+            cycle_runner=cycle_runner,
+            one_shot_runner=one_shot_runner,
         )
 
 
@@ -183,9 +204,14 @@ def test_application_requires_runner_to_use_same_universe() -> None:
         )
     )
 
-    runner = MultiSymbolCycleRunner(
+    cycle_runner = MultiSymbolCycleRunner(
         universe=other_universe,
         cycles=application.cycles,
+    )
+
+    one_shot_runner = MultiSymbolRuntimeRunner(
+        market_data=application.market_data,
+        runner=cycle_runner,
     )
 
     with pytest.raises(
@@ -196,5 +222,6 @@ def test_application_requires_runner_to_use_same_universe() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=application.cycles,
-            runner=runner,
+            cycle_runner=cycle_runner,
+            one_shot_runner=one_shot_runner,
         )

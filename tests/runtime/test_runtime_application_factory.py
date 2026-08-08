@@ -678,13 +678,23 @@ def test_factory_creates_multi_symbol_application() -> None:
     )
 
     assert (
-        application.runner.universe
+        application.cycle_runner.universe
         is application.universe
     )
 
     assert (
-        application.runner.cycles
+        application.cycle_runner.cycles
         == application.cycles
+    )
+
+    assert (
+        application.one_shot_runner.runner
+        is application.cycle_runner
+    )
+
+    assert (
+        application.one_shot_runner.market_data
+        is application.market_data
     )
 
 

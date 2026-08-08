@@ -74,6 +74,9 @@ from imie.runtime.multi_symbol_cycle_runner import (
 from imie.runtime.multi_symbol_runtime_application import (
     MultiSymbolRuntimeApplication,
 )
+from imie.runtime.multi_symbol_runtime_runner import (
+    MultiSymbolRuntimeRunner,
+)
 
 def _build_symbol_cycles(
     *,
@@ -186,10 +189,8 @@ class RuntimeApplicationFactory:
         )
 
         market_session_clock = MarketSessionClock(
-            exchange_calendar=(
-                build_nyse_calendar(
-                    *resolved_calendar_years
-                )
+            exchange_calendar=build_nyse_calendar(
+                *resolved_calendar_years
             )
         )
 
@@ -206,16 +207,22 @@ class RuntimeApplicationFactory:
             session_policy=resolved_session_policy,
         )
 
-        runner = MultiSymbolCycleRunner(
+        cycle_runner = MultiSymbolCycleRunner(
             universe=universe,
             cycles=cycles,
+        )
+
+        one_shot_runner = MultiSymbolRuntimeRunner(
+            market_data=market_data,
+            runner=cycle_runner,
         )
 
         return MultiSymbolRuntimeApplication(
             universe=universe,
             market_data=market_data,
             cycles=cycles,
-            runner=runner,
+            cycle_runner=cycle_runner,
+            one_shot_runner=one_shot_runner,
         )
 
     @classmethod
@@ -283,7 +290,7 @@ class RuntimeApplicationFactory:
             raise TypeError(
                 "continue_on_publish_error must be a bool."
             )
-        
+
         if not isinstance(
             health_console_output,
             bool,
@@ -344,7 +351,7 @@ class RuntimeApplicationFactory:
                 "create_health_status_parent_directories "
                 "must be a bool."
             )
-        
+
         runtime_config = (
             config
             or RuntimeConfig()
@@ -404,7 +411,7 @@ class RuntimeApplicationFactory:
             else SUPPORTED_NYSE_CALENDAR_YEARS
         )
 
-       
+
         if not isinstance(
             resolved_calendar_years,
             tuple,
@@ -422,7 +429,7 @@ class RuntimeApplicationFactory:
             settings.default_provider
         )
 
-              
+
         market_session_clock = MarketSessionClock(
             exchange_calendar=(
                 build_nyse_calendar(

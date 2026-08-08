@@ -14,6 +14,9 @@ from imie.runtime.single_analysis_cycle import (
 from imie.services.market_data_service import (
     MarketDataService,
 )
+from imie.runtime.multi_symbol_runtime_runner import (
+    MultiSymbolRuntimeRunner,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +34,8 @@ class MultiSymbolRuntimeApplication:
         SingleAnalysisCycle,
         ...,
     ]
-    runner: MultiSymbolCycleRunner
+    cycle_runner: MultiSymbolCycleRunner
+    one_shot_runner: MultiSymbolRuntimeRunner
 
     def __post_init__(self) -> None:
         if not isinstance(
@@ -73,11 +77,19 @@ class MultiSymbolRuntimeApplication:
                 )
 
         if not isinstance(
-            self.runner,
+            self.cycle_runner,
             MultiSymbolCycleRunner,
         ):
             raise TypeError(
-                "runner must be a MultiSymbolCycleRunner."
+                "cycle_runner must be a MultiSymbolCycleRunner."
+            )
+
+        if not isinstance(
+            self.one_shot_runner,
+            MultiSymbolRuntimeRunner,
+        ):
+            raise TypeError(
+                "one_shot_runner must be a MultiSymbolRuntimeRunner."
             )
 
         cycle_symbols = tuple(
@@ -98,12 +110,30 @@ class MultiSymbolRuntimeApplication:
                     "market_data instance."
                 )
 
-        if self.runner.universe is not self.universe:
+        if self.cycle_runner.universe is not self.universe:
             raise ValueError(
-                "runner must use the application universe."
+                "cycle_runner must use the application universe."
             )
 
-        if self.runner.cycles != self.cycles:
+        if self.cycle_runner.cycles != self.cycles:
             raise ValueError(
-                "runner must use the application cycles."
+                "cycle_runner must use the application cycles."
+            )
+
+        if (
+            self.one_shot_runner.runner
+            is not self.cycle_runner
+        ):
+            raise ValueError(
+                "one_shot_runner must use the application "
+                "cycle_runner."
+            )
+
+        if (
+            self.one_shot_runner.market_data
+            is not self.market_data
+        ):
+            raise ValueError(
+                "one_shot_runner must use the application "
+                "market_data instance."
             )
