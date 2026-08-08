@@ -144,6 +144,9 @@ from imie.runtime.runtime_symbol_universe import (
 from imie.runtime.multi_symbol_cycle_runner import (
     MultiSymbolCycleRunner,
 )
+from imie.runtime.multi_symbol_runtime_application import (
+    MultiSymbolRuntimeApplication,
+)
 
 __all__ = [
     "AnalysisCycleResult",
@@ -202,4 +205,5 @@ __all__ = [
     "run_dashboard",
     "RuntimeSymbolUniverse",
     "MultiSymbolCycleRunner",
+    "MultiSymbolRuntimeApplication",
 ]
