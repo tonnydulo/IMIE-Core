@@ -19,6 +19,12 @@ from imie.runtime.multi_symbol_runtime_application import (
 from imie.services import (
     MarketDataService,
 )
+from imie.runtime.composite_result_publisher import (
+    CompositeResultPublisher,
+)
+from imie.runtime.console_result_publisher import (
+    ConsoleResultPublisher,
+)
 
 
 def make_market_data() -> MarketDataService:
@@ -31,6 +37,12 @@ def make_market_data() -> MarketDataService:
 
 def make_application() -> MultiSymbolRuntimeApplication:
     market_data = make_market_data()
+
+    publisher = CompositeResultPublisher(
+        publishers=(
+            ConsoleResultPublisher(),
+        ),
+    )
 
     universe = RuntimeSymbolUniverse(
         symbols=(
@@ -64,6 +76,7 @@ def make_application() -> MultiSymbolRuntimeApplication:
         universe=universe,
         market_data=market_data,
         cycles=cycles,
+        publisher=publisher,
         cycle_runner=cycle_runner,
         one_shot_runner=one_shot_runner,
     )
@@ -110,6 +123,7 @@ def test_application_requires_runtime_symbol_universe() -> None:
             universe=object(),  # type: ignore[arg-type]
             market_data=application.market_data,
             cycles=application.cycles,
+            publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
         )
@@ -126,6 +140,7 @@ def test_application_requires_market_data_service() -> None:
             universe=application.universe,
             market_data=object(),  # type: ignore[arg-type]
             cycles=application.cycles,
+            publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
         )
@@ -148,6 +163,7 @@ def test_application_rejects_mismatched_cycle_symbols() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=cycles,
+            publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
         )
@@ -188,6 +204,7 @@ def test_application_requires_shared_market_data() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=cycles,
+            publisher=application.publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
         )
@@ -222,6 +239,7 @@ def test_application_requires_runner_to_use_same_universe() -> None:
             universe=application.universe,
             market_data=application.market_data,
             cycles=application.cycles,
+            publisher=application.publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
         )

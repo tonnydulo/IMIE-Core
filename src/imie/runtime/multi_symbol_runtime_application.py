@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from imie.runtime.composite_result_publisher import (
+    CompositeResultPublisher,
+)
 from imie.runtime.multi_symbol_cycle_runner import (
     MultiSymbolCycleRunner,
+)
+from imie.runtime.multi_symbol_runtime_runner import (
+    MultiSymbolRuntimeRunner,
 )
 from imie.runtime.runtime_symbol_universe import (
     RuntimeSymbolUniverse,
@@ -13,9 +19,6 @@ from imie.runtime.single_analysis_cycle import (
 )
 from imie.services.market_data_service import (
     MarketDataService,
-)
-from imie.runtime.multi_symbol_runtime_runner import (
-    MultiSymbolRuntimeRunner,
 )
 
 
@@ -34,6 +37,7 @@ class MultiSymbolRuntimeApplication:
         SingleAnalysisCycle,
         ...,
     ]
+    publisher: CompositeResultPublisher
     cycle_runner: MultiSymbolCycleRunner
     one_shot_runner: MultiSymbolRuntimeRunner
 
@@ -75,6 +79,14 @@ class MultiSymbolRuntimeApplication:
                 raise TypeError(
                     "each cycle must be a SingleAnalysisCycle."
                 )
+
+        if not isinstance(
+            self.publisher,
+            CompositeResultPublisher,
+        ):
+            raise TypeError(
+                "publisher must be a CompositeResultPublisher."
+            )
 
         if not isinstance(
             self.cycle_runner,

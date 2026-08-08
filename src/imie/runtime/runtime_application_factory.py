@@ -199,6 +199,25 @@ class RuntimeApplicationFactory:
             or SessionPolicy()
         )
 
+        publishers: list[
+            object
+        ] = []
+
+        publishers.append(
+            ConsoleResultPublisher()
+        )
+
+        publishers.append(
+            JsonLinesResultPublisher(
+                file_path="runtime/history/imie_cycles.jsonl",
+            )
+        )
+
+        publisher = CompositeResultPublisher(
+            publishers=publishers,
+            continue_on_error=True,
+        )
+
         cycles = _build_symbol_cycles(
             universe=universe,
             base_config=runtime_config,
@@ -221,6 +240,7 @@ class RuntimeApplicationFactory:
             universe=universe,
             market_data=market_data,
             cycles=cycles,
+            publisher=publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
         )
