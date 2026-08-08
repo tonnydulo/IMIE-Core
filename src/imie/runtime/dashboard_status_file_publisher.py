@@ -1336,13 +1336,6 @@ class DashboardStatusFilePublisher:
         ) = analyst_domain_values["VALUE"]
 
         (
-            value_analyst,
-            value_opinion,
-            value_confidence,
-            value_enabled,
-        ) = analyst_domain_values["VALUE"]
-
-        (
             setup_lifecycle_state,
             setup_lifecycle_direction,
             setup_lifecycle_confidence,
