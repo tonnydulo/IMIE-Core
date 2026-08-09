@@ -12,6 +12,8 @@ from imie.models import (
 from imie.providers.base_provider import (
     MarketDataProvider,
 )
+from imie.engines.order_blocks import OrderBlockDetector
+from imie.engines.structure.core import StructureEngine
 
 
 class MockProvider(MarketDataProvider):
@@ -226,6 +228,47 @@ class MockProvider(MarketDataProvider):
             ):
                 low = 97.20
 
+            is_order_block_source = (
+                index == limit - 2
+            )
+
+            is_order_block_displacement = (
+                index == limit - 1
+            )
+
+            if is_order_block_source:
+                open_price = close + 0.08
+                high = open_price + 0.04
+                low = close - 0.04
+
+            if is_order_block_displacement:
+                previous_source_close = bars[-1].close
+
+                prior_high = max(
+                    bar.high
+                    for bar in bars
+                )
+
+                open_price = (
+                    previous_source_close
+                    - 0.02
+                )
+
+                close = (
+                    prior_high
+                    + 0.20
+                )
+
+                high = (
+                    close
+                    + 0.05
+                )
+
+                low = (
+                    open_price
+                    - 0.03
+                )
+
             volume = (
                 900_000
                 + (
@@ -249,3 +292,17 @@ class MockProvider(MarketDataProvider):
             )
 
         return bars
+
+def test_mock_provider_generates_bullish_order_block() -> None:
+    provider = MockProvider()
+
+    bars = provider.get_bars(
+        "NVDA",
+        "2m",
+        limit=40,
+    )
+
+    structure = StructureEngine().evaluate(
+        # use the same TradingContext construction already used
+        # by an existing structure test if this method requires context
+    )

@@ -1,7 +1,6 @@
 from imie.providers.mock_provider import (
     MockProvider,
 )
-from itertools import pairwise
 from datetime import (
     UTC,
     datetime,
@@ -13,6 +12,15 @@ from imie.engines.structure.swing_detector import (
 from imie.engines.liquidity import (
     EqualHighDetector,
     EqualLowDetector,
+)
+from imie.engines.structure.core import (
+    BosEngine,
+)
+from imie.engines.order_blocks import (
+    OrderBlockDetector,
+)
+from imie.models import (
+    StructureResult,
 )
 
 def test_mock_provider_timestamps_are_timezone_aware() -> None:
@@ -152,3 +160,142 @@ def test_mock_provider_generates_equal_high_and_low_liquidity() -> None:
         and finding.point.second_index == 13
         for finding in equal_lows
     )
+
+def test_mock_provider_generates_bullish_bos() -> None:
+    provider = MockProvider()
+
+    bars = provider.get_bars(
+        "NVDA",
+        "2m",
+        limit=40,
+    )
+
+    swings = SwingDetector(
+        left_bars=2,
+        right_bars=2,
+    ).detect(
+        bars
+    )
+
+    swing_highs = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "HIGH"
+    )
+
+    swing_lows = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "LOW"
+    )
+
+    bos = BosEngine().evaluate(
+        bars=bars,
+        highs=swing_highs,
+        lows=swing_lows,
+    )
+
+    assert bos.detected is True
+    assert bos.bullish_break is True
+    assert bos.bearish_break is False
+
+    assert bos.bullish_break_level is not None
+    assert bos.confirmation_price is not None
+
+    assert (
+        bos.confirmation_price
+        > bos.bullish_break_level
+    )
+
+def test_mock_provider_generates_bullish_order_block() -> None:
+    provider = MockProvider()
+
+    bars = provider.get_bars(
+        "NVDA",
+        "2m",
+        limit=40,
+    )
+
+    swings = SwingDetector(
+        left_bars=2,
+        right_bars=2,
+    ).detect(
+        bars
+    )
+
+    swing_highs = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "HIGH"
+    )
+
+    swing_lows = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "LOW"
+    )
+
+    bos = BosEngine().evaluate(
+        bars=bars,
+        highs=swing_highs,
+        lows=swing_lows,
+    )
+
+    structure = StructureResult(
+        symbol="NVDA",
+        direction="long",
+        state="BULLISH_STRUCTURE",
+        confidence=90.0,
+        nearest_support=None,
+        nearest_resistance=None,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=len(
+            swing_highs
+        ),
+        swing_low_count=len(
+            swing_lows
+        ),
+        bullish_break=bos.bullish_break,
+        bearish_break=bos.bearish_break,
+        bullish_break_level=(
+            bos.bullish_break_level
+        ),
+        bearish_break_level=(
+            bos.bearish_break_level
+        ),
+        break_confirmation_price=(
+            bos.confirmation_price
+        ),
+        bullish_choch=False,
+        bearish_choch=False,
+        bullish_mss=False,
+        bearish_mss=False,
+        mss_confidence=0.0,
+        mss_reason="",
+        evidence=(
+            "Mock bullish BOS confirmed.",
+        ),
+        warnings=(),
+        reason=(
+            "Mock market structure supports "
+            "bullish order-block detection."
+        ),
+    )
+
+    findings = OrderBlockDetector().detect(
+        bars=tuple(
+            bars
+        ),
+        structure=structure,
+    )
+
+    assert len(findings) == 1
+
+    finding = findings[0]
+
+    assert finding.source_bar_index == 38
+    assert finding.confidence >= 60.0
