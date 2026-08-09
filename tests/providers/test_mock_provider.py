@@ -10,6 +10,10 @@ from datetime import (
 from imie.engines.structure.swing_detector import (
     SwingDetector,
 )
+from imie.engines.liquidity import (
+    EqualHighDetector,
+    EqualLowDetector,
+)
 
 def test_mock_provider_timestamps_are_timezone_aware() -> None:
     provider = MockProvider()
@@ -109,3 +113,42 @@ def test_mock_provider_generates_confirmed_market_swings() -> None:
 
     assert len(swing_highs) >= 2
     assert len(swing_lows) >= 2
+
+def test_mock_provider_generates_equal_high_and_low_liquidity() -> None:
+    provider = MockProvider()
+
+    bars = provider.get_bars(
+        "NVDA",
+        "2m",
+        limit=40,
+    )
+
+    swings = SwingDetector(
+        left_bars=2,
+        right_bars=2,
+    ).detect(
+        bars
+    )
+
+    equal_highs = EqualHighDetector().detect(
+        swings
+    )
+
+    equal_lows = EqualLowDetector().detect(
+        swings
+    )
+
+    assert equal_highs
+    assert equal_lows
+
+    assert any(
+        finding.point.first_index == 4
+        and finding.point.second_index == 10
+        for finding in equal_highs
+    )
+
+    assert any(
+        finding.point.first_index == 7
+        and finding.point.second_index == 13
+        for finding in equal_lows
+    )

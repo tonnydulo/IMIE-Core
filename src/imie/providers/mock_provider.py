@@ -214,6 +214,18 @@ class MockProvider(MarketDataProvider):
                     - wick_size
                 )
 
+            if index in (
+                4,
+                10,
+            ):
+                high = 99.20
+
+            if index in (
+                7,
+                13,
+            ):
+                low = 97.20
+
             volume = (
                 900_000
                 + (
