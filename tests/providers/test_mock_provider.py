@@ -299,3 +299,25 @@ def test_mock_provider_generates_bullish_order_block() -> None:
 
     assert finding.source_bar_index == 38
     assert finding.confidence >= 60.0
+
+def test_mock_provider_quote_aligns_with_latest_bar_close() -> None:
+    provider = MockProvider()
+
+    quote = provider.get_quote(
+        "NVDA"
+    )
+
+    for limit in (
+        40,
+        500,
+    ):
+        bars = provider.get_bars(
+            "NVDA",
+            "2m",
+            limit=limit,
+        )
+
+        assert abs(
+            bars[-1].close
+            - quote.last
+        ) < 1e-9

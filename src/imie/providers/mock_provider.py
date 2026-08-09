@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import (
     UTC,
     datetime,
@@ -12,12 +13,11 @@ from imie.models import (
 from imie.providers.base_provider import (
     MarketDataProvider,
 )
-from imie.engines.order_blocks import OrderBlockDetector
-from imie.engines.structure.core import StructureEngine
 
 
 class MockProvider(MarketDataProvider):
     provider_name = "mock"
+    reference_price = 100.03
 
     def connect(self) -> ProviderStatus:
         return ProviderStatus(
@@ -46,11 +46,17 @@ class MockProvider(MarketDataProvider):
         return Quote(
             symbol=symbol,
             timestamp=datetime.now(
-                        UTC
+                UTC
             ),
-            bid=100.00,
-            ask=100.05,
-            last=100.03,
+            bid=(
+                self.reference_price
+                - 0.03
+            ),
+            ask=(
+                self.reference_price
+                + 0.02
+            ),
+            last=self.reference_price,
             volume=1_000_000,
             provider=self.provider_name,
         )
@@ -291,18 +297,33 @@ class MockProvider(MarketDataProvider):
                 )
             )
 
-        return bars
+        if not bars:
+            return bars
 
-def test_mock_provider_generates_bullish_order_block() -> None:
-    provider = MockProvider()
+        price_offset = (
+            self.reference_price
+            - bars[-1].close
+        )
 
-    bars = provider.get_bars(
-        "NVDA",
-        "2m",
-        limit=40,
-    )
-
-    structure = StructureEngine().evaluate(
-        # use the same TradingContext construction already used
-        # by an existing structure test if this method requires context
-    )
+        return [
+            replace(
+                bar,
+                open=(
+                    bar.open
+                    + price_offset
+                ),
+                high=(
+                    bar.high
+                    + price_offset
+                ),
+                low=(
+                    bar.low
+                    + price_offset
+                ),
+                close=(
+                    bar.close
+                    + price_offset
+                ),
+            )
+            for bar in bars
+        ]
