@@ -1,4 +1,8 @@
-from datetime import datetime, timezone
+from datetime import (
+    UTC,
+    datetime,
+    timedelta,
+)
 
 from imie.models import (
     MarketBar,
@@ -18,7 +22,7 @@ class MockProvider(MarketDataProvider):
             provider_name=self.provider_name,
             connected=True,
             timestamp=datetime.now(
-                timezone.utc
+                        UTC
             ),
             message="Mock provider connected.",
         )
@@ -28,7 +32,7 @@ class MockProvider(MarketDataProvider):
             provider_name=self.provider_name,
             connected=False,
             timestamp=datetime.now(
-                timezone.utc
+                        UTC
             ),
             message="Mock provider disconnected.",
         )
@@ -40,7 +44,7 @@ class MockProvider(MarketDataProvider):
         return Quote(
             symbol=symbol,
             timestamp=datetime.now(
-                timezone.utc
+                        UTC
             ),
             bid=100.00,
             ask=100.05,
@@ -55,19 +59,78 @@ class MockProvider(MarketDataProvider):
         timeframe: str,
         limit: int = 100,
     ) -> list[MarketBar]:
-        return [
-            MarketBar(
-                symbol=symbol,
-                timestamp=datetime.now(
-                    timezone.utc
-                ),
-                open=99.50,
-                high=100.25,
-                low=99.25,
-                close=100.03,
-                volume=1_000_000,
-                timeframe=timeframe,
-                provider=self.provider_name,
+        timeframe_minutes = {
+            "1m": 1,
+            "2m": 2,
+            "5m": 5,
+            "15m": 15,
+        }
+
+        if timeframe not in timeframe_minutes:
+            raise ValueError(
+                f"Unsupported timeframe: {timeframe}"
             )
-            for _ in range(limit)
+
+        minutes = timeframe_minutes[
+            timeframe
         ]
+
+        now = datetime.now(
+            UTC
+        )
+
+        current_interval_start = now.replace(
+            minute=(
+                now.minute
+                - (
+                    now.minute
+                    % minutes
+                )
+            ),
+            second=0,
+            microsecond=0,
+        )
+
+        latest_completed = (
+            current_interval_start
+            - timedelta(
+                minutes=(
+                    minutes * 2
+                ),
+            )
+        )
+
+        bars: list[
+            MarketBar
+        ] = []
+
+        for index in range(limit):
+            timestamp = (
+                latest_completed
+                - timedelta(
+                    minutes=(
+                        minutes
+                        * (
+                            limit
+                            - index
+                            - 1
+                        )
+                    ),
+                )
+            )
+
+            bars.append(
+                MarketBar(
+                    symbol=symbol,
+                    timestamp=timestamp,
+                    open=99.50,
+                    high=100.25,
+                    low=99.25,
+                    close=100.03,
+                    volume=1_000_000,
+                    timeframe=timeframe,
+                    provider=self.provider_name,
+                )
+            )
+
+        return bars
