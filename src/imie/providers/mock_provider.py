@@ -1,7 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from imie.models import MarketBar, ProviderStatus, Quote
-from imie.providers.base_provider import MarketDataProvider
+from imie.models import (
+    MarketBar,
+    ProviderStatus,
+    Quote,
+)
+from imie.providers.base_provider import (
+    MarketDataProvider,
+)
 
 
 class MockProvider(MarketDataProvider):
@@ -11,7 +17,9 @@ class MockProvider(MarketDataProvider):
         return ProviderStatus(
             provider_name=self.provider_name,
             connected=True,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(
+                timezone.utc
+            ),
             message="Mock provider connected.",
         )
 
@@ -19,14 +27,21 @@ class MockProvider(MarketDataProvider):
         return ProviderStatus(
             provider_name=self.provider_name,
             connected=False,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(
+                timezone.utc
+            ),
             message="Mock provider disconnected.",
         )
 
-    def get_quote(self, symbol: str) -> Quote:
+    def get_quote(
+        self,
+        symbol: str,
+    ) -> Quote:
         return Quote(
             symbol=symbol,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(
+                timezone.utc
+            ),
             bid=100.00,
             ask=100.05,
             last=100.03,
@@ -34,11 +49,18 @@ class MockProvider(MarketDataProvider):
             provider=self.provider_name,
         )
 
-    def get_bars(self, symbol: str, timeframe: str, limit: int = 100) -> list[MarketBar]:
+    def get_bars(
+        self,
+        symbol: str,
+        timeframe: str,
+        limit: int = 100,
+    ) -> list[MarketBar]:
         return [
             MarketBar(
                 symbol=symbol,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(
+                    timezone.utc
+                ),
                 open=99.50,
                 high=100.25,
                 low=99.25,
