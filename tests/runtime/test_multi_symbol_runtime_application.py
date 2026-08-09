@@ -7,6 +7,7 @@ from imie.config.settings import (
 from imie.providers.mock_provider import MockProvider
 
 from imie.runtime import (
+    MultiSymbolContinuousRuntimeRunner,
     MultiSymbolCycleRunner,
     RuntimeConfig,
     RuntimeSymbolUniverse,
@@ -72,6 +73,12 @@ def make_application() -> MultiSymbolRuntimeApplication:
         runner=cycle_runner,
     )
 
+    continuous_runner = MultiSymbolContinuousRuntimeRunner(
+        config=RuntimeConfig(),
+        market_data=market_data,
+        runner=cycle_runner,
+    )
+
     return MultiSymbolRuntimeApplication(
         universe=universe,
         market_data=market_data,
@@ -79,6 +86,7 @@ def make_application() -> MultiSymbolRuntimeApplication:
         publisher=publisher,
         cycle_runner=cycle_runner,
         one_shot_runner=one_shot_runner,
+        continuous_runner=continuous_runner,
     )
 
 
@@ -126,6 +134,7 @@ def test_application_requires_runtime_symbol_universe() -> None:
             publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
+            continuous_runner=application.continuous_runner,
         )
 
 
@@ -143,6 +152,7 @@ def test_application_requires_market_data_service() -> None:
             publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
+            continuous_runner=application.continuous_runner,
         )
 
 
@@ -166,6 +176,7 @@ def test_application_rejects_mismatched_cycle_symbols() -> None:
             publisher=application.publisher,
             cycle_runner=application.cycle_runner,
             one_shot_runner=application.one_shot_runner,
+            continuous_runner=application.continuous_runner,
         )
 
 
@@ -207,6 +218,7 @@ def test_application_requires_shared_market_data() -> None:
             publisher=application.publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
+            continuous_runner=application.continuous_runner,
         )
 
 
@@ -242,4 +254,5 @@ def test_application_requires_runner_to_use_same_universe() -> None:
             publisher=application.publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
+            continuous_runner=application.continuous_runner,
         )

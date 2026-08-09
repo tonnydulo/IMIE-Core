@@ -20,6 +20,9 @@ from imie.runtime.single_analysis_cycle import (
 from imie.services.market_data_service import (
     MarketDataService,
 )
+from imie.runtime.multi_symbol_continuous_runtime_runner import (
+    MultiSymbolContinuousRuntimeRunner,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +43,7 @@ class MultiSymbolRuntimeApplication:
     publisher: CompositeResultPublisher
     cycle_runner: MultiSymbolCycleRunner
     one_shot_runner: MultiSymbolRuntimeRunner
+    continuous_runner: MultiSymbolContinuousRuntimeRunner
 
     def __post_init__(self) -> None:
         if not isinstance(
@@ -64,6 +68,15 @@ class MultiSymbolRuntimeApplication:
         ):
             raise TypeError(
                 "cycles must be a tuple."
+            )
+
+        if not isinstance(
+            self.continuous_runner,
+            MultiSymbolContinuousRuntimeRunner,
+        ):
+            raise TypeError(
+                "continuous_runner must be a "
+                "MultiSymbolContinuousRuntimeRunner."
             )
 
         if not self.cycles:
@@ -147,5 +160,23 @@ class MultiSymbolRuntimeApplication:
         ):
             raise ValueError(
                 "one_shot_runner must use the application "
+                "market_data instance."
+            )
+
+        if (
+            self.continuous_runner.runner
+            is not self.cycle_runner
+        ):
+            raise ValueError(
+                "continuous_runner must use the application "
+                "cycle_runner."
+            )
+
+        if (
+            self.continuous_runner.market_data
+            is not self.market_data
+        ):
+            raise ValueError(
+                "continuous_runner must use the application "
                 "market_data instance."
             )

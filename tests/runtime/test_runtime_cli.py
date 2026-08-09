@@ -1218,3 +1218,47 @@ def test_run_application_runs_and_publishes_all_multi_symbol_results(
         "AMD",
         "SPY",
     )
+
+def test_run_application_runs_multi_symbol_continuous_mode(
+    monkeypatch,
+) -> None:
+    application = RuntimeApplicationFactory.create_multi_symbol(
+        settings=AppSettings(
+            default_provider="mock",
+        ),
+        universe=RuntimeSymbolUniverse(
+            symbols=(
+                "NVDA",
+                "AMD",
+                "SPY",
+            )
+        ),
+    )
+
+    calls: list[int | None] = []
+
+    def fake_run(
+        *,
+        max_cycles=None,
+    ):
+        calls.append(
+            max_cycles
+        )
+        return ()
+
+    monkeypatch.setattr(
+        application.continuous_runner,
+        "run",
+        fake_run,
+    )
+
+    exit_code = run_application(
+        application=application,
+        continuous=True,
+        max_cycles=3,
+    )
+
+    assert exit_code == 0
+    assert calls == [
+        3,
+    ]

@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import signal
 from types import FrameType
-from typing import Callable
+from collections.abc import Callable
 
 from imie.runtime.continuous_runtime_runner import (
     ContinuousRuntimeRunner,
+)
+from imie.runtime.multi_symbol_continuous_runtime_runner import (
+    MultiSymbolContinuousRuntimeRunner,
 )
 
 
@@ -32,10 +35,14 @@ class RuntimeShutdownController:
     ) -> None:
         if not isinstance(
             runner,
-            ContinuousRuntimeRunner,
+            (
+                ContinuousRuntimeRunner,
+                MultiSymbolContinuousRuntimeRunner,
+            ),
         ):
             raise TypeError(
-                "runner must be a ContinuousRuntimeRunner."
+                "runner must be a ContinuousRuntimeRunner "
+                "or MultiSymbolContinuousRuntimeRunner."
             )
 
         self.runner = runner

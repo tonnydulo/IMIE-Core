@@ -605,10 +605,14 @@ def run_application(
         MultiSymbolRuntimeApplication,
     ):
         if continuous:
-            raise ValueError(
-                "continuous mode is not yet supported "
-                "with --symbols."
-            )
+            with RuntimeShutdownController(
+                runner=application.continuous_runner,
+            ):
+                application.continuous_runner.run(
+                    max_cycles=max_cycles,
+                )
+
+            return 0
 
         results = (
             application.one_shot_runner.run_once()

@@ -77,6 +77,9 @@ from imie.runtime.multi_symbol_runtime_application import (
 from imie.runtime.multi_symbol_runtime_runner import (
     MultiSymbolRuntimeRunner,
 )
+from imie.runtime.multi_symbol_continuous_runtime_runner import (
+    MultiSymbolContinuousRuntimeRunner,
+)
 
 def _build_symbol_cycles(
     *,
@@ -236,6 +239,22 @@ class RuntimeApplicationFactory:
             runner=cycle_runner,
         )
 
+        session_wake_planner = SessionWakePlanner(
+            market_session_clock=market_session_clock,
+            session_policy=resolved_session_policy,
+        )
+
+        interruptible_sleeper = InterruptibleSleeper()
+
+        continuous_runner = MultiSymbolContinuousRuntimeRunner(
+            config=runtime_config,
+            market_data=market_data,
+            runner=cycle_runner,
+            publisher=publisher.publish,
+            session_wake_planner=session_wake_planner,
+            interruptible_sleeper=interruptible_sleeper,
+        )
+
         return MultiSymbolRuntimeApplication(
             universe=universe,
             market_data=market_data,
@@ -243,6 +262,7 @@ class RuntimeApplicationFactory:
             publisher=publisher,
             cycle_runner=cycle_runner,
             one_shot_runner=one_shot_runner,
+            continuous_runner=continuous_runner,
         )
 
     @classmethod
