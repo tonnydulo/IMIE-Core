@@ -94,9 +94,7 @@ class MockProvider(MarketDataProvider):
         latest_completed = (
             current_interval_start
             - timedelta(
-                minutes=(
-                    minutes * 2
-                ),
+                minutes=minutes,
             )
         )
 
@@ -119,15 +117,63 @@ class MockProvider(MarketDataProvider):
                 )
             )
 
+            base_price = 98.00
+            trend_step = 0.04
+
+            close = (
+                base_price
+                + (
+                    index
+                    * trend_step
+                )
+            )
+
+            pullback = (
+                0.10
+                if index % 7 == 0
+                else 0.0
+            )
+
+            close -= pullback
+
+            open_price = (
+                close
+                - 0.05
+            )
+
+            high = (
+                max(
+                    open_price,
+                    close,
+                )
+                + 0.08
+            )
+
+            low = (
+                min(
+                    open_price,
+                    close,
+                )
+                - 0.08
+            )
+
+            volume = (
+                900_000
+                + (
+                    index
+                    * 2_000
+                )
+            )
+
             bars.append(
                 MarketBar(
                     symbol=symbol,
                     timestamp=timestamp,
-                    open=99.50,
-                    high=100.25,
-                    low=99.25,
-                    close=100.03,
-                    volume=1_000_000,
+                    open=open_price,
+                    high=high,
+                    low=low,
+                    close=close,
+                    volume=volume,
                     timeframe=timeframe,
                     provider=self.provider_name,
                 )

@@ -49,7 +49,8 @@ def test_mock_provider_bars_are_aligned_to_timeframe() -> None:
         assert bar.timestamp.microsecond == 0
         assert bar.timestamp.minute % 2 == 0
 
-def test_mock_provider_latest_bar_is_safely_historical() -> None:
+
+def test_mock_provider_latest_bar_is_recent() -> None:
     provider = MockProvider()
 
     bars = provider.get_bars(
@@ -62,10 +63,50 @@ def test_mock_provider_latest_bar_is_safely_historical() -> None:
         UTC
     )
 
-    assert (
-        bars[-1].timestamp
-        + timedelta(
-            minutes=2,
+    age_seconds = (
+        now
+        - bars[-1].timestamp
+    ).total_seconds()
+
+    assert age_seconds >= 120.0
+    assert age_seconds <= 300.0
+
+def test_mock_provider_generates_deterministic_price_progression() -> None:
+    provider = MockProvider()
+
+    bars = provider.get_bars(
+        "NVDA",
+        "2m",
+        limit=20,
+    )
+
+    assert len(bars) == 20
+
+    assert bars[-1].close > bars[0].close
+
+    assert any(
+        bars[index].close
+        < bars[index - 1].close
+        for index in range(
+            1,
+            len(bars),
         )
-        < now
+    )
+
+    assert all(
+        bar.high
+        > max(
+            bar.open,
+            bar.close,
+        )
+        for bar in bars
+    )
+
+    assert all(
+        bar.low
+        < min(
+            bar.open,
+            bar.close,
+        )
+        for bar in bars
     )
