@@ -19,6 +19,7 @@ from imie.runtime.nyse_calendar import (
 from imie.runtime import (
     AnalysisCycleResult,
     AnalysisCycleStatus,
+    MultiSymbolRuntimeApplication,
     RuntimeApplication,
     RuntimeApplicationFactory,
     RuntimeConfig,
@@ -503,7 +504,7 @@ def build_application(
     *,
     settings: AppSettings,
     arguments: argparse.Namespace,
-) -> RuntimeApplication:
+) -> RuntimeApplication | MultiSymbolRuntimeApplication:
     config = build_runtime_config(
         arguments
     )
@@ -520,6 +521,30 @@ def build_application(
     calendar_years = resolve_calendar_years(
         arguments
     )
+
+    symbols = getattr(
+        arguments,
+        "symbols",
+        None,
+    )
+
+    if symbols is not None:
+        universe = build_runtime_symbol_universe(
+            arguments
+        )
+
+        multi_symbol_config = replace(
+            config,
+            symbol=universe.symbols[0],
+        )
+
+        return RuntimeApplicationFactory.create_multi_symbol(
+            settings=resolved_settings,
+            universe=universe,
+            config=multi_symbol_config,
+            session_policy=session_policy,
+            calendar_years=calendar_years,
+        )
 
     return RuntimeApplicationFactory.create(
         settings=resolved_settings,
@@ -563,7 +588,7 @@ def publish_one_shot_result(
 
 def run_application(
     *,
-    application,
+    application: RuntimeApplication | MultiSymbolRuntimeApplication,
     continuous: bool,
     max_cycles: int | None,
 ) -> int:
@@ -574,6 +599,34 @@ def run_application(
         raise TypeError(
             "continuous must be a bool."
         )
+
+    if isinstance(
+        application,
+        MultiSymbolRuntimeApplication,
+    ):
+        if continuous:
+            raise ValueError(
+                "continuous mode is not yet supported "
+                "with --symbols."
+            )
+
+        results = (
+            application.one_shot_runner.run_once()
+        )
+
+        for result in results:
+            application.publisher.publish(
+                result
+            )
+
+        if any(
+            result.status
+            is AnalysisCycleStatus.FAILED
+            for result in results
+        ):
+            return 1
+
+        return 0
 
     if continuous:
         with RuntimeShutdownController(
@@ -623,11 +676,23 @@ def main(
             arguments=arguments,
         )
 
-        logger.info(
-            "Starting IMIE runtime for %s on %s.",
-            application.config.symbol,
-            application.config.timeframe,
-        )
+        if isinstance(
+            application,
+            MultiSymbolRuntimeApplication,
+        ):
+            logger.info(
+                "Starting IMIE runtime for %s on %s.",
+                ", ".join(
+                    application.universe.symbols
+                ),
+                application.cycles[0].config.timeframe,
+            )
+        else:
+            logger.info(
+                "Starting IMIE runtime for %s on %s.",
+                application.config.symbol,
+                application.config.timeframe,
+            )
 
         return run_application(
             application=application,

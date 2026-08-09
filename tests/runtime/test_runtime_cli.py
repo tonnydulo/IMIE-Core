@@ -12,6 +12,7 @@ from imie.runtime import (
     AnalysisCycleStatus,
     RuntimeApplicationFactory,
     RuntimeConfig,
+    RuntimeSymbolUniverse,
     SUPPORTED_NYSE_CALENDAR_YEARS,
 )
 from imie.runtime_cli import (
@@ -1123,6 +1124,96 @@ def test_runtime_symbol_universe_uses_symbols_argument() -> None:
     )
 
     assert universe.symbols == (
+        "NVDA",
+        "AMD",
+        "SPY",
+    )
+
+def test_build_application_uses_multi_symbol_factory_when_symbols_are_provided(
+    monkeypatch,
+) -> None:
+    arguments = build_parser().parse_args(
+        [
+            "--symbols",
+            "NVDA",
+            "AMD",
+            "SPY",
+        ]
+    )
+
+    settings = AppSettings(
+        default_provider="mock",
+    )
+
+    created: dict[str, object] = {}
+
+    def fake_create_multi_symbol(**kwargs):
+        created.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        RuntimeApplicationFactory,
+        "create_multi_symbol",
+        fake_create_multi_symbol,
+    )
+
+    application = build_application(
+        settings=settings,
+        arguments=arguments,
+    )
+
+    assert application is not None
+
+    universe = created["universe"]
+
+    assert isinstance(
+        universe,
+        RuntimeSymbolUniverse,
+    )
+
+    assert universe.symbols == (
+        "NVDA",
+        "AMD",
+        "SPY",
+    )
+
+
+def test_run_application_runs_and_publishes_all_multi_symbol_results(
+    monkeypatch,
+) -> None:
+    application = RuntimeApplicationFactory.create_multi_symbol(
+        settings=AppSettings(
+            default_provider="mock",
+        ),
+        universe=RuntimeSymbolUniverse(
+            symbols=(
+                "NVDA",
+                "AMD",
+                "SPY",
+            )
+        ),
+    )
+
+    published: list[AnalysisCycleResult] = []
+
+    monkeypatch.setattr(
+        application.publisher,
+        "publish",
+        published.append,
+    )
+
+    exit_code = run_application(
+        application=application,
+        continuous=False,
+        max_cycles=None,
+    )
+
+    assert exit_code == 0
+
+    assert tuple(
+        result.symbol
+        for result in published
+    ) == (
         "NVDA",
         "AMD",
         "SPY",
