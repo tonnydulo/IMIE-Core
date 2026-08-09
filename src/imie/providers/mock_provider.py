@@ -118,7 +118,29 @@ class MockProvider(MarketDataProvider):
             )
 
             base_price = 98.00
-            trend_step = 0.04
+            trend_step = 0.02
+
+            wave = (
+                0.00,
+                0.12,
+                0.28,
+                0.12,
+                0.00,
+                -0.12,
+                -0.28,
+                -0.12,
+            )
+
+            phase = (
+                index
+                % len(
+                    wave
+                )
+            )
+
+            wave_value = wave[
+                phase
+            ]
 
             close = (
                 base_price
@@ -126,36 +148,71 @@ class MockProvider(MarketDataProvider):
                     index
                     * trend_step
                 )
+                + wave_value
             )
 
-            pullback = (
-                0.10
-                if index % 7 == 0
-                else 0.0
-            )
-
-            close -= pullback
-
-            open_price = (
-                close
-                - 0.05
-            )
-
-            high = (
-                max(
-                    open_price,
-                    close,
+            if index == 0:
+                previous_close = (
+                    close
+                    - 0.04
                 )
-                + 0.08
-            )
-
-            low = (
-                min(
-                    open_price,
-                    close,
+            else:
+                previous_phase = (
+                    index - 1
+                ) % len(
+                    wave
                 )
-                - 0.08
-            )
+
+                previous_close = (
+                    base_price
+                    + (
+                        (
+                            index - 1
+                        )
+                        * trend_step
+                    )
+                    + wave[
+                        previous_phase
+                    ]
+                )
+
+            open_price = previous_close
+
+            wick_size = 0.06
+
+            if phase == 2:
+                high = (
+                    max(
+                        open_price,
+                        close,
+                    )
+                    + 0.20
+                )
+            else:
+                high = (
+                    max(
+                        open_price,
+                        close,
+                    )
+                    + wick_size
+                )
+
+            if phase == 6:
+                low = (
+                    min(
+                        open_price,
+                        close,
+                    )
+                    - 0.20
+                )
+            else:
+                low = (
+                    min(
+                        open_price,
+                        close,
+                    )
+                    - wick_size
+                )
 
             volume = (
                 900_000

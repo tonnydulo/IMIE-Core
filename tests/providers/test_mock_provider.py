@@ -1,12 +1,15 @@
 from imie.providers.mock_provider import (
     MockProvider,
 )
+from itertools import pairwise
 from datetime import (
     UTC,
     datetime,
     timedelta,
 )
-
+from imie.engines.structure.swing_detector import (
+    SwingDetector,
+)
 
 def test_mock_provider_timestamps_are_timezone_aware() -> None:
     provider = MockProvider()
@@ -71,42 +74,38 @@ def test_mock_provider_latest_bar_is_recent() -> None:
     assert age_seconds >= 120.0
     assert age_seconds <= 300.0
 
-def test_mock_provider_generates_deterministic_price_progression() -> None:
+def test_mock_provider_generates_confirmed_market_swings() -> None:
     provider = MockProvider()
 
     bars = provider.get_bars(
         "NVDA",
         "2m",
-        limit=20,
+        limit=40,
     )
 
-    assert len(bars) == 20
-
-    assert bars[-1].close > bars[0].close
-
-    assert any(
-        bars[index].close
-        < bars[index - 1].close
-        for index in range(
-            1,
-            len(bars),
-        )
+    detector = SwingDetector(
+        left_bars=2,
+        right_bars=2,
     )
 
-    assert all(
-        bar.high
-        > max(
-            bar.open,
-            bar.close,
-        )
-        for bar in bars
+    swings = detector.detect(
+        bars
     )
 
-    assert all(
-        bar.low
-        < min(
-            bar.open,
-            bar.close,
-        )
-        for bar in bars
+    swing_highs = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "HIGH"
     )
+
+    swing_lows = tuple(
+        swing
+        for swing in swings
+        if swing.kind == "LOW"
+    )
+
+    assert swing_highs
+    assert swing_lows
+
+    assert len(swing_highs) >= 2
+    assert len(swing_lows) >= 2
