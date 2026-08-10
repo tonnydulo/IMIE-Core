@@ -171,28 +171,60 @@ class MarketPhaseEngine:
                 for vote in phase_scores
                 if vote.score == highest_score
             )
+
         else:
             leading_phases = ()
 
-        supporting_domains = tuple(
-            domain.domain
-            for domain in domains
-            if (
-                domain.is_known
-                and not domain.is_disabled
-                and domain.phase in leading_phases
+        if (
+            phase is MarketPhaseType.TRANSITION
+            and len(leading_phases) > 1
+        ):
+            supporting_domains = tuple(
+                domain.domain
+                for domain in domains
+                if (
+                    domain.is_known
+                    and not domain.is_disabled
+                    and domain.phase in leading_phases
+                )
             )
-        )
 
-        opposing_domains = tuple(
-            domain.domain
-            for domain in domains
-            if (
-                domain.is_known
-                and not domain.is_disabled
-                and domain.phase not in leading_phases
+            opposing_domains = tuple(
+                domain.domain
+                for domain in domains
+                if (
+                    domain.is_known
+                    and not domain.is_disabled
+                    and domain.phase not in leading_phases
+                )
             )
-        )
+
+        else:
+            supporting_domains = tuple(
+                domain.domain
+                for domain in domains
+                if (
+                    domain.is_known
+                    and not domain.is_disabled
+                    and self._phases_compatible(
+                        candidate=domain.phase,
+                        dominant=phase,
+                    )
+                )
+            )
+
+            opposing_domains = tuple(
+                domain.domain
+                for domain in domains
+                if (
+                    domain.is_known
+                    and not domain.is_disabled
+                    and not self._phases_compatible(
+                        candidate=domain.phase,
+                        dominant=phase,
+                    )
+                )
+            )
 
         neutral_domains: tuple[str, ...] = ()
 
@@ -243,19 +275,13 @@ class MarketPhaseEngine:
                 "No resolved market phase votes are available.",
             )
 
-        elif phase is MarketPhaseType.TRANSITION:
+        elif (
+            phase is MarketPhaseType.TRANSITION
+            and len(leading_phases) > 1
+        ):
             warnings = (
                 "Multiple market phases share the highest score.",
             )
-
-        unknown_domains = tuple(
-            domain.domain
-            for domain in domains
-            if (
-                domain.is_unknown
-                or domain.is_disabled
-            )
-        )
 
         return MarketPhase(
             phase=phase,
@@ -270,7 +296,7 @@ class MarketPhaseEngine:
             unknown_domains=unknown_domains,
             evidence=evidence,
             warnings=warnings,
-            )
+        )
         
 
     @staticmethod
@@ -406,6 +432,37 @@ class MarketPhaseEngine:
                 ),
                 reverse=True,
             )
+        )
+
+    @staticmethod
+    def _phases_compatible(
+        *,
+        candidate: MarketPhaseType,
+        dominant: MarketPhaseType,
+    ) -> bool:
+        if candidate is dominant:
+            return True
+
+        bullish_family = {
+            MarketPhaseType.ACCUMULATION,
+            MarketPhaseType.MARKUP,
+            MarketPhaseType.EXPANSION,
+        }
+
+        bearish_family = {
+            MarketPhaseType.DISTRIBUTION,
+            MarketPhaseType.MARKDOWN,
+        }
+
+        if (
+            candidate in bullish_family
+            and dominant in bullish_family
+        ):
+            return True
+
+        return (
+            candidate in bearish_family
+            and dominant in bearish_family
         )
 
     @staticmethod

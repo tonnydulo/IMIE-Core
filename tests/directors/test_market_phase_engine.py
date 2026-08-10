@@ -328,3 +328,69 @@ def test_unresolved_result_does_not_vote() -> None:
     assert "STRUCTURE" in result.unknown_domains
     assert "AUCTION" in result.supporting_domains
 
+def test_accumulation_supports_markup_phase_family() -> None:
+    engine = MarketPhaseEngine()
+
+    result = engine.evaluate(
+        structure=make_phase_result(
+            analyst="StructureAnalyst",
+            phase=MarketPhaseType.MARKUP,
+            confidence=100.0,
+        ),
+        order_block=make_phase_result(
+            analyst="OrderBlockAnalyst",
+            phase=MarketPhaseType.ACCUMULATION,
+            confidence=100.0,
+        ),
+    )
+
+    assert result.phase is MarketPhaseType.MARKUP
+    assert result.agreement_count == 2
+    assert result.conflict_count == 0
+    assert result.supporting_domains == (
+        "STRUCTURE",
+        "ORDER_BLOCK",
+    )
+
+def test_expansion_supports_markup_phase_family() -> None:
+    engine = MarketPhaseEngine()
+
+    result = engine.evaluate(
+        structure=make_phase_result(
+            analyst="StructureAnalyst",
+            phase=MarketPhaseType.MARKUP,
+            confidence=100.0,
+        ),
+        pressure=make_phase_result(
+            analyst="PressureAnalyst",
+            phase=MarketPhaseType.EXPANSION,
+            confidence=100.0,
+        ),
+    )
+
+    assert result.phase is MarketPhaseType.MARKUP
+    assert result.agreement_count == 2
+    assert result.conflict_count == 0
+
+def test_distribution_opposes_markup_phase_family() -> None:
+    engine = MarketPhaseEngine()
+
+    result = engine.evaluate(
+        structure=make_phase_result(
+            analyst="StructureAnalyst",
+            phase=MarketPhaseType.MARKUP,
+            confidence=100.0,
+        ),
+        value=make_phase_result(
+            analyst="ValueAnalyst",
+            phase=MarketPhaseType.DISTRIBUTION,
+            confidence=100.0,
+        ),
+    )
+
+    assert result.phase is MarketPhaseType.MARKUP
+    assert result.agreement_count == 1
+    assert result.conflict_count == 1
+    assert result.opposing_domains == (
+        "VALUE",
+    )
