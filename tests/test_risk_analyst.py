@@ -356,3 +356,159 @@ def test_long_trade_plan_keeps_2r_when_resistance_is_beyond_target() -> None:
     assert plan.valid is True
     assert plan.actionable is True
     assert plan.decision == "READY"
+
+def test_short_trade_plan_passes_when_support_limits_rr() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(
+            price=99.40
+        ),
+        freshness=fresh_data(),
+        trend_result=trend_result(
+            "BEARISH"
+        ),
+        lifecycle=ready_lifecycle(
+            "short"
+        ),
+        acceptance=short_acceptance(),
+        structure=structure_result(
+            nearest_support=98.20,
+            nearest_resistance=101.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        98.60
+    )
+
+    assert plan.target2 == pytest.approx(
+        98.20
+    )
+
+    assert plan.reward2_per_share == pytest.approx(
+        1.20
+    )
+
+    assert plan.rr2 == pytest.approx(
+        1.50
+    )
+
+    assert plan.valid is False
+    assert plan.actionable is False
+    assert plan.decision == "PASS"
+
+    assert any(
+        "below the 2.00 minimum"
+        in warning
+        for warning in plan.warnings
+    )
+
+def test_short_trade_plan_keeps_2r_when_support_is_beyond_target() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(
+            price=99.40
+        ),
+        freshness=fresh_data(),
+        trend_result=trend_result(
+            "BEARISH"
+        ),
+        lifecycle=ready_lifecycle(
+            "short"
+        ),
+        acceptance=short_acceptance(),
+        structure=structure_result(
+            nearest_support=97.00,
+            nearest_resistance=101.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        98.60
+    )
+
+    assert plan.target2 == pytest.approx(
+        97.80
+    )
+
+    assert plan.rr2 == pytest.approx(
+        2.0
+    )
+
+    assert plan.valid is True
+    assert plan.actionable is True
+    assert plan.decision == "READY"
+
+def test_long_trade_plan_uses_mechanical_2r_without_valid_resistance() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(),
+        freshness=fresh_data(),
+        trend_result=trend_result(),
+        lifecycle=ready_lifecycle(
+            "long"
+        ),
+        acceptance=long_acceptance(),
+        structure=structure_result(
+            nearest_support=99.00,
+            nearest_resistance=None,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        101.40
+    )
+
+    assert plan.target2 == pytest.approx(
+        102.20
+    )
+
+    assert plan.rr2 == pytest.approx(
+        2.0
+    )
+
+    assert plan.valid is True
+    assert plan.actionable is True
+    assert plan.decision == "READY"
+    assert any(
+        "no valid structural resistance"
+        in warning.lower()
+        for warning in plan.warnings
+    )
+
+def test_short_trade_plan_uses_mechanical_2r_without_valid_support() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(
+            price=99.40
+        ),
+        freshness=fresh_data(),
+        trend_result=trend_result(
+            "BEARISH"
+        ),
+        lifecycle=ready_lifecycle(
+            "short"
+        ),
+        acceptance=short_acceptance(),
+        structure=structure_result(
+            nearest_support=None,
+            nearest_resistance=101.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        98.60
+    )
+
+    assert plan.target2 == pytest.approx(
+        97.80
+    )
+
+    assert plan.rr2 == pytest.approx(
+        2.0
+    )
+
+    assert plan.valid is True
+    assert plan.actionable is True
+    assert plan.decision == "READY"
+    assert any(
+        "no valid structural support"
+        in warning.lower()
+        for warning in plan.warnings
+    )

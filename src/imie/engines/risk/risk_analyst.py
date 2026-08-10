@@ -217,6 +217,14 @@ class RiskAnalyst:
                     target2,
                 )
 
+            else:
+                warnings.append(
+                    "No valid structural resistance constrains "
+                    "the projected Target 2. "
+                    f"Using the configured {self.target2_r:.2f}R "
+                    "projection."
+                )
+
         elif lifecycle.direction == "short":
             stop = acceptance.pullback_high
 
@@ -260,6 +268,14 @@ class RiskAnalyst:
                 target1 = max(
                     target1,
                     target2,
+                )
+
+            else:
+                warnings.append(
+                    "No valid structural support constrains "
+                    "the projected Target 2. "
+                    f"Using the configured {self.target2_r:.2f}R "
+                    "projection."
                 )
 
         else:
