@@ -1928,3 +1928,106 @@ def test_aligned_phase_below_agreement_threshold_prepares() -> None:
         in warning.lower()
         for warning in result.warnings
     )
+
+def test_bullish_pullback_phase_is_unresolved_for_authorization() -> None:
+    registry = make_ready_registry(
+        trend=TREND_BULLISH,
+        plan_direction="long",
+    )
+
+    add_all_bullish(
+        registry
+    )
+
+    result = evaluate(
+        registry,
+        institutional_bias_policy="READY",
+        market_phase_policy="PREPARE",
+        market_phase_engine=FixedMarketPhaseEngine(
+            MarketPhaseType.PULLBACK
+        ),
+    )
+
+    assert (
+        result.decision
+        is DirectorDecision.PREPARE
+    )
+    assert result.actionable is False
+
+    assert any(
+        "market phase compatibility is unresolved"
+        in reason.lower()
+        for reason in result.reasons
+    )
+
+def test_bearish_pullback_phase_is_unresolved_for_authorization() -> None:
+    registry = make_ready_registry(
+        trend=TREND_BEARISH,
+        plan_direction="short",
+    )
+
+    add_all_bearish(
+        registry
+    )
+
+    result = evaluate(
+        registry,
+        institutional_bias_policy="READY",
+        market_phase_policy="PREPARE",
+        market_phase_engine=FixedMarketPhaseEngine(
+            MarketPhaseType.PULLBACK
+        ),
+    )
+
+    assert (
+        result.decision
+        is DirectorDecision.PREPARE
+    )
+    assert result.actionable is False
+
+    assert any(
+        "market phase compatibility is unresolved"
+        in reason.lower()
+        for reason in result.reasons
+    )
+
+@pytest.mark.parametrize(
+    "phase",
+    (
+        MarketPhaseType.EXPANSION,
+        MarketPhaseType.REVERSAL,
+        MarketPhaseType.COMPRESSION,
+    ),
+)
+def test_nondirectional_phase_is_unresolved_for_authorization(
+    phase: MarketPhaseType,
+) -> None:
+    registry = make_ready_registry(
+        trend=TREND_BULLISH,
+        plan_direction="long",
+    )
+
+    add_all_bullish(
+        registry
+    )
+
+    result = evaluate(
+        registry,
+        institutional_bias_policy="READY",
+        market_phase_policy="PREPARE",
+        market_phase_engine=FixedMarketPhaseEngine(
+            phase
+        ),
+    )
+
+    assert (
+        result.decision
+        is DirectorDecision.PREPARE
+    )
+    assert result.actionable is False
+
+    assert any(
+        "market phase compatibility is unresolved"
+        in reason.lower()
+        for reason in result.reasons
+    )

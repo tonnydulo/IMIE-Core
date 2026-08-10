@@ -1680,7 +1680,6 @@ class DecisionDirector:
         if trade_direction is InstitutionalDirection.BULLISH:
             aligned_phases = {
                 "MARKUP",
-                "PULLBACK",
                 "ACCUMULATION",
             }
 
@@ -1692,7 +1691,6 @@ class DecisionDirector:
         else:
             aligned_phases = {
                 "MARKDOWN",
-                "PULLBACK",
                 "DISTRIBUTION",
             }
 
