@@ -89,6 +89,9 @@ from imie.models.participation_analysis import (
 from imie.models.value_analysis import (
     ValueAnalysis,
 )
+from imie.models.position_size_result import (
+    PositionSizeResult,
+)
 
 __all__ = [
     "AcceptanceResult",
