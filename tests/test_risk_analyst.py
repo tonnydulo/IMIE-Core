@@ -328,6 +328,10 @@ def test_long_trade_plan_passes_when_resistance_limits_rr() -> None:
         for warning in plan.warnings
     )
 
+    assert "Target 2 is 101.80" in plan.narrative
+    assert "1.50R" in plan.narrative
+    assert "2R target" not in plan.narrative
+
 def test_long_trade_plan_keeps_2r_when_resistance_is_beyond_target() -> None:
     plan = RiskAnalyst().analyze(
         context=build_context(),
@@ -401,6 +405,10 @@ def test_short_trade_plan_passes_when_support_limits_rr() -> None:
         in warning
         for warning in plan.warnings
     )
+
+    assert "Target 2 is 98.20" in plan.narrative
+    assert "1.50R" in plan.narrative
+    assert "2R target" not in plan.narrative
 
 def test_short_trade_plan_keeps_2r_when_support_is_beyond_target() -> None:
     plan = RiskAnalyst().analyze(

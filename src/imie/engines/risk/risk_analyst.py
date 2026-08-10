@@ -459,8 +459,8 @@ class RiskAnalyst:
             f"candle-close acceptance was rated "
             f"{acceptance_level}. "
             f"The projected entry is {entry:.2f}, invalidation is "
-            f"{stop:.2f}, and the 2R target is {target2:.2f}. "
-            f"Projected reward-to-risk is {rr2:.2f}."
+            f"{stop:.2f}, and Target 2 is {target2:.2f}. "
+            f"Projected reward-to-risk is {rr2:.2f}R."
         )
 
     def _empty_plan(
