@@ -59,9 +59,14 @@ class FixedMarketPhaseEngine(
     def __init__(
         self,
         phase: MarketPhaseType,
+        *,
+        confidence: float | None = None,
+        agreement_count: int | None = None,
     ) -> None:
         super().__init__()
         self.phase = phase
+        self.fixed_confidence = confidence
+        self.fixed_agreement_count = agreement_count
 
     def evaluate(
         self,
@@ -72,10 +77,18 @@ class FixedMarketPhaseEngine(
         if self.phase is MarketPhaseType.UNKNOWN:
             return MarketPhase(
                 phase=MarketPhaseType.UNKNOWN,
-                confidence=0.0,
+                confidence=(
+                    0.0
+                    if self.fixed_confidence is None
+                    else self.fixed_confidence
+                ),
                 strength=0.0,
                 phase_scores=(),
-                agreement_count=0,
+                agreement_count=(
+                    0
+                    if self.fixed_agreement_count is None
+                    else self.fixed_agreement_count
+                ),
                 conflict_count=0,
                 supporting_domains=(),
                 opposing_domains=(),
@@ -96,19 +109,35 @@ class FixedMarketPhaseEngine(
                 ),
             )
 
-        return MarketPhase(
-            phase=self.phase,
-            confidence=90.0,
-            strength=75.0,
-            phase_scores=(),
-            agreement_count=4,
-            conflict_count=0,
-            supporting_domains=(
+        confidence = (
+            90.0
+            if self.fixed_confidence is None
+            else self.fixed_confidence
+        )
+
+        agreement_count = (
+            4
+            if self.fixed_agreement_count is None
+            else self.fixed_agreement_count
+        )
+
+        supporting_domains = tuple(
+            (
                 "STRUCTURE",
                 "AUCTION",
                 "TREND",
                 "VALUE",
-            ),
+            )[:agreement_count]
+        )
+
+        return MarketPhase(
+            phase=self.phase,
+            confidence=confidence,
+            strength=75.0,
+            phase_scores=(),
+            agreement_count=agreement_count,
+            conflict_count=0,
+            supporting_domains=supporting_domains,
             opposing_domains=(),
             neutral_domains=(),
             unknown_domains=(),
@@ -1833,4 +1862,69 @@ def test_fully_aligned_expanded_confluence_adds_eight() -> None:
         for reason in result.reasons
     )
 
+def test_aligned_phase_below_confidence_threshold_prepares() -> None:
+    registry = make_ready_registry(
+        trend=TREND_BULLISH,
+        plan_direction="long",
+    )
 
+    add_all_bullish(
+        registry
+    )
+
+    result = evaluate(
+        registry,
+        institutional_bias_policy="READY",
+        market_phase_policy="PREPARE",
+        market_phase_engine=FixedMarketPhaseEngine(
+            MarketPhaseType.MARKUP,
+            confidence=59.0,
+            agreement_count=4,
+        ),
+    )
+
+    assert (
+        result.decision
+        is DirectorDecision.PREPARE
+    )
+    assert result.actionable is False
+
+    assert any(
+        "market phase confidence is below"
+        in warning.lower()
+        for warning in result.warnings
+    )
+
+
+def test_aligned_phase_below_agreement_threshold_prepares() -> None:
+    registry = make_ready_registry(
+        trend=TREND_BULLISH,
+        plan_direction="long",
+    )
+
+    add_all_bullish(
+        registry
+    )
+
+    result = evaluate(
+        registry,
+        institutional_bias_policy="READY",
+        market_phase_policy="PREPARE",
+        market_phase_engine=FixedMarketPhaseEngine(
+            MarketPhaseType.MARKUP,
+            confidence=90.0,
+            agreement_count=2,
+        ),
+    )
+
+    assert (
+        result.decision
+        is DirectorDecision.PREPARE
+    )
+    assert result.actionable is False
+
+    assert any(
+        "market phase agreement is below"
+        in warning.lower()
+        for warning in result.warnings
+    )

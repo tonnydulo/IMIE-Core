@@ -837,6 +837,8 @@ class DecisionDirector:
             phase_warnings,
         ) = self._market_phase_alignment(
             phase=market_phase.phase,
+            confidence=market_phase.confidence,
+            agreement_count=market_phase.agreement_count,
             trade_direction=intended_direction,
         )
 
@@ -1602,6 +1604,8 @@ class DecisionDirector:
         self,
         *,
         phase,
+        confidence: float,
+        agreement_count: int,
         trade_direction: InstitutionalDirection,
     ) -> tuple[
         bool | None,
@@ -1619,6 +1623,43 @@ class DecisionDirector:
 
         if not trade_direction.is_directional:
             return None, (), ()
+
+        minimum_confidence = (
+            self.market_phase_engine
+            .config
+            .minimum_phase_confidence
+        )
+
+        minimum_agreement = (
+            self.market_phase_engine
+            .config
+            .minimum_phase_agreement
+        )
+
+        quality_warnings: list[str] = []
+
+        if confidence < minimum_confidence:
+            quality_warnings.append(
+                "Market phase confidence is below the "
+                "minimum required for trade authorization: "
+                f"{confidence:.2f}% < "
+                f"{minimum_confidence:.2f}%."
+            )
+
+        if agreement_count < minimum_agreement:
+            quality_warnings.append(
+                "Market phase agreement is below the "
+                "minimum required for trade authorization: "
+                f"{agreement_count} < "
+                f"{minimum_agreement}."
+            )
+
+        if quality_warnings:
+            return (
+                None,
+                (),
+                tuple(quality_warnings),
+            )
 
         phase_value = self._normalize(
             phase
