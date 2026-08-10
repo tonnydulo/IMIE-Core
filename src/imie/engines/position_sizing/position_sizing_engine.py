@@ -23,6 +23,8 @@ class PositionSizingEngine:
         *,
         account_equity: float,
         risk_percent: float | None = None,
+        buying_power: float | None = None,
+        maximum_notional: float | None = None,
     ) -> PositionSizeResult:
         effective_risk_percent = (
             self.default_risk_percent
@@ -38,6 +40,16 @@ class PositionSizingEngine:
         if effective_risk_percent <= 0:
             raise ValueError(
                 "risk_percent must be greater than zero."
+            )
+
+        if buying_power is not None and buying_power <= 0:
+            raise ValueError(
+                "buying_power must be greater than zero."
+            )
+
+        if maximum_notional is not None and maximum_notional <= 0:
+            raise ValueError(
+                "maximum_notional must be greater than zero."
             )
 
         if (
@@ -59,10 +71,41 @@ class PositionSizingEngine:
             / 100.0
         )
 
-        quantity = floor(
+        risk_quantity = floor(
             risk_budget
             / trade_plan.risk_per_share
         )
+
+        quantity = risk_quantity
+
+        warnings: list[str] = []
+
+        if buying_power is not None:
+            buying_power_quantity = floor(
+                buying_power
+                / trade_plan.entry
+            )
+
+            if buying_power_quantity < quantity:
+                quantity = buying_power_quantity
+
+                warnings.append(
+                    "Position size was constrained by available buying power."
+                )
+
+        if maximum_notional is not None:
+            maximum_notional_quantity = floor(
+                maximum_notional
+                / trade_plan.entry
+            )
+
+            if maximum_notional_quantity < quantity:
+                quantity = maximum_notional_quantity
+
+                warnings.append(
+                    "Position size was constrained by the maximum "
+                    "notional limit."
+                )
 
         position_notional = (
             quantity
@@ -82,12 +125,15 @@ class PositionSizingEngine:
 
         actionable = quantity >= 1
 
-        warnings: tuple[str, ...] = ()
-
         if not actionable:
-            warnings = (
-                "Risk budget is insufficient for one share.",
-            )
+            if risk_quantity < 1:
+                warnings.append(
+                    "Risk budget is insufficient for one share."
+                )
+            else:
+                warnings.append(
+                    "Capital constraints do not allow one share."
+                )
 
         return PositionSizeResult(
             symbol=trade_plan.symbol,
@@ -107,5 +153,5 @@ class PositionSizingEngine:
             reasons=(
                 "Position size calculated from account risk budget.",
             ),
-            warnings=warnings,
+            warnings=tuple(warnings),
         )

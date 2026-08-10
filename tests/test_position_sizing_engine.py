@@ -152,3 +152,137 @@ def test_rejects_invalid_account_risk_inputs(
             account_equity=account_equity,
             risk_percent=risk_percent,
         )
+
+def test_buying_power_constrains_position_size() -> None:
+    result = PositionSizingEngine().calculate(
+        actionable_trade_plan(),
+        account_equity=25_000.0,
+        buying_power=10_000.0,
+    )
+
+    assert result.risk_budget == pytest.approx(
+        125.00
+    )
+
+    assert result.quantity == 99
+
+    assert result.position_notional == pytest.approx(
+        9_959.40
+    )
+
+    assert result.actual_risk == pytest.approx(
+        79.20
+    )
+
+    assert result.actual_risk_percent == pytest.approx(
+        0.3168
+    )
+
+    assert result.valid is True
+    assert result.actionable is True
+
+    assert (
+        "Position size was constrained by available buying power."
+        in result.warnings
+    )
+
+
+def test_maximum_notional_constrains_position_size() -> None:
+    result = PositionSizingEngine().calculate(
+        actionable_trade_plan(),
+        account_equity=25_000.0,
+        maximum_notional=5_000.0,
+    )
+
+    assert result.quantity == 49
+
+    assert result.position_notional == pytest.approx(
+        4_929.40
+    )
+
+    assert result.actual_risk == pytest.approx(
+        39.20
+    )
+
+    assert (
+        "Position size was constrained by the maximum "
+        "notional limit."
+        in result.warnings
+    )
+
+
+def test_tightest_cap_controls_final_quantity() -> None:
+    result = PositionSizingEngine().calculate(
+        actionable_trade_plan(),
+        account_equity=25_000.0,
+        buying_power=10_000.0,
+        maximum_notional=5_000.0,
+    )
+
+    assert result.quantity == 49
+
+    assert result.position_notional == pytest.approx(
+        4_929.40
+    )
+
+    assert result.actual_risk == pytest.approx(
+        39.20
+    )
+
+    assert (
+        "Position size was constrained by available buying power."
+        in result.warnings
+    )
+
+    assert (
+        "Position size was constrained by the maximum "
+        "notional limit."
+        in result.warnings
+    )
+
+
+def test_cap_below_one_share_returns_non_actionable_result() -> None:
+    result = PositionSizingEngine().calculate(
+        actionable_trade_plan(),
+        account_equity=25_000.0,
+        buying_power=50.0,
+    )
+
+    assert result.quantity == 0
+    assert result.position_notional == pytest.approx(
+        0.0
+    )
+
+    assert result.actual_risk == pytest.approx(
+        0.0
+    )
+
+    assert result.valid is True
+    assert result.actionable is False
+
+    assert (
+        "Capital constraints do not allow one share."
+        in result.warnings
+    )
+
+
+@pytest.mark.parametrize(
+    "buying_power,maximum_notional",
+    [
+        (0.0, None),
+        (-1.0, None),
+        (None, 0.0),
+        (None, -1.0),
+    ],
+)
+def test_rejects_invalid_capital_constraints(
+    buying_power: float | None,
+    maximum_notional: float | None,
+) -> None:
+    with pytest.raises(ValueError):
+        PositionSizingEngine().calculate(
+            actionable_trade_plan(),
+            account_equity=25_000.0,
+            buying_power=buying_power,
+            maximum_notional=maximum_notional,
+        )
