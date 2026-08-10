@@ -12,6 +12,7 @@ from imie.models import (
     MarketObservations,
     MarketSnapshot,
     Quote,
+    StructureResult,
     SetupLifecycle,
     TradingContext,
 )
@@ -156,6 +157,27 @@ def short_acceptance() -> AcceptanceResult:
         reason="Short acceptance confirmed.",
     )
 
+def structure_result(
+    *,
+    nearest_support: float | None = None,
+    nearest_resistance: float | None = None,
+) -> StructureResult:
+    return StructureResult(
+        symbol="TEST",
+        direction="long",
+        state="BULLISH_STRUCTURE",
+        confidence=85.0,
+        nearest_support=nearest_support,
+        nearest_resistance=nearest_resistance,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=2,
+        swing_low_count=2,
+    )
+
 
 def test_long_trade_plan_uses_pullback_low_as_stop() -> None:
     plan = RiskAnalyst().analyze(
@@ -266,3 +288,71 @@ def test_invalid_long_stop_is_rejected() -> None:
     assert plan.actionable is False
     assert plan.decision == "PASS"
     assert plan.stop is None
+
+def test_long_trade_plan_passes_when_resistance_limits_rr() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(),
+        freshness=fresh_data(),
+        trend_result=trend_result(),
+        lifecycle=ready_lifecycle("long"),
+        acceptance=long_acceptance(),
+        structure=structure_result(
+            nearest_support=99.00,
+            nearest_resistance=101.80,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        101.40
+    )
+
+    assert plan.target2 == pytest.approx(
+        101.80
+    )
+
+    assert plan.reward2_per_share == pytest.approx(
+        1.20
+    )
+
+    assert plan.rr2 == pytest.approx(
+        1.50
+    )
+
+    assert plan.valid is False
+    assert plan.actionable is False
+    assert plan.decision == "PASS"
+
+    assert any(
+        "below the 2.00 minimum"
+        in warning
+        for warning in plan.warnings
+    )
+
+def test_long_trade_plan_keeps_2r_when_resistance_is_beyond_target() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(),
+        freshness=fresh_data(),
+        trend_result=trend_result(),
+        lifecycle=ready_lifecycle("long"),
+        acceptance=long_acceptance(),
+        structure=structure_result(
+            nearest_support=99.00,
+            nearest_resistance=103.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        101.40
+    )
+
+    assert plan.target2 == pytest.approx(
+        102.20
+    )
+
+    assert plan.rr2 == pytest.approx(
+        2.0
+    )
+
+    assert plan.valid is True
+    assert plan.actionable is True
+    assert plan.decision == "READY"

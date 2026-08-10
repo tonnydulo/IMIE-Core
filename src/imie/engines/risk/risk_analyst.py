@@ -3,6 +3,7 @@
     AnalystResult,
     DataFreshness,
     SetupLifecycle,
+    StructureResult,
     TradePlan,
     TradingContext,
 )
@@ -43,14 +44,15 @@ class RiskAnalyst:
         self.target2_r = target2_r
 
     def analyze_result(
-        self,
-        *,
-        context: TradingContext,
-        freshness: DataFreshness,
-        trend_result: AnalystResult,
-        lifecycle: SetupLifecycle,
-        acceptance: AcceptanceResult,
-    ) -> AnalystResult:
+    self,
+    *,
+    context: TradingContext,
+    freshness: DataFreshness,
+    trend_result: AnalystResult,
+    lifecycle: SetupLifecycle,
+    acceptance: AcceptanceResult,
+    structure: StructureResult | None = None,
+) -> AnalystResult:
         """
         Return the standardized analyst contract.
 
@@ -63,6 +65,7 @@ class RiskAnalyst:
             trend_result=trend_result,
             lifecycle=lifecycle,
             acceptance=acceptance,
+            structure=structure,
         )
 
         evidence = list(trade_plan.reasons)
@@ -94,6 +97,7 @@ class RiskAnalyst:
         trend_result: AnalystResult,
         lifecycle: SetupLifecycle,
         acceptance: AcceptanceResult,
+        structure: StructureResult | None = None,
     ) -> TradePlan:
         """
         Build and validate a Pullback-to-Core TradePlan.
@@ -187,14 +191,31 @@ class RiskAnalyst:
                 )
 
             risk_per_share = entry - stop
+
             target1 = (
                 entry
                 + risk_per_share * self.target1_r
             )
+
             target2 = (
                 entry
                 + risk_per_share * self.target2_r
             )
+
+            if (
+                structure is not None
+                and structure.nearest_resistance is not None
+                and structure.nearest_resistance > entry
+            ):
+                target2 = min(
+                    target2,
+                    structure.nearest_resistance,
+                )
+
+                target1 = min(
+                    target1,
+                    target2,
+                )
 
         elif lifecycle.direction == "short":
             stop = acceptance.pullback_high
@@ -215,14 +236,31 @@ class RiskAnalyst:
                 )
 
             risk_per_share = stop - entry
+
             target1 = (
                 entry
                 - risk_per_share * self.target1_r
             )
+
             target2 = (
                 entry
                 - risk_per_share * self.target2_r
             )
+
+            if (
+                structure is not None
+                and structure.nearest_support is not None
+                and structure.nearest_support < entry
+            ):
+                target2 = max(
+                    target2,
+                    structure.nearest_support,
+                )
+
+                target1 = max(
+                    target1,
+                    target2,
+                )
 
         else:
             warnings.append("Trade direction is neutral.")
@@ -250,8 +288,15 @@ class RiskAnalyst:
                 narrative="The calculated risk is invalid.",
             )
 
-        reward1 = risk_per_share * self.target1_r
-        reward2 = risk_per_share * self.target2_r
+        if lifecycle.direction == "long":
+            reward1 = target1 - entry
+            reward2 = target2 - entry
+        else:
+            reward1 = entry - target1
+            reward2 = entry - target2
+
+        rr1 = reward1 / risk_per_share
+        rr2 = reward2 / risk_per_share
 
         rr1 = reward1 / risk_per_share
         rr2 = reward2 / risk_per_share

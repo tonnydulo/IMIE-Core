@@ -26,6 +26,7 @@ from imie.models import (
     DataFreshness,
     DecisionResult,
     SetupLifecycle,
+    StructureResult,
     TradePlan,
     TradingContext,
 )
@@ -180,12 +181,24 @@ class AnalysisPipeline:
                 "SetupLifecycle payload."
             )
 
+        structure = structure_result.payload
+
+        if not isinstance(
+            structure,
+            StructureResult,
+        ):
+            raise TypeError(
+                "StructureAnalyst did not produce a "
+                "StructureResult payload."
+            )
+
         risk_result = self.risk_analyst.analyze_result(
             context=context,
             freshness=freshness,
             trend_result=trend_result,
             lifecycle=lifecycle,
             acceptance=acceptance,
+            structure=structure,
         )
 
         risk_result = replace(
