@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from imie.models.swing import Swing
+from imie.models.market_phase_type import MarketPhaseType
+
 
 @dataclass(frozen=True, slots=True)
 class StructureResult:
@@ -30,6 +32,8 @@ class StructureResult:
 
     swing_high_count: int
     swing_low_count: int
+
+    market_phase: MarketPhaseType = MarketPhaseType.UNKNOWN
 
     swings: tuple[Swing, ...] = field(default_factory=tuple)
 
@@ -73,6 +77,14 @@ class StructureResult:
             raise ValueError(
                 "StructureResult direction must be long, short, "
                 "or neutral."
+            )
+
+        if not isinstance(
+            self.market_phase,
+            MarketPhaseType,
+        ):
+            raise TypeError(
+                "market_phase must be a MarketPhaseType."
             )
 
         if not state:

@@ -6,6 +6,7 @@ from imie.models import (
     MarketBar,
     MarketMeasurements,
     MarketObservations,
+    MarketPhaseType,
     MarketSnapshot,
     Quote,
     Swing,
@@ -254,3 +255,110 @@ def test_infers_unconfirmed_structure_when_swings_are_insufficient():
     assert direction == "neutral"
     assert state == "UNCONFIRMED_STRUCTURE"
     assert confidence == 40.0
+
+def test_structure_phase_resolver_maps_bullish_structure_to_markup():
+    from imie.models import StructureResult
+
+    structure = StructureResult(
+        symbol="SPY",
+        direction="long",
+        state="BULLISH_STRUCTURE",
+        confidence=85.0,
+        nearest_support=None,
+        nearest_resistance=None,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=2,
+        swing_low_count=2,
+    )
+
+    phase = StructureAnalyst._resolve_market_phase(
+        structure
+    )
+
+    assert phase is MarketPhaseType.MARKUP
+
+
+def test_structure_phase_resolver_maps_bearish_structure_to_markdown():
+    from imie.models import StructureResult
+
+    structure = StructureResult(
+        symbol="SPY",
+        direction="short",
+        state="BEARISH_STRUCTURE",
+        confidence=85.0,
+        nearest_support=None,
+        nearest_resistance=None,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=2,
+        swing_low_count=2,
+    )
+
+    phase = StructureAnalyst._resolve_market_phase(
+        structure
+    )
+
+    assert phase is MarketPhaseType.MARKDOWN
+
+
+def test_structure_phase_resolver_maps_neutral_structure_to_compression():
+    from imie.models import StructureResult
+
+    structure = StructureResult(
+        symbol="SPY",
+        direction="neutral",
+        state="NEUTRAL_STRUCTURE",
+        confidence=60.0,
+        nearest_support=None,
+        nearest_resistance=None,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=2,
+        swing_low_count=2,
+    )
+
+    phase = StructureAnalyst._resolve_market_phase(
+        structure
+    )
+
+    assert phase is MarketPhaseType.COMPRESSION
+
+
+def test_structure_phase_resolver_prioritizes_choch_as_reversal():
+    from imie.models import StructureResult
+
+    structure = StructureResult(
+        symbol="SPY",
+        direction="long",
+        state="BULLISH_STRUCTURE",
+        confidence=85.0,
+        nearest_support=None,
+        nearest_resistance=None,
+        structural_target=None,
+        structural_stop=None,
+        projected_reward=None,
+        projected_risk=None,
+        projected_rr=None,
+        swing_high_count=2,
+        swing_low_count=2,
+        bullish_break=True,
+        bullish_break_level=100.0,
+        break_confirmation_price=101.0,
+        bullish_choch=True,
+    )
+
+    phase = StructureAnalyst._resolve_market_phase(
+        structure
+    )
+
+    assert phase is MarketPhaseType.REVERSAL
