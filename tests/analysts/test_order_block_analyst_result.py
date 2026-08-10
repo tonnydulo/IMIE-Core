@@ -7,6 +7,7 @@ import pytest
 from imie.analysts import OrderBlockAnalyst
 from imie.models import (
     AnalystResult,
+    MarketPhaseType,
     OrderBlockAnalysis,
     OrderBlockFinding,
     OrderBlockLifecycleState,
@@ -200,3 +201,11 @@ def test_invalid_state_is_rejected() -> None:
                 None,  # type: ignore[arg-type]
             )
         )
+
+def test_market_phase_is_preserved_in_payload() -> None:
+    result = make_analyst_result()
+
+    assert (
+        result.payload.market_phase
+        is MarketPhaseType.ACCUMULATION
+    )

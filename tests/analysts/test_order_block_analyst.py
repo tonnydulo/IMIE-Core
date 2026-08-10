@@ -6,6 +6,7 @@ from imie.analysts.order_block_analyst import (
     OrderBlockAnalyst,
 )
 from imie.models import (
+    MarketPhaseType,
     OrderBlockAnalysis,
     OrderBlockFinding,
     OrderBlockLifecycleState,
@@ -377,4 +378,72 @@ def test_analysis_type() -> None:
     assert isinstance(
         result,
         OrderBlockAnalysis,
+    )
+
+def test_bullish_order_block_resolves_accumulation() -> None:
+    analyst = OrderBlockAnalyst()
+
+    result = analyst.analyze(
+        (
+            make_state(
+                side=OrderBlockSide.BULLISH,
+            ),
+        )
+    )
+
+    assert (
+        result.market_phase
+        is MarketPhaseType.ACCUMULATION
+    )
+
+
+def test_bearish_order_block_resolves_distribution() -> None:
+    analyst = OrderBlockAnalyst()
+
+    result = analyst.analyze(
+        (
+            make_state(
+                side=OrderBlockSide.BEARISH,
+            ),
+        )
+    )
+
+    assert (
+        result.market_phase
+        is MarketPhaseType.DISTRIBUTION
+    )
+
+
+def test_balanced_order_blocks_resolve_transition() -> None:
+    analyst = OrderBlockAnalyst()
+
+    result = analyst.analyze(
+        (
+            make_state(
+                side=OrderBlockSide.BULLISH,
+            ),
+            make_state(
+                side=OrderBlockSide.BEARISH,
+                upper=130.0,
+                lower=120.0,
+            ),
+        )
+    )
+
+    assert (
+        result.market_phase
+        is MarketPhaseType.TRANSITION
+    )
+
+
+def test_no_actionable_order_blocks_resolve_unknown() -> None:
+    analyst = OrderBlockAnalyst()
+
+    result = analyst.analyze(
+        ()
+    )
+
+    assert (
+        result.market_phase
+        is MarketPhaseType.UNKNOWN
     )

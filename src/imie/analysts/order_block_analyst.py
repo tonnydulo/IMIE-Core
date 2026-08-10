@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from imie.analysts.base import Analyst
 from imie.models import (
     AnalystResult,
+    MarketPhaseType,
     OrderBlockAnalysis,
     OrderBlockLifecycleState,
     OrderBlockSide,
@@ -99,6 +100,11 @@ class OrderBlockAnalyst(Analyst):
             nearest_bearish=nearest_bearish,
         )
 
+        market_phase = self._resolve_market_phase(
+            nearest_bullish=nearest_bullish,
+            nearest_bearish=nearest_bearish,
+        )
+
         evidence = self._build_evidence(
             active_blocks=active_blocks,
             tested_blocks=tested_blocks,
@@ -124,6 +130,7 @@ class OrderBlockAnalyst(Analyst):
             mitigated_blocks=mitigated_blocks,
             invalidated_blocks=invalidated_blocks,
             confidence=confidence,
+            market_phase=market_phase,
             opinion=opinion,
             evidence=evidence,
             warnings=warnings,
@@ -327,6 +334,32 @@ class OrderBlockAnalyst(Analyst):
         return (
             "No actionable institutional order blocks."
         )
+
+    @staticmethod
+    def _resolve_market_phase(
+        *,
+        nearest_bullish: (
+            OrderBlockLifecycleState
+            | None
+        ),
+        nearest_bearish: (
+            OrderBlockLifecycleState
+            | None
+        ),
+    ) -> MarketPhaseType:
+        if (
+            nearest_bullish is not None
+            and nearest_bearish is not None
+        ):
+            return MarketPhaseType.TRANSITION
+
+        if nearest_bullish is not None:
+            return MarketPhaseType.ACCUMULATION
+
+        if nearest_bearish is not None:
+            return MarketPhaseType.DISTRIBUTION
+
+        return MarketPhaseType.UNKNOWN
 
     @staticmethod
     def _build_evidence(

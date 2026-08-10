@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from imie.models import (
+    MarketPhaseType,
     OrderBlockFinding,
     OrderBlockLifecycleState,
 )
@@ -51,6 +52,8 @@ class OrderBlockAnalysis:
     ] = field(default_factory=tuple)
 
     confidence: float = 0.0
+
+    market_phase: MarketPhaseType = MarketPhaseType.UNKNOWN
 
     opinion: str = ""
 
@@ -129,6 +132,14 @@ class OrderBlockAnalysis:
         self._validate_collection(
             self.invalidated_blocks
         )
+
+        if not isinstance(
+            self.market_phase,
+            MarketPhaseType,
+        ):
+            raise TypeError(
+                "market_phase must be a MarketPhaseType."
+            )
 
     @staticmethod
     def _validate_state(
