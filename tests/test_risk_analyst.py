@@ -520,3 +520,93 @@ def test_short_trade_plan_uses_mechanical_2r_without_valid_support() -> None:
         in warning.lower()
         for warning in plan.warnings
     )
+
+def test_long_structure_inside_1r_collapses_targets_and_passes() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(),
+        freshness=fresh_data(),
+        trend_result=trend_result(),
+        lifecycle=ready_lifecycle(
+            "long"
+        ),
+        acceptance=long_acceptance(),
+        structure=structure_result(
+            nearest_support=99.00,
+            nearest_resistance=101.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        101.00
+    )
+
+    assert plan.target2 == pytest.approx(
+        101.00
+    )
+
+    assert plan.reward1_per_share == pytest.approx(
+        0.40
+    )
+
+    assert plan.reward2_per_share == pytest.approx(
+        0.40
+    )
+
+    assert plan.rr1 == pytest.approx(
+        0.50
+    )
+
+    assert plan.rr2 == pytest.approx(
+        0.50
+    )
+
+    assert plan.valid is False
+    assert plan.actionable is False
+    assert plan.decision == "PASS"
+
+def test_short_structure_inside_1r_collapses_targets_and_passes() -> None:
+    plan = RiskAnalyst().analyze(
+        context=build_context(
+            price=99.40
+        ),
+        freshness=fresh_data(),
+        trend_result=trend_result(
+            "BEARISH"
+        ),
+        lifecycle=ready_lifecycle(
+            "short"
+        ),
+        acceptance=short_acceptance(),
+        structure=structure_result(
+            nearest_support=99.00,
+            nearest_resistance=101.00,
+        ),
+    )
+
+    assert plan.target1 == pytest.approx(
+        99.00
+    )
+
+    assert plan.target2 == pytest.approx(
+        99.00
+    )
+
+    assert plan.reward1_per_share == pytest.approx(
+        0.40
+    )
+
+    assert plan.reward2_per_share == pytest.approx(
+        0.40
+    )
+
+    assert plan.rr1 == pytest.approx(
+        0.50
+    )
+
+    assert plan.rr2 == pytest.approx(
+        0.50
+    )
+
+    assert plan.valid is False
+    assert plan.actionable is False
+    assert plan.decision == "PASS"
