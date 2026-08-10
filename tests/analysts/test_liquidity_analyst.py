@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from imie.analysts.liquidity_analyst import LiquidityAnalyst
+
 from imie.models import (
     LiquidityAnalysis,
     LiquidityBias,
@@ -17,6 +18,7 @@ from imie.models import (
     LiquiditySide,
     LiquidityState,
     LiquidityType,
+    MarketPhaseType,
     SweepDirection,
     SweepResult,
 )
@@ -91,17 +93,31 @@ def make_state(
 def make_sweep(
     pool: LiquidityPool,
     swept: bool = False,
+    direction: SweepDirection = SweepDirection.BEARISH,
 ) -> SweepResult:
-
     return SweepResult(
         pool=pool,
         swept=swept,
         direction=(
-            SweepDirection.BEARISH
+            direction
             if swept
             else SweepDirection.NONE
         ),
-        penetration_price=pool.upper if swept else None,
+        penetration_price=(
+            pool.upper
+            if (
+                swept
+                and direction is SweepDirection.BEARISH
+            )
+            else (
+                pool.lower
+                if (
+                    swept
+                    and direction is SweepDirection.BULLISH
+                )
+                else None
+            )
+        ),
         close_price=pool.price,
         reclaimed=swept,
         confidence=95.0 if swept else 0.0,
@@ -353,3 +369,132 @@ def test_invalid_sweep_type() -> None:
             states=(make_state(pool),),
             sweeps=(None,),  # type: ignore[arg-type]
         )
+
+def test_no_sweep_resolves_unknown_phase() -> None:
+    analyst = LiquidityAnalyst()
+
+    pool = make_pool(
+        LiquiditySide.BUY_SIDE,
+        550.0,
+    )
+
+    analysis = analyst.analyze(
+        liquidity=make_result((pool,), ()),
+        states=(make_state(pool),),
+        sweeps=(),
+    )
+
+    assert (
+        analysis.market_phase
+        is MarketPhaseType.UNKNOWN
+    )
+
+
+def test_bearish_sweep_resolves_reversal_phase() -> None:
+    analyst = LiquidityAnalyst()
+
+    pool = make_pool(
+        LiquiditySide.BUY_SIDE,
+        550.0,
+    )
+
+    analysis = analyst.analyze(
+        liquidity=make_result((pool,), ()),
+        states=(
+            make_state(
+                pool,
+                LiquidityPoolStateType.SWEPT,
+            ),
+        ),
+        sweeps=(
+            make_sweep(
+                pool,
+                swept=True,
+                direction=SweepDirection.BEARISH,
+            ),
+        ),
+    )
+
+    assert (
+        analysis.market_phase
+        is MarketPhaseType.REVERSAL
+    )
+
+
+def test_bullish_sweep_resolves_reversal_phase() -> None:
+    analyst = LiquidityAnalyst()
+
+    pool = make_pool(
+        LiquiditySide.SELL_SIDE,
+        540.0,
+    )
+
+    analysis = analyst.analyze(
+        liquidity=make_result((), (pool,)),
+        states=(
+            make_state(
+                pool,
+                LiquidityPoolStateType.SWEPT,
+            ),
+        ),
+        sweeps=(
+            make_sweep(
+                pool,
+                swept=True,
+                direction=SweepDirection.BULLISH,
+            ),
+        ),
+    )
+
+    assert (
+        analysis.market_phase
+        is MarketPhaseType.REVERSAL
+    )
+
+
+def test_mixed_sweeps_resolve_transition_phase() -> None:
+    analyst = LiquidityAnalyst()
+
+    buy_pool = make_pool(
+        LiquiditySide.BUY_SIDE,
+        550.0,
+    )
+
+    sell_pool = make_pool(
+        LiquiditySide.SELL_SIDE,
+        540.0,
+    )
+
+    analysis = analyst.analyze(
+        liquidity=make_result(
+            (buy_pool,),
+            (sell_pool,),
+        ),
+        states=(
+            make_state(
+                buy_pool,
+                LiquidityPoolStateType.SWEPT,
+            ),
+            make_state(
+                sell_pool,
+                LiquidityPoolStateType.SWEPT,
+            ),
+        ),
+        sweeps=(
+            make_sweep(
+                buy_pool,
+                swept=True,
+                direction=SweepDirection.BEARISH,
+            ),
+            make_sweep(
+                sell_pool,
+                swept=True,
+                direction=SweepDirection.BULLISH,
+            ),
+        ),
+    )
+
+    assert (
+        analysis.market_phase
+        is MarketPhaseType.TRANSITION
+    )

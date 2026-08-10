@@ -12,6 +12,7 @@ from imie.models import (
     LiquidityPoolStateType,
     LiquidityResult,
     LiquiditySide,
+    MarketPhaseType,
     SweepResult,
 )
 
@@ -86,6 +87,10 @@ class LiquidityAnalyst(Analyst):
             sell_pool=nearest_sell,
         )
 
+        market_phase = self._resolve_market_phase(
+            sweeps=sweeps,
+        )
+
         evidence = self._build_evidence(
             active_states=active_states,
             sweeps=sweeps,
@@ -107,6 +112,7 @@ class LiquidityAnalyst(Analyst):
             opinion=opinion,
             evidence=evidence,
             warnings=warnings,
+            market_phase=market_phase,
         )
 
     def analyze_result(
@@ -330,3 +336,27 @@ class LiquidityAnalyst(Analyst):
         return (
             "No active liquidity pools available.",
         )
+
+    @staticmethod
+    def _resolve_market_phase(
+        *,
+        sweeps: tuple[SweepResult, ...],
+    ) -> MarketPhaseType:
+        bullish_sweep = any(
+            sweep.is_bullish
+            for sweep in sweeps
+        )
+
+        bearish_sweep = any(
+            sweep.is_bearish
+            for sweep in sweeps
+        )
+
+        if bullish_sweep and bearish_sweep:
+            return MarketPhaseType.TRANSITION
+
+        if bullish_sweep or bearish_sweep:
+            return MarketPhaseType.REVERSAL
+
+        return MarketPhaseType.UNKNOWN
+

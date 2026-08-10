@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from imie.models import (
-    LiquidityBias,
-    LiquidityPool,
-)
+from imie.models.liquidity_pool import LiquidityPool
+from imie.models.liquidity_types import LiquidityBias
+from imie.models.market_phase_type import MarketPhaseType
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +39,8 @@ class LiquidityAnalysis:
 
     warnings: tuple[str, ...]
 
+    market_phase: MarketPhaseType = MarketPhaseType.UNKNOWN
+
     def __post_init__(self) -> None:
 
         if not isinstance(
@@ -49,6 +50,14 @@ class LiquidityAnalysis:
             raise TypeError(
                 "institutional_bias must be "
                 "a LiquidityBias."
+            )
+
+        if not isinstance(
+            self.market_phase,
+            MarketPhaseType,
+        ):
+            raise TypeError(
+                "market_phase must be a MarketPhaseType."
             )
 
         for name, value in (

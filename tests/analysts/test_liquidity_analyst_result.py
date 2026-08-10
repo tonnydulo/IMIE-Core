@@ -16,6 +16,7 @@ from imie.models import (
     LiquiditySide,
     LiquidityState,
     LiquidityType,
+    MarketPhaseType,
 )
 
 
@@ -157,4 +158,12 @@ def test_existing_analyze_method_remains_available() -> None:
     assert isinstance(
         analysis,
         LiquidityAnalysis,
+    )
+
+def test_market_phase_is_preserved_in_payload() -> None:
+    result = make_analyst_result()
+
+    assert (
+        result.payload.market_phase
+        is MarketPhaseType.UNKNOWN
     )
