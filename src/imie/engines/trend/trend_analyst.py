@@ -1,4 +1,9 @@
-from imie.models import AnalystResult, TradingContext
+from imie.models import (
+    AnalystResult,
+    MarketPhaseType,
+    TradingContext,
+)
+
 from imie.utils.constants import TREND_BEARISH, TREND_BULLISH, TREND_NEUTRAL
 
 
@@ -47,6 +52,9 @@ class TrendAnalyst:
                 confidence=float(bullish_score),
                 evidence=evidence,
                 warnings=warnings,
+                payload={
+                    "market_phase": MarketPhaseType.MARKUP,
+                },
             )
 
         if bearish_score > bullish_score and bearish_score >= 60:
@@ -56,12 +64,26 @@ class TrendAnalyst:
                 confidence=float(bearish_score),
                 evidence=evidence,
                 warnings=warnings,
+                payload={
+                    "market_phase": MarketPhaseType.MARKDOWN,
+                },
             )
 
         return AnalystResult(
             analyst=self.analyst_name,
             opinion=TREND_NEUTRAL,
-            confidence=float(max(bullish_score, bearish_score)),
+            confidence=float(
+                max(
+                    bullish_score,
+                    bearish_score,
+                )
+            ),
             evidence=evidence,
-            warnings=warnings + ["Trend is mixed or not strong enough."],
+            warnings=warnings
+            + [
+                "Trend is mixed or not strong enough.",
+            ],
+            payload={
+                "market_phase": MarketPhaseType.COMPRESSION,
+            },
         )
