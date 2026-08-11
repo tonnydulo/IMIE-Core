@@ -7,6 +7,7 @@ from imie.models import (
     DataFreshness,
     DecisionResult,
     DirectorDecision,
+     PositionSizeResult,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -89,6 +90,42 @@ def make_decision() -> DecisionResult:
                 "enabled": True,
             },
         },
+    )
+
+def make_sized_completed_result() -> AnalysisCycleResult:
+    return AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=CHECKED_AT,
+        completed_at=CHECKED_AT,
+        message="Analysis completed.",
+        completed_bar=make_completed_bar(),
+        freshness=make_freshness(),
+        decision=make_decision(),
+        position_size=make_position_size(),
+    )
+
+def make_position_size() -> PositionSizeResult:
+    return PositionSizeResult(
+        symbol="NVDA",
+        direction="long",
+        account_equity=25_000.0,
+        risk_percent=0.50,
+        risk_budget=125.0,
+        entry=100.60,
+        stop=99.80,
+        risk_per_share=0.80,
+        quantity=156,
+        position_notional=15_693.60,
+        actual_risk=124.80,
+        actual_risk_percent=0.4992,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Position size calculated from account risk budget.",
+        ),
+        warnings=(),
     )
 
 
@@ -197,6 +234,7 @@ def test_completed_result_converts_to_dict() -> None:
     assert payload["symbol"] == "NVDA"
     assert payload["timeframe"] == "2m"
     assert payload["message"] == "Analysis completed."
+    assert payload["position_size"] is None
 
     assert payload["completed_bar"] == {
         "accepted": True,
@@ -257,6 +295,7 @@ def test_failed_result_converts_to_dict() -> None:
     assert payload["completed_bar"] is None
     assert payload["freshness"] is None
     assert payload["decision"] is None
+    assert payload["position_size"] is None
 
 
 def test_dumps_returns_valid_json() -> None:
@@ -330,3 +369,33 @@ def test_result_must_be_analysis_cycle_result() -> None:
         publisher.to_dict(
             object(),  # type: ignore[arg-type]
         )
+
+def test_position_size_converts_to_dict() -> None:
+    publisher = JsonResultPublisher(
+        output=lambda value: None,
+    )
+
+    payload = publisher.to_dict(
+        make_sized_completed_result()
+    )
+
+    assert payload["position_size"] == {
+        "symbol": "NVDA",
+        "direction": "long",
+        "account_equity": 25_000.0,
+        "risk_percent": 0.50,
+        "risk_budget": 125.0,
+        "entry": 100.60,
+        "stop": 99.80,
+        "risk_per_share": 0.80,
+        "quantity": 156,
+        "position_notional": 15_693.60,
+        "actual_risk": 124.80,
+        "actual_risk_percent": 0.4992,
+        "valid": True,
+        "actionable": True,
+        "reasons": [
+            "Position size calculated from account risk budget.",
+        ],
+        "warnings": [],
+    }

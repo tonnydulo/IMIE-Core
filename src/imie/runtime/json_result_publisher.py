@@ -133,6 +133,7 @@ class JsonResultPublisher:
             "completed_bar": None,
             "freshness": None,
             "decision": None,
+            "position_size": None,
         }
 
         if result.completed_bar is not None:
@@ -259,6 +260,58 @@ class JsonResultPublisher:
                     result.decision
                     .institutional_context
                     is not None
+                ),
+            }
+
+        if result.position_size is not None:
+            payload["position_size"] = {
+                "symbol": (
+                    result.position_size.symbol
+                ),
+                "direction": (
+                    result.position_size.direction
+                ),
+                "account_equity": (
+                    result.position_size.account_equity
+                ),
+                "risk_percent": (
+                    result.position_size.risk_percent
+                ),
+                "risk_budget": (
+                    result.position_size.risk_budget
+                ),
+                "entry": (
+                    result.position_size.entry
+                ),
+                "stop": (
+                    result.position_size.stop
+                ),
+                "risk_per_share": (
+                    result.position_size.risk_per_share
+                ),
+                "quantity": (
+                    result.position_size.quantity
+                ),
+                "position_notional": (
+                    result.position_size.position_notional
+                ),
+                "actual_risk": (
+                    result.position_size.actual_risk
+                ),
+                "actual_risk_percent": (
+                    result.position_size.actual_risk_percent
+                ),
+                "valid": (
+                    result.position_size.valid
+                ),
+                "actionable": (
+                    result.position_size.actionable
+                ),
+                "reasons": list(
+                    result.position_size.reasons
+                ),
+                "warnings": list(
+                    result.position_size.warnings
                 ),
             }
 
