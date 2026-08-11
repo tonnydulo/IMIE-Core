@@ -309,6 +309,24 @@ def test_dashboard_html_contains_trade_plan_fields() -> None:
     assert "payload.trade_rr2" in html
     assert "payload.trade_quality" in html
 
+    assert "positionSizeQuantity" in html
+    assert "positionSizeNotional" in html
+    assert "positionSizeRiskBudget" in html
+    assert "positionSizeActualRisk" in html
+    assert "positionSizeRiskPercent" in html
+    assert "positionSizeActualRiskPercent" in html
+    assert "positionSizeActionable" in html
+    assert "positionSizeWarnings" in html
+
+    assert "payload.position_size_quantity" in html
+    assert "payload.position_size_notional" in html
+    assert "payload.position_size_risk_budget" in html
+    assert "payload.position_size_actual_risk" in html
+    assert "payload.position_size_risk_percent" in html
+    assert "payload.position_size_actual_risk_percent" in html
+    assert "payload.position_size_actionable" in html
+    assert "payload.position_size_warnings" in html
+
 def test_dashboard_html_contains_trade_plan_formatters() -> None:
     html = build_dashboard_html()
 

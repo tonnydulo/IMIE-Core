@@ -1383,6 +1383,112 @@ def build_dashboard_html(
             </article>
 
             <article class="card">
+            <div class="label">
+                Position Quantity
+            </div>
+
+            <div
+                id="positionSizeQuantity"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Position Notional
+            </div>
+
+            <div
+                id="positionSizeNotional"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Risk Budget
+            </div>
+
+            <div
+                id="positionSizeRiskBudget"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Actual Risk
+            </div>
+
+            <div
+                id="positionSizeActualRisk"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Planned Risk %
+            </div>
+
+            <div
+                id="positionSizeRiskPercent"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Actual Risk %
+            </div>
+
+            <div
+                id="positionSizeActualRiskPercent"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Size Actionable
+            </div>
+
+            <div
+                id="positionSizeActionable"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">
+                Sizing Warnings
+            </div>
+
+            <ul
+                id="positionSizeWarnings"
+                class="explanation-list warning-list"
+            >
+                <li class="empty-list">
+                    No sizing warnings.
+                </li>
+            </ul>
+        </article>
+
+            <article class="card">
                 <div class="label">
                     Institutional Bias
                 </div>
@@ -3988,6 +4094,85 @@ def build_dashboard_html(
                     payload.trade_warnings,
                     "No trade warnings."
                 );
+
+                setText(
+                "positionSizeQuantity",
+                payload.position_size_quantity
+                    ?? "—"
+            );
+
+            setText(
+                "positionSizeNotional",
+                payload.position_size_notional
+                    === null
+                    || payload.position_size_notional
+                    === undefined
+                    ? "—"
+                    : `$${{Number(
+                        payload.position_size_notional
+                    ).toFixed(2)}}`
+            );
+
+            setText(
+                "positionSizeRiskBudget",
+                payload.position_size_risk_budget
+                    === null
+                    || payload.position_size_risk_budget
+                    === undefined
+                    ? "—"
+                    : `$${{Number(
+                        payload.position_size_risk_budget
+                    ).toFixed(2)}}`
+            );
+
+            setText(
+                "positionSizeActualRisk",
+                payload.position_size_actual_risk
+                    === null
+                    || payload.position_size_actual_risk
+                    === undefined
+                    ? "—"
+                    : `$${{Number(
+                        payload.position_size_actual_risk
+                    ).toFixed(2)}}`
+            );
+
+            setText(
+                "positionSizeRiskPercent",
+                payload.position_size_risk_percent
+                    === null
+                    || payload.position_size_risk_percent
+                    === undefined
+                    ? "—"
+                    : `${{Number(
+                        payload.position_size_risk_percent
+                    ).toFixed(2)}}%`
+            );
+
+            setText(
+                "positionSizeActualRiskPercent",
+                payload.position_size_actual_risk_percent
+                    === null
+                    || payload.position_size_actual_risk_percent
+                    === undefined
+                    ? "—"
+                    : `${{Number(
+                        payload.position_size_actual_risk_percent
+                    ).toFixed(4)}}%`
+            );
+
+            setText(
+                "positionSizeActionable",
+                formatBoolean(
+                    payload.position_size_actionable
+                )
+            );
+
+            updateTextList(
+                "positionSizeWarnings",
+                payload.position_size_warnings,
+                "No sizing warnings."
+            );
 
                 updateInstitutionalDirection(
                     "institutionalBias",
