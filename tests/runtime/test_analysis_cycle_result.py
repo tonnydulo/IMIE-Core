@@ -7,6 +7,13 @@ from imie.runtime import (
     AnalysisCycleStatus,
 )
 
+from imie.models import (
+    DecisionResult,
+    DirectorDecision,
+    PositionSizeResult,
+    TradePlan,
+)
+
 
 def make_time(
     minute: int = 30,
@@ -18,6 +25,58 @@ def make_time(
         14,
         minute,
         tzinfo=timezone.utc,
+    )
+
+def make_decision_result() -> DecisionResult:
+    return DecisionResult(
+        decision=DirectorDecision.READY,
+        actionable=True,
+        confidence=90.0,
+        recommendation="Ready.",
+        reasons=(),
+        warnings=(),
+        analyst_summary={},
+        trade_plan=make_trade_plan(),
+        institutional_context=None,
+    )
+
+def make_position_size_result() -> PositionSizeResult:
+    return PositionSizeResult(
+        symbol="NVDA",
+        direction="long",
+        account_equity=25_000.0,
+        risk_percent=0.50,
+        risk_budget=125.0,
+        entry=100.60,
+        stop=99.80,
+        risk_per_share=0.80,
+        quantity=156,
+        position_notional=15_693.60,
+        actual_risk=124.80,
+        actual_risk_percent=0.4992,
+        valid=True,
+        actionable=True,
+    )
+
+def make_trade_plan() -> TradePlan:
+    return TradePlan(
+        symbol="NVDA",
+        strategy="Pullback-to-Core",
+        direction="long",
+        valid=True,
+        actionable=True,
+        decision="READY",
+        entry=100.60,
+        stop=99.80,
+        target1=101.40,
+        target2=102.20,
+        risk_per_share=0.80,
+        reward1_per_share=0.80,
+        reward2_per_share=1.60,
+        rr1=1.0,
+        rr2=2.0,
+        quality=90,
+        confidence=90.0,
     )
 
 
@@ -139,7 +198,7 @@ def test_timestamps_must_be_timezone_aware() -> None:
                 18,
                 14,
                 30,
-            ),
+            ),  # noqa: DTZ001
             completed_at=make_time(),
             message="Skipped.",
         )
@@ -188,4 +247,36 @@ def test_required_text_cannot_be_empty(
     ):
         AnalysisCycleResult(
             **arguments,  # type: ignore[arg-type]
+        )
+
+def test_completed_cycle_accepts_position_size_result() -> None:
+    position_size = make_position_size_result()
+
+    result = AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=make_time(),
+        completed_at=make_time(),
+        message="Cycle completed.",
+        decision=make_decision_result(),
+        position_size=position_size,
+    )
+
+    assert result.position_size is position_size
+
+def test_rejects_invalid_position_size_type() -> None:
+    with pytest.raises(
+        TypeError,
+        match="position_size must be a PositionSizeResult or None",
+    ):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            decision=make_decision_result(),
+            position_size="invalid",  # type: ignore[arg-type]
         )

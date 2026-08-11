@@ -153,6 +153,9 @@ from imie.runtime.multi_symbol_runtime_runner import (
 from imie.runtime.multi_symbol_continuous_runtime_runner import (
     MultiSymbolContinuousRuntimeRunner,
 )
+from imie.runtime.position_sizing_config import (
+    PositionSizingConfig,
+)
 
 __all__ = [
     "AnalysisCycleResult",
@@ -214,4 +217,5 @@ __all__ = [
     "MultiSymbolRuntimeApplication",
     "MultiSymbolRuntimeRunner",
     "MultiSymbolContinuousRuntimeRunner",
+    "PositionSizingConfig",
 ]

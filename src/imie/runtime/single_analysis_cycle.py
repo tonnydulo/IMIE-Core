@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from imie.models import MarketSnapshot
 from imie.runtime.analysis_cycle_result import (
@@ -25,6 +25,12 @@ from imie.services import (
     AnalysisPipeline,
     ContextBuilder,
     DataFreshnessGuard,
+)
+from imie.engines.position_sizing import (
+    PositionSizingEngine,
+)
+from imie.runtime.position_sizing_config import (
+    PositionSizingConfig,
 )
 
 
@@ -58,6 +64,8 @@ class SingleAnalysisCycle:
         analysis_pipeline: AnalysisPipeline | None = None,
         market_session_clock: MarketSessionClock | None = None,
         session_policy: SessionPolicy | None = None,
+        position_sizing_engine: PositionSizingEngine | None = None,
+        position_sizing_config: PositionSizingConfig | None = None,
     ) -> None:
         if not isinstance(
             config,
@@ -121,6 +129,16 @@ class SingleAnalysisCycle:
             or AnalysisPipeline()
         )
 
+        self.position_sizing_engine = (
+            position_sizing_engine
+            or PositionSizingEngine()
+        )
+
+        self.position_sizing_config = (
+            position_sizing_config
+            or PositionSizingConfig()
+        )
+
         self.market_session_clock = (
             market_session_clock
             or MarketSessionClock()
@@ -146,6 +164,24 @@ class SingleAnalysisCycle:
         ):
             raise TypeError(
                 "session_policy must be a SessionPolicy."
+            )
+
+        if not isinstance(
+            self.position_sizing_engine,
+            PositionSizingEngine,
+        ):
+            raise TypeError(
+                "position_sizing_engine must be a "
+                "PositionSizingEngine."
+            )
+
+        if not isinstance(
+            self.position_sizing_config,
+            PositionSizingConfig,
+        ):
+            raise TypeError(
+                "position_sizing_config must be a "
+                "PositionSizingConfig."
             )
 
     def run(
@@ -259,6 +295,40 @@ class SingleAnalysisCycle:
                 freshness=freshness,
             )
 
+            position_size = None
+
+            if (
+                self.position_sizing_config.enabled
+                and decision.actionable
+                and decision.trade_plan is not None
+                and decision.trade_plan.actionable
+            ):
+                account_equity = (
+                    self.position_sizing_config.account_equity
+                )
+
+                if account_equity is None:
+                    raise RuntimeError(
+                        "Position sizing is enabled without "
+                        "account equity."
+                    )
+
+                position_size = (
+                    self.position_sizing_engine.calculate(
+                        decision.trade_plan,
+                        account_equity=account_equity,
+                        risk_percent=(
+                            self.position_sizing_config.risk_percent
+                        ),
+                        buying_power=(
+                            self.position_sizing_config.buying_power
+                        ),
+                        maximum_notional=(
+                            self.position_sizing_config.maximum_notional
+                        ),
+                    )
+                )
+
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.COMPLETED,
                 symbol=self.config.symbol,
@@ -276,9 +346,15 @@ class SingleAnalysisCycle:
                 freshness=freshness,
                 context=context,
                 decision=decision,
+                position_size=position_size,
             )
 
-        except Exception as exc:
+        except (
+            OSError,
+            RuntimeError,
+            TimeoutError,
+            ValueError,
+        ) as exc:
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.FAILED,
                 symbol=self.config.symbol,
@@ -300,7 +376,7 @@ class SingleAnalysisCycle:
     ) -> datetime:
         if value is None:
             return datetime.now(
-                timezone.utc
+                UTC
             )
 
         if not isinstance(
@@ -317,11 +393,11 @@ class SingleAnalysisCycle:
             )
 
         return value.astimezone(
-            timezone.utc
+            UTC
         )
 
     @staticmethod
     def _now() -> datetime:
         return datetime.now(
-            timezone.utc
+            UTC
         )

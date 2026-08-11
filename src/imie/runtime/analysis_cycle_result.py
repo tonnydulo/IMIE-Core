@@ -7,6 +7,7 @@ from imie.models import (
     DataFreshness,
     DecisionResult,
     MarketSnapshot,
+    PositionSizeResult,
     TradingContext,
 )
 from imie.runtime.analysis_cycle_status import (
@@ -48,6 +49,7 @@ class AnalysisCycleResult:
     freshness: DataFreshness | None = None
     context: TradingContext | None = None
     decision: DecisionResult | None = None
+    position_size: PositionSizeResult | None = None
 
     error_type: str | None = None
 
@@ -160,6 +162,18 @@ class AnalysisCycleResult:
         ):
             raise TypeError(
                 "decision must be a DecisionResult or None."
+            )
+
+        if (
+            self.position_size is not None
+            and not isinstance(
+                self.position_size,
+                PositionSizeResult,
+            )
+        ):
+            raise TypeError(
+                "position_size must be a PositionSizeResult "
+                "or None."
             )
 
         error_type = self.error_type
