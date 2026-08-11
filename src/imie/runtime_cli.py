@@ -20,6 +20,7 @@ from imie.runtime import (
     AnalysisCycleResult,
     AnalysisCycleStatus,
     MultiSymbolRuntimeApplication,
+    PositionSizingConfig,
     RuntimeApplication,
     RuntimeApplicationFactory,
     RuntimeConfig,
@@ -100,6 +101,53 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=500,
         help="Number of bars to request. Default: 500.",
+    )
+
+    parser.add_argument(
+        "--position-sizing",
+        action="store_true",
+        help=(
+            "Enable account-based position sizing for "
+            "actionable READY trade plans."
+        ),
+    )
+
+    parser.add_argument(
+        "--account-equity",
+        type=float,
+        default=None,
+        help=(
+            "Account equity used for position sizing. "
+            "Required when --position-sizing is enabled."
+        ),
+    )
+
+    parser.add_argument(
+        "--risk-percent",
+        type=float,
+        default=0.50,
+        help=(
+            "Maximum account risk percentage per trade. "
+            "Default: 0.50."
+        ),
+    )
+
+    parser.add_argument(
+        "--buying-power",
+        type=float,
+        default=None,
+        help=(
+            "Optional available buying-power constraint."
+        ),
+    )
+
+    parser.add_argument(
+        "--maximum-notional",
+        type=float,
+        default=None,
+        help=(
+            "Optional maximum notional value per position."
+        ),
     )
 
     parser.add_argument(
@@ -290,6 +338,45 @@ def build_runtime_config(
         ),
         heartbeat_interval_seconds=(
             arguments.heartbeat_seconds
+        ),
+    )
+
+def build_position_sizing_config(
+    arguments: argparse.Namespace,
+) -> PositionSizingConfig:
+    if not isinstance(
+        arguments,
+        argparse.Namespace,
+    ):
+        raise TypeError(
+            "arguments must be an argparse.Namespace."
+        )
+
+    return PositionSizingConfig(
+        enabled=getattr(
+            arguments,
+            "position_sizing",
+            False,
+        ),
+        account_equity=getattr(
+            arguments,
+            "account_equity",
+            None,
+        ),
+        risk_percent=getattr(
+            arguments,
+            "risk_percent",
+            0.50,
+        ),
+        buying_power=getattr(
+            arguments,
+            "buying_power",
+            None,
+        ),
+        maximum_notional=getattr(
+            arguments,
+            "maximum_notional",
+            None,
         ),
     )
 
@@ -509,6 +596,12 @@ def build_application(
         arguments
     )
 
+    position_sizing_config = (
+        build_position_sizing_config(
+            arguments
+        )
+    )
+
     resolved_settings = resolve_settings(
         settings=settings,
         arguments=arguments,
@@ -544,6 +637,9 @@ def build_application(
             config=multi_symbol_config,
             session_policy=session_policy,
             calendar_years=calendar_years,
+            position_sizing_config=(
+                position_sizing_config
+            ),
         )
 
     return RuntimeApplicationFactory.create(
@@ -555,6 +651,9 @@ def build_application(
         continue_on_publish_error=True,
         session_policy=session_policy,
         calendar_years=calendar_years,
+        position_sizing_config=(
+            position_sizing_config
+        ),
         health_console_output=(
             not arguments.no_health_console
         ),

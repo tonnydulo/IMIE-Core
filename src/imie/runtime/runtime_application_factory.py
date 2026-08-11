@@ -80,6 +80,9 @@ from imie.runtime.multi_symbol_runtime_runner import (
 from imie.runtime.multi_symbol_continuous_runtime_runner import (
     MultiSymbolContinuousRuntimeRunner,
 )
+from imie.runtime.position_sizing_config import (
+    PositionSizingConfig,
+)
 
 def _build_symbol_cycles(
     *,
@@ -88,10 +91,16 @@ def _build_symbol_cycles(
     market_data: MarketDataService,
     market_session_clock: MarketSessionClock,
     session_policy: SessionPolicy,
+    position_sizing_config: PositionSizingConfig | None = None,
 ) -> tuple[
     SingleAnalysisCycle,
     ...,
 ]:
+    resolved_position_sizing_config = (
+        position_sizing_config
+        or PositionSizingConfig()
+    )
+
     return tuple(
         SingleAnalysisCycle(
             config=replace(
@@ -101,6 +110,9 @@ def _build_symbol_cycles(
             market_data=market_data,
             market_session_clock=market_session_clock,
             session_policy=session_policy,
+            position_sizing_config=(
+                resolved_position_sizing_config
+            ),
         )
         for symbol in universe.symbols
     )
@@ -122,6 +134,7 @@ class RuntimeApplicationFactory:
         config: RuntimeConfig | None = None,
         session_policy: SessionPolicy | None = None,
         calendar_years: tuple[int, ...] | None = None,
+        position_sizing_config: PositionSizingConfig | None = None,
     ) -> MultiSymbolRuntimeApplication:
         if not isinstance(
             settings,
@@ -160,6 +173,23 @@ class RuntimeApplicationFactory:
             raise TypeError(
                 "session_policy must be a SessionPolicy or None."
             )
+
+        if (
+            position_sizing_config is not None
+            and not isinstance(
+                position_sizing_config,
+                PositionSizingConfig,
+            )
+        ):
+            raise TypeError(
+                "position_sizing_config must be a "
+                "PositionSizingConfig or None."
+            )
+
+        resolved_position_sizing_config = (
+            position_sizing_config
+            or PositionSizingConfig()
+        )
 
         runtime_config = (
             config
@@ -227,6 +257,9 @@ class RuntimeApplicationFactory:
             market_data=market_data,
             market_session_clock=market_session_clock,
             session_policy=resolved_session_policy,
+            position_sizing_config=(
+                resolved_position_sizing_config
+            ),
         )
 
         cycle_runner = MultiSymbolCycleRunner(
@@ -279,6 +312,7 @@ class RuntimeApplicationFactory:
         continue_on_publish_error: bool = True,
         session_policy: SessionPolicy | None = None,
         calendar_years: tuple[int, ...] | None = None,
+        position_sizing_config: PositionSizingConfig | None = None,
         health_console_output: bool = True,
         health_history_file: str | Path = (
             "runtime/history/imie_health.jsonl"
@@ -346,6 +380,19 @@ class RuntimeApplicationFactory:
             raise TypeError(
                 "persist_health_history must be a bool."
             )
+
+        if (
+            position_sizing_config is not None
+            and not isinstance(
+                position_sizing_config,
+                PositionSizingConfig,
+            )
+        ):
+            raise TypeError(
+                "position_sizing_config must be a "
+                "PositionSizingConfig or None."
+            )
+
         if (
             health_status_file is not None
             and not isinstance(
@@ -451,6 +498,11 @@ class RuntimeApplicationFactory:
             else SUPPORTED_NYSE_CALENDAR_YEARS
         )
 
+        resolved_position_sizing_config = (
+            position_sizing_config
+            or PositionSizingConfig()
+        )
+
 
         if not isinstance(
             resolved_calendar_years,
@@ -493,6 +545,9 @@ class RuntimeApplicationFactory:
             market_data=market_data,
             market_session_clock=market_session_clock,
             session_policy=resolved_session_policy,
+            position_sizing_config=(
+                resolved_position_sizing_config
+            ),
         )
 
 
