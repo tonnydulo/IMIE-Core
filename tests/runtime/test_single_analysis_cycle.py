@@ -9,12 +9,14 @@ from imie.models import (
     MarketBar,
     MarketSnapshot,
     Quote,
+    TradePlan,
 )
 from imie.runtime import (
     AnalysisCycleStatus,
     CompletedBarGuard,
     RuntimeConfig,
     SingleAnalysisCycle,
+    PositionSizingConfig,
 )
 from imie.services import ContextBuilder
 
@@ -190,6 +192,82 @@ def test_cycle_can_be_created() -> None:
     assert cycle.freshness_guard is not None
     assert cycle.context_builder is not None
     assert cycle.analysis_pipeline is not None
+
+def test_ready_cycle_calculates_position_size() -> None:
+    checked_at = BASE_TIME + timedelta(
+        minutes=2,
+        seconds=3,
+    )
+
+    quote = make_quote(
+        timestamp=checked_at,
+    )
+
+    bars = [
+        make_bar(
+            timestamp=BASE_TIME,
+        ),
+    ]
+
+    market_data = StaticMarketData(
+        quote=quote,
+        bars=bars,
+    )
+
+    freshness = make_freshness(
+        actionable=True,
+        checked_at=checked_at,
+    )
+
+    freshness_guard = FixedFreshnessGuard(
+        freshness
+    )
+
+    pipeline = RecordingAnalysisPipeline(
+        make_ready_decision()
+    )
+
+    sizing_config = PositionSizingConfig(
+        enabled=True,
+        account_equity=25_000.0,
+        risk_percent=0.50,
+    )
+
+    cycle = SingleAnalysisCycle(
+        config=RuntimeConfig(),
+        market_data=market_data,
+        freshness_guard=freshness_guard,
+        analysis_pipeline=pipeline,
+        session_policy=make_permissive_session_policy(),
+        position_sizing_config=sizing_config,
+    )
+
+    result = cycle.run(
+        checked_at=checked_at,
+    )
+
+    assert result.status is AnalysisCycleStatus.COMPLETED
+    assert result.decision is not None
+    assert result.decision.decision is DirectorDecision.READY
+    assert result.decision.actionable is True
+
+    assert result.position_size is not None
+    assert result.position_size.risk_budget == pytest.approx(
+        125.00
+    )
+    assert result.position_size.quantity == 156
+    assert result.position_size.position_notional == pytest.approx(
+        15_693.60
+    )
+    assert result.position_size.actual_risk == pytest.approx(
+        124.80
+    )
+    assert result.position_size.actual_risk_percent == pytest.approx(
+        0.4992
+    )
+    assert result.position_size.valid is True
+    assert result.position_size.actionable is True
+    assert result.position_size.warnings == ()
 
 
 def test_config_must_be_runtime_config() -> None:
@@ -368,6 +446,47 @@ def make_decision() -> DecisionResult:
         warnings=(),
         analyst_summary={},
         trade_plan=None,
+        institutional_context=None,
+    )
+
+def make_ready_trade_plan() -> TradePlan:
+    return TradePlan(
+        symbol="NVDA",
+        strategy="Pullback-to-Core",
+        direction="long",
+        valid=True,
+        actionable=True,
+        decision="READY",
+        entry=100.60,
+        stop=99.80,
+        target1=101.40,
+        target2=102.20,
+        risk_per_share=0.80,
+        reward1_per_share=0.80,
+        reward2_per_share=1.60,
+        rr1=1.0,
+        rr2=2.0,
+        quality=90,
+        confidence=90.0,
+    )
+
+
+def make_ready_decision() -> DecisionResult:
+    trade_plan = make_ready_trade_plan()
+
+    return DecisionResult(
+        decision=DirectorDecision.READY,
+        actionable=True,
+        confidence=90.0,
+        recommendation=(
+            "Take the validated Pullback-to-Core setup."
+        ),
+        reasons=(
+            "Runtime position-sizing integration test.",
+        ),
+        warnings=(),
+        analyst_summary={},
+        trade_plan=trade_plan,
         institutional_context=None,
     )
 
