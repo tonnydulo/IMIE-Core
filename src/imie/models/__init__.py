@@ -92,6 +92,7 @@ from imie.models.value_analysis import (
 from imie.models.position_size_result import (
     PositionSizeResult,
 )
+from imie.models.execution_candidate import ExecutionCandidate
 
 __all__ = [
     "AcceptanceResult",
@@ -140,7 +141,6 @@ __all__ = [
     "OrderBlockState",
     "OrderBlock",
     "OrderBlockFinding",
-    "OrderBlockState",
     "OrderBlockStateType",
     "OrderBlockLifecycleState",
     "OrderBlockAnalysis",
@@ -157,4 +157,5 @@ __all__ = [
     "PressureAnalysis",
     "ParticipationAnalysis",
     "ValueAnalysis",
+    "ExecutionCandidate",
 ]
