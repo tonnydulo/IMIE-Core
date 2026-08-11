@@ -1267,6 +1267,12 @@ class DashboardStatusFilePublisher:
             decision_result
         )
 
+        position_size = (
+            cycle.position_size
+            if cycle is not None
+            else None
+        )
+
         analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
@@ -1440,6 +1446,19 @@ class DashboardStatusFilePublisher:
         )
 
         (
+            position_size_quantity,
+            position_size_notional,
+            position_size_risk_budget,
+            position_size_actual_risk,
+            position_size_actual_risk_percent,
+            position_size_risk_percent,
+            position_size_actionable,
+            position_size_warnings,
+        ) = _position_size_dashboard_values(
+            position_size
+        )
+
+        (
             decision_confidence,
             decision_actionable,
             decision_recommendation,
@@ -1592,6 +1611,17 @@ class DashboardStatusFilePublisher:
             trade_narrative=trade_narrative,
             trade_reasons=trade_reasons,
             trade_warnings=trade_warnings,
+
+            position_size_quantity=position_size_quantity,
+            position_size_notional=position_size_notional,
+            position_size_risk_budget=position_size_risk_budget,
+            position_size_actual_risk=position_size_actual_risk,
+            position_size_actual_risk_percent=(
+                position_size_actual_risk_percent
+            ),
+            position_size_risk_percent=position_size_risk_percent,
+            position_size_actionable=position_size_actionable,
+            position_size_warnings=position_size_warnings,
 
             decision_confidence=decision_confidence,
             decision_actionable=decision_actionable,
@@ -2643,6 +2673,41 @@ def _trade_plan_dashboard_values(
         trade_plan.narrative,
         tuple(trade_plan.reasons),
         tuple(trade_plan.warnings),
+    )
+
+def _position_size_dashboard_values(
+    position_size: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+]:
+    if position_size is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+        )
+
+    return (
+        position_size.quantity,
+        position_size.position_notional,
+        position_size.risk_budget,
+        position_size.actual_risk,
+        position_size.actual_risk_percent,
+        position_size.risk_percent,
+        position_size.actionable,
+        tuple(position_size.warnings),
     )
 
 def _decision_result_dashboard_values(

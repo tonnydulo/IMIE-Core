@@ -186,6 +186,15 @@ class RuntimeDashboardStatus:
     analyst_operational_message: str | None = None
     analyst_operational_percentage: float | None = None
 
+    position_size_quantity: int | None = None
+    position_size_notional: float | None = None
+    position_size_risk_budget: float | None = None
+    position_size_actual_risk: float | None = None
+    position_size_actual_risk_percent: float | None = None
+    position_size_risk_percent: float | None = None
+    position_size_actionable: bool | None = None
+    position_size_warnings: tuple[str, ...] = ()
+
     def __post_init__(
         self,
     ) -> None:
@@ -1158,6 +1167,18 @@ class RuntimeDashboardStatus:
         ):
             raise TypeError(
                 "trade_plan_valid must be "
+                "a bool or None."
+            )
+        if (
+            self.position_size_actionable
+            is not None
+            and not isinstance(
+                self.position_size_actionable,
+                bool,
+            )
+        ):
+            raise TypeError(
+                "position_size_actionable must be "
                 "a bool or None."
             )
 
@@ -2773,6 +2794,30 @@ class RuntimeDashboardStatus:
                 ),
                 "trade_warnings": list(
                     self.trade_warnings
+                ),
+                "position_size_quantity": (
+                    self.position_size_quantity
+                ),
+                "position_size_notional": (
+                    self.position_size_notional
+                ),
+                "position_size_risk_budget": (
+                    self.position_size_risk_budget
+                ),
+                "position_size_actual_risk": (
+                    self.position_size_actual_risk
+                ),
+                "position_size_actual_risk_percent": (
+                    self.position_size_actual_risk_percent
+                ),
+                "position_size_risk_percent": (
+                    self.position_size_risk_percent
+                ),
+                "position_size_actionable": (
+                    self.position_size_actionable
+                ),
+                "position_size_warnings": list(
+                    self.position_size_warnings
                 ),
                 "institutional_bias": (
                     self.institutional_bias
