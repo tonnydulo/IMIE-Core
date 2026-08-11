@@ -134,6 +134,7 @@ class JsonResultPublisher:
             "freshness": None,
             "decision": None,
             "position_size": None,
+            "execution_candidate": None,
         }
 
         if result.completed_bar is not None:
@@ -312,6 +313,52 @@ class JsonResultPublisher:
                 ),
                 "warnings": list(
                     result.position_size.warnings
+                ),
+            }
+
+        if result.execution_candidate is not None:
+            payload["execution_candidate"] = {
+                "symbol": (
+                    result.execution_candidate.symbol
+                ),
+                "strategy": (
+                    result.execution_candidate.strategy
+                ),
+                "direction": (
+                    result.execution_candidate.direction
+                ),
+                "quantity": (
+                    result.execution_candidate.quantity
+                ),
+                "entry": (
+                    result.execution_candidate.entry
+                ),
+                "stop": (
+                    result.execution_candidate.stop
+                ),
+                "target1": (
+                    result.execution_candidate.target1
+                ),
+                "target2": (
+                    result.execution_candidate.target2
+                ),
+                "position_notional": (
+                    result.execution_candidate.position_notional
+                ),
+                "risk_amount": (
+                    result.execution_candidate.risk_amount
+                ),
+                "valid": (
+                    result.execution_candidate.valid
+                ),
+                "actionable": (
+                    result.execution_candidate.actionable
+                ),
+                "reasons": list(
+                    result.execution_candidate.reasons
+                ),
+                "warnings": list(
+                    result.execution_candidate.warnings
                 ),
             }
 

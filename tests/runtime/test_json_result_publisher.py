@@ -7,7 +7,8 @@ from imie.models import (
     DataFreshness,
     DecisionResult,
     DirectorDecision,
-     PositionSizeResult,
+    ExecutionCandidate,
+    PositionSizeResult,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -104,6 +105,9 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         freshness=make_freshness(),
         decision=make_decision(),
         position_size=make_position_size(),
+        execution_candidate=(
+            make_execution_candidate()
+        ),
     )
 
 def make_position_size() -> PositionSizeResult:
@@ -124,6 +128,26 @@ def make_position_size() -> PositionSizeResult:
         actionable=True,
         reasons=(
             "Position size calculated from account risk budget.",
+        ),
+        warnings=(),
+    )
+
+def make_execution_candidate() -> ExecutionCandidate:
+    return ExecutionCandidate(
+        symbol="NVDA",
+        strategy="Pullback-to-Core",
+        direction="long",
+        quantity=156,
+        entry=100.60,
+        stop=99.80,
+        target1=101.40,
+        target2=102.20,
+        position_notional=15_693.60,
+        risk_amount=124.80,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Trade plan and position size are approved.",
         ),
         warnings=(),
     )
@@ -279,6 +303,7 @@ def test_completed_result_converts_to_dict() -> None:
         payload["decision"]["has_trade_plan"]
         is False
     )
+    assert payload["execution_candidate"] is None
 
 
 def test_failed_result_converts_to_dict() -> None:
@@ -296,6 +321,7 @@ def test_failed_result_converts_to_dict() -> None:
     assert payload["freshness"] is None
     assert payload["decision"] is None
     assert payload["position_size"] is None
+    assert payload["execution_candidate"] is None
 
 
 def test_dumps_returns_valid_json() -> None:
@@ -399,3 +425,45 @@ def test_position_size_converts_to_dict() -> None:
         ],
         "warnings": [],
     }
+
+    assert payload["execution_candidate"] is not None
+
+    execution_candidate = payload[
+        "execution_candidate"
+    ]
+
+    assert execution_candidate["symbol"] == "NVDA"
+    assert (
+        execution_candidate["strategy"]
+        == "Pullback-to-Core"
+    )
+    assert execution_candidate["direction"] == "long"
+    assert execution_candidate["quantity"] == 156
+    assert execution_candidate["entry"] == pytest.approx(
+        100.60
+    )
+    assert execution_candidate["stop"] == pytest.approx(
+        99.80
+    )
+    assert execution_candidate["target1"] == pytest.approx(
+        101.40
+    )
+    assert execution_candidate["target2"] == pytest.approx(
+        102.20
+    )
+    assert execution_candidate[
+        "position_notional"
+    ] == pytest.approx(
+        15_693.60
+    )
+    assert execution_candidate[
+        "risk_amount"
+    ] == pytest.approx(
+        124.80
+    )
+    assert execution_candidate["valid"] is True
+    assert execution_candidate["actionable"] is True
+    assert execution_candidate["reasons"] == [
+        "Trade plan and position size are approved.",
+    ]
+    assert execution_candidate["warnings"] == []
