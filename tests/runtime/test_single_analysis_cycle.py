@@ -326,6 +326,65 @@ def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     assert result.decision.actionable is True
     assert result.position_size is None
 
+def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
+    checked_at = BASE_TIME + timedelta(
+        minutes=2,
+        seconds=3,
+    )
+
+    quote = make_quote(
+        timestamp=checked_at,
+    )
+
+    bars = [
+        make_bar(
+            timestamp=BASE_TIME,
+        ),
+    ]
+
+    market_data = StaticMarketData(
+        quote=quote,
+        bars=bars,
+    )
+
+    freshness = make_freshness(
+        actionable=True,
+        checked_at=checked_at,
+    )
+
+    freshness_guard = FixedFreshnessGuard(
+        freshness
+    )
+
+    pipeline = RecordingAnalysisPipeline(
+        make_decision()
+    )
+
+    sizing_config = PositionSizingConfig(
+        enabled=True,
+        account_equity=25_000.0,
+        risk_percent=0.50,
+    )
+
+    cycle = SingleAnalysisCycle(
+        config=RuntimeConfig(),
+        market_data=market_data,
+        freshness_guard=freshness_guard,
+        analysis_pipeline=pipeline,
+        session_policy=make_permissive_session_policy(),
+        position_sizing_config=sizing_config,
+    )
+
+    result = cycle.run(
+        checked_at=checked_at,
+    )
+
+    assert result.status is AnalysisCycleStatus.COMPLETED
+    assert result.decision is not None
+    assert result.decision.decision is DirectorDecision.PREPARE
+    assert result.decision.actionable is False
+    assert result.position_size is None
+
 
 def test_config_must_be_runtime_config() -> None:
     with pytest.raises(
