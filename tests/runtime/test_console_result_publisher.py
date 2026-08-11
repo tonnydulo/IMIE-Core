@@ -7,6 +7,7 @@ import pytest
 from imie.models import (
     DecisionResult,
     DirectorDecision,
+    PositionSizeResult,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -79,6 +80,55 @@ def make_completed_result() -> AnalysisCycleResult:
         completed_at=CHECKED_AT,
         message="Analysis completed.",
         decision=decision,
+    )
+
+def make_position_size() -> PositionSizeResult:
+    return PositionSizeResult(
+        symbol="NVDA",
+        direction="long",
+        account_equity=25_000.0,
+        risk_percent=0.50,
+        risk_budget=125.0,
+        entry=100.60,
+        stop=99.80,
+        risk_per_share=0.80,
+        quantity=156,
+        position_notional=15_693.60,
+        actual_risk=124.80,
+        actual_risk_percent=0.4992,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Position size calculated from account risk budget.",
+        ),
+        warnings=(),
+    )
+
+def make_sized_completed_result() -> AnalysisCycleResult:
+    decision = DecisionResult(
+        decision=DirectorDecision.PREPARE,
+        actionable=False,
+        confidence=82.5,
+        recommendation=(
+            "Prepare for a possible validated setup."
+        ),
+        reasons=(
+            "Setup is developing.",
+        ),
+        warnings=(
+            "Institutional conflict is present.",
+        ),
+    )
+
+    return AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=CHECKED_AT,
+        completed_at=CHECKED_AT,
+        message="Analysis completed.",
+        decision=decision,
+        position_size=make_position_size(),
     )
 
 
@@ -158,6 +208,7 @@ def test_completed_result_includes_decision() -> None:
     assert " - Setup is developing." in lines
     assert "Warnings     :" in lines
     assert " - Institutional conflict is present." in lines
+    assert "Position Size :" not in lines
 
 
 def test_publish_sends_every_line_to_output() -> None:

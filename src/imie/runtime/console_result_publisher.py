@@ -197,6 +197,57 @@ class ConsoleResultPublisher:
                     for warning in result.decision.warnings
                 )
 
+        if result.position_size is not None:
+            position_size = result.position_size
+
+            lines.extend(
+                [
+                    "Position Size :",
+                    (
+                        "Direction    : "
+                        f"{position_size.direction}"
+                    ),
+                    (
+                        "Risk Budget  : "
+                        f"${position_size.risk_budget:.2f}"
+                    ),
+                    (
+                        "Risk %       : "
+                        f"{position_size.risk_percent:.2f}%"
+                    ),
+                    (
+                        "Quantity     : "
+                        f"{position_size.quantity}"
+                    ),
+                    (
+                        "Notional     : "
+                        f"${position_size.position_notional:.2f}"
+                    ),
+                    (
+                        "Actual Risk  : "
+                        f"${position_size.actual_risk:.2f}"
+                    ),
+                    (
+                        "Actual Risk %: "
+                        f"{position_size.actual_risk_percent:.4f}%"
+                    ),
+                    (
+                        "Size Actionable: "
+                        f"{position_size.actionable}"
+                    ),
+                ]
+            )
+
+            if position_size.warnings:
+                lines.append(
+                    "Sizing Warnings:"
+                )
+
+                lines.extend(
+                    f" - {warning}"
+                    for warning in position_size.warnings
+                )
+
         if (
             result.status
             is AnalysisCycleStatus.FAILED
