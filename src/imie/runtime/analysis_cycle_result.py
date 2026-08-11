@@ -6,6 +6,7 @@ from datetime import datetime
 from imie.models import (
     DataFreshness,
     DecisionResult,
+    ExecutionCandidate,
     MarketSnapshot,
     PositionSizeResult,
     TradingContext,
@@ -50,6 +51,7 @@ class AnalysisCycleResult:
     context: TradingContext | None = None
     decision: DecisionResult | None = None
     position_size: PositionSizeResult | None = None
+    execution_candidate: ExecutionCandidate | None = None
 
     error_type: str | None = None
 
@@ -174,6 +176,18 @@ class AnalysisCycleResult:
             raise TypeError(
                 "position_size must be a PositionSizeResult "
                 "or None."
+            )
+
+        if (
+            self.execution_candidate is not None
+            and not isinstance(
+                self.execution_candidate,
+                ExecutionCandidate,
+            )
+        ):
+            raise TypeError(
+                "execution_candidate must be an "
+                "ExecutionCandidate or None."
             )
 
         error_type = self.error_type

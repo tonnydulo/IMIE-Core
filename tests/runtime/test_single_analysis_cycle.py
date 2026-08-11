@@ -269,6 +269,19 @@ def test_ready_cycle_calculates_position_size() -> None:
     assert result.position_size.actionable is True
     assert result.position_size.warnings == ()
 
+    assert result.execution_candidate is not None
+    assert result.execution_candidate.symbol == "NVDA"
+    assert result.execution_candidate.direction == "long"
+    assert result.execution_candidate.quantity == 156
+    assert result.execution_candidate.position_notional == pytest.approx(
+        15_693.60
+    )
+    assert result.execution_candidate.risk_amount == pytest.approx(
+        124.80
+    )
+    assert result.execution_candidate.valid is True
+    assert result.execution_candidate.actionable is True
+
 def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     checked_at = BASE_TIME + timedelta(
         minutes=2,
@@ -325,6 +338,7 @@ def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     assert result.decision.decision is DirectorDecision.READY
     assert result.decision.actionable is True
     assert result.position_size is None
+    assert result.execution_candidate is None
 
 def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insufficient() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -403,6 +417,11 @@ def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insu
         in result.position_size.warnings
     )
 
+    assert result.execution_candidate is not None
+    assert result.execution_candidate.quantity == 0
+    assert result.execution_candidate.valid is True
+    assert result.execution_candidate.actionable is False
+
 def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     checked_at = BASE_TIME + timedelta(
         minutes=2,
@@ -461,6 +480,7 @@ def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     assert result.decision.decision is DirectorDecision.PREPARE
     assert result.decision.actionable is False
     assert result.position_size is None
+    assert result.execution_candidate is None
 
 
 def test_config_must_be_runtime_config() -> None:
