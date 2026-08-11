@@ -248,6 +248,72 @@ class ConsoleResultPublisher:
                     for warning in position_size.warnings
                 )
 
+        if result.execution_candidate is not None:
+            execution_candidate = (
+                result.execution_candidate
+            )
+
+            lines.extend(
+                [
+                    "Execution Candidate :",
+                    (
+                        "Strategy     : "
+                        f"{execution_candidate.strategy}"
+                    ),
+                    (
+                        "Direction    : "
+                        f"{execution_candidate.direction}"
+                    ),
+                    (
+                        "Quantity     : "
+                        f"{execution_candidate.quantity}"
+                    ),
+                    (
+                        "Entry        : "
+                        f"${execution_candidate.entry:.2f}"
+                    ),
+                    (
+                        "Stop         : "
+                        f"${execution_candidate.stop:.2f}"
+                    ),
+                    (
+                        "Target 1     : "
+                        f"${execution_candidate.target1:.2f}"
+                    ),
+                    (
+                        "Target 2     : "
+                        f"${execution_candidate.target2:.2f}"
+                    ),
+                    (
+                        "Notional     : "
+                        f"${execution_candidate.position_notional:.2f}"
+                    ),
+                    (
+                        "Risk Amount  : "
+                        f"${execution_candidate.risk_amount:.2f}"
+                    ),
+                    (
+                        "Exec Valid   : "
+                        f"{execution_candidate.valid}"
+                    ),
+                    (
+                        "Exec Actionable: "
+                        f"{execution_candidate.actionable}"
+                    ),
+                ]
+            )
+
+            if execution_candidate.warnings:
+                lines.append(
+                    "Execution Warnings:"
+                )
+
+                lines.extend(
+                    f" - {warning}"
+                    for warning
+                    in execution_candidate.warnings
+                )
+
         if (
             result.status
             is AnalysisCycleStatus.FAILED

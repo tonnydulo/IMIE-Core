@@ -7,6 +7,7 @@ import pytest
 from imie.models import (
     DecisionResult,
     DirectorDecision,
+    ExecutionCandidate,
     PositionSizeResult,
 )
 from imie.runtime import (
@@ -104,6 +105,26 @@ def make_position_size() -> PositionSizeResult:
         warnings=(),
     )
 
+def make_execution_candidate() -> ExecutionCandidate:
+    return ExecutionCandidate(
+        symbol="NVDA",
+        strategy="Pullback-to-Core",
+        direction="long",
+        quantity=156,
+        entry=100.60,
+        stop=99.80,
+        target1=101.40,
+        target2=102.20,
+        position_notional=15_693.60,
+        risk_amount=124.80,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Trade plan and position size are approved.",
+        ),
+        warnings=(),
+    )
+
 def make_sized_completed_result() -> AnalysisCycleResult:
     decision = DecisionResult(
         decision=DirectorDecision.PREPARE,
@@ -129,8 +150,42 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         message="Analysis completed.",
         decision=decision,
         position_size=make_position_size(),
+        execution_candidate=(
+            make_execution_candidate()
+        ),
     )
 
+def test_sized_completed_result_includes_execution_candidate() -> None:
+    publisher = ConsoleResultPublisher(
+        output=lambda line: None,
+    )
+
+    lines = publisher.format_lines(
+        make_sized_completed_result()
+    )
+
+    assert "Position Size :" in lines
+    assert "Direction    : long" in lines
+    assert "Risk Budget  : $125.00" in lines
+    assert "Risk %       : 0.50%" in lines
+    assert "Quantity     : 156" in lines
+    assert "Notional     : $15693.60" in lines
+    assert "Actual Risk  : $124.80" in lines
+    assert "Actual Risk %: 0.4992%" in lines
+    assert "Size Actionable: True" in lines
+
+    assert "Execution Candidate :" in lines
+    assert "Strategy     : Pullback-to-Core" in lines
+    assert "Direction    : long" in lines
+    assert "Quantity     : 156" in lines
+    assert "Entry        : $100.60" in lines
+    assert "Stop         : $99.80" in lines
+    assert "Target 1     : $101.40" in lines
+    assert "Target 2     : $102.20" in lines
+    assert "Notional     : $15693.60" in lines
+    assert "Risk Amount  : $124.80" in lines
+    assert "Exec Valid   : True" in lines
+    assert "Exec Actionable: True" in lines
 
 def test_publisher_can_be_created() -> None:
     lines: list[str] = []
@@ -208,7 +263,9 @@ def test_completed_result_includes_decision() -> None:
     assert " - Setup is developing." in lines
     assert "Warnings     :" in lines
     assert " - Institutional conflict is present." in lines
+
     assert "Position Size :" not in lines
+    assert "Execution Candidate :" not in lines
 
 
 def test_publish_sends_every_line_to_output() -> None:
