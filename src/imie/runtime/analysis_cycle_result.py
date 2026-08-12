@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from imie.models import (
+    BrokerSubmissionResult,
     DataFreshness,
     DecisionResult,
     ExecutionCandidate,
@@ -54,6 +55,7 @@ class AnalysisCycleResult:
     position_size: PositionSizeResult | None = None
     execution_candidate: ExecutionCandidate | None = None
     execution_order_intent: ExecutionOrderIntent | None = None
+    broker_submission_result: BrokerSubmissionResult | None = None
 
     error_type: str | None = None
 
@@ -202,6 +204,18 @@ class AnalysisCycleResult:
             raise TypeError(
                 "execution_order_intent must be an "
                 "ExecutionOrderIntent or None."
+            )
+
+        if (
+            self.broker_submission_result is not None
+            and not isinstance(
+                self.broker_submission_result,
+                BrokerSubmissionResult,
+            )
+        ):
+            raise TypeError(
+                "broker_submission_result must be a "
+                "BrokerSubmissionResult or None."
             )
 
         error_type = self.error_type

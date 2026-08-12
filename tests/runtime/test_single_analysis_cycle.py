@@ -24,6 +24,9 @@ from imie.runtime import (
     SessionPolicy,
     SessionPolicyConfig,
 )
+from imie.execution import (
+    MockBrokerExecutionAdapter,
+)
 
 
 class FakeMarketData:
@@ -240,6 +243,9 @@ def test_ready_cycle_calculates_position_size() -> None:
         analysis_pipeline=pipeline,
         session_policy=make_permissive_session_policy(),
         position_sizing_config=sizing_config,
+        broker_execution_port=(
+            MockBrokerExecutionAdapter()
+        ),
     )
 
     result = cycle.run(
@@ -281,6 +287,19 @@ def test_ready_cycle_calculates_position_size() -> None:
     )
     assert result.execution_candidate.valid is True
     assert result.execution_candidate.actionable is True
+
+    assert result.broker_submission_result is not None
+    assert result.broker_submission_result.broker == "mock"
+    assert result.broker_submission_result.symbol == "NVDA"
+    assert result.broker_submission_result.side == "buy"
+    assert result.broker_submission_result.quantity == 156
+    assert result.broker_submission_result.accepted is True
+    assert result.broker_submission_result.status == "accepted"
+    assert (
+        result.broker_submission_result.broker_order_id
+        == "mock-nvda-000001"
+    )
+
     assert result.execution_order_intent is not None
     assert result.execution_order_intent.symbol == "NVDA"
     assert result.execution_order_intent.side == "buy"
@@ -360,6 +379,7 @@ def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     assert result.position_size is None
     assert result.execution_candidate is None
     assert result.execution_order_intent is None
+    assert result.broker_submission_result is None
 
 def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insufficient() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -446,6 +466,7 @@ def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insu
     assert result.execution_order_intent.quantity == 0
     assert result.execution_order_intent.valid is True
     assert result.execution_order_intent.actionable is False
+    assert result.broker_submission_result is None
 
 def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -507,6 +528,7 @@ def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     assert result.position_size is None
     assert result.execution_candidate is None
     assert result.execution_order_intent is None
+    assert result.broker_submission_result is None
 
 
 def test_config_must_be_runtime_config() -> None:

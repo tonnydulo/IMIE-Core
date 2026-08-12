@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from imie.execution import BrokerExecutionPort
+
 from imie.models import MarketSnapshot
 from imie.runtime.analysis_cycle_result import (
     AnalysisCycleResult,
@@ -54,7 +56,8 @@ class SingleAnalysisCycle:
     8. Returns a typed AnalysisCycleResult.
 
     This class does not connect, disconnect, sleep, poll, retry,
-    print, persist, or execute trades.
+    print, or persist. Broker submission occurs only when an
+    execution port is explicitly provided.
     """
 
     def __init__(
@@ -72,6 +75,7 @@ class SingleAnalysisCycle:
         position_sizing_config: PositionSizingConfig | None = None,
         execution_candidate_builder: ExecutionCandidateBuilder | None = None,
         execution_order_intent_builder: ExecutionOrderIntentBuilder | None = None,
+        broker_execution_port: BrokerExecutionPort | None = None,
     ) -> None:
         if not isinstance(
             config,
@@ -155,6 +159,8 @@ class SingleAnalysisCycle:
             or ExecutionOrderIntentBuilder()
         )
 
+        self.broker_execution_port = broker_execution_port
+
         self.market_session_clock = (
             market_session_clock
             or MarketSessionClock()
@@ -216,6 +222,20 @@ class SingleAnalysisCycle:
             raise TypeError(
                 "execution_order_intent_builder must be an "
                 "ExecutionOrderIntentBuilder."
+            )
+
+        if (
+            self.broker_execution_port is not None
+            and not callable(
+                getattr(
+                    self.broker_execution_port,
+                    "submit_order",
+                    None,
+                )
+            )
+        ):
+            raise TypeError(
+                "broker_execution_port must provide submit_order()."
             )
 
     def run(
@@ -332,6 +352,7 @@ class SingleAnalysisCycle:
             position_size = None
             execution_candidate = None
             execution_order_intent = None
+            broker_submission_result = Noneexecution_order_intent = None
 
             if (
                 self.position_sizing_config.enabled
@@ -380,6 +401,18 @@ class SingleAnalysisCycle:
                     )
                 )
 
+            if (
+                execution_order_intent is not None
+                and execution_order_intent.valid
+                and execution_order_intent.actionable
+                and self.broker_execution_port is not None
+            ):
+                broker_submission_result = (
+                    self.broker_execution_port.submit_order(
+                        execution_order_intent
+                    )
+                )
+
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.COMPLETED,
                 symbol=self.config.symbol,
@@ -400,6 +433,7 @@ class SingleAnalysisCycle:
                 position_size=position_size,
                 execution_candidate=execution_candidate,
                 execution_order_intent=execution_order_intent,
+                broker_submission_result=broker_submission_result,
             )
 
         except (

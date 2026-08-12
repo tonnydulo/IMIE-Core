@@ -8,6 +8,7 @@ from imie.runtime import (
 )
 
 from imie.models import (
+    BrokerSubmissionResult,
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
@@ -15,6 +16,7 @@ from imie.models import (
     PositionSizeResult,
     TradePlan,
 )
+
 
 
 def make_time(
@@ -74,6 +76,18 @@ def make_execution_candidate() -> ExecutionCandidate:
         risk_amount=124.80,
         valid=True,
         actionable=True,
+    )
+
+def make_broker_submission_result() -> BrokerSubmissionResult:
+    return BrokerSubmissionResult(
+        broker="mock",
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        accepted=True,
+        broker_order_id="mock-nvda-000001",
+        status="accepted",
+        message="Mock order accepted.",
     )
 
 
@@ -398,6 +412,51 @@ def test_rejects_invalid_execution_order_intent_type() -> None:
             message="Cycle completed.",
             decision=make_decision_result(),
             execution_order_intent=(
+                "invalid"  # type: ignore[arg-type]
+            ),
+        )
+
+def test_completed_cycle_accepts_broker_submission_result() -> None:
+    broker_submission_result = (
+        make_broker_submission_result()
+    )
+
+    result = AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=make_time(),
+        completed_at=make_time(),
+        message="Cycle completed.",
+        decision=make_decision_result(),
+        broker_submission_result=(
+            broker_submission_result
+        ),
+    )
+
+    assert (
+        result.broker_submission_result
+        is broker_submission_result
+    )
+
+
+def test_rejects_invalid_broker_submission_result_type() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "broker_submission_result must be a "
+            "BrokerSubmissionResult or None"
+        ),
+    ):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            decision=make_decision_result(),
+            broker_submission_result=(
                 "invalid"  # type: ignore[arg-type]
             ),
         )
