@@ -948,6 +948,82 @@ def test_to_dict_includes_execution_candidate_fields() -> None:
         == []
     )
 
+def test_execution_order_intent_fields_are_serialized() -> None:
+    status = RuntimeDashboardStatus(
+        health=make_health(),
+        symbol="NVDA",
+        timeframe="2m",
+        latest_cycle_status=(
+            AnalysisCycleStatus.COMPLETED
+        ),
+        latest_cycle_message=(
+            "Analysis cycle completed."
+        ),
+        latest_cycle_started_at=NOW,
+        latest_cycle_completed_at=NOW,
+        market_session="REGULAR",
+        latest_decision="READY",
+        latest_error_type=None,
+        execution_order_intent_side="buy",
+        execution_order_intent_quantity=125,
+        execution_order_intent_order_type="limit",
+        execution_order_intent_entry_price=500.0,
+        execution_order_intent_stop_price=499.0,
+        execution_order_intent_target1_price=501.0,
+        execution_order_intent_target2_price=502.0,
+        execution_order_intent_time_in_force="day",
+        execution_order_intent_valid=True,
+        execution_order_intent_actionable=True,
+        execution_order_intent_warnings=(),
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["execution_order_intent_side"]
+        == "buy"
+    )
+    assert (
+        payload["execution_order_intent_quantity"]
+        == 125
+    )
+    assert (
+        payload["execution_order_intent_order_type"]
+        == "limit"
+    )
+    assert (
+        payload["execution_order_intent_entry_price"]
+        == 500.0
+    )
+    assert (
+        payload["execution_order_intent_stop_price"]
+        == 499.0
+    )
+    assert (
+        payload["execution_order_intent_target1_price"]
+        == 501.0
+    )
+    assert (
+        payload["execution_order_intent_target2_price"]
+        == 502.0
+    )
+    assert (
+        payload["execution_order_intent_time_in_force"]
+        == "day"
+    )
+    assert (
+        payload["execution_order_intent_valid"]
+        is True
+    )
+    assert (
+        payload["execution_order_intent_actionable"]
+        is True
+    )
+    assert (
+        payload["execution_order_intent_warnings"]
+        == []
+    )
+
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(
         institutional_bias_strength=80.0,

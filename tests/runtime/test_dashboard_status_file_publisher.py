@@ -35,6 +35,7 @@ from imie.models import (
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
+    ExecutionOrderIntent,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
@@ -72,7 +73,6 @@ from imie.runtime.dashboard_status_file_publisher import (
     _validate_temporary_file_fingerprint,
     _validate_sha256_digest_match,
     _validate_temporary_file_size,
-    TemporaryFileIdentity,
     _temporary_file_identity,
     _normalize_non_negative_int,
     _normalize_temporary_file_fingerprint,
@@ -97,7 +97,6 @@ from imie.runtime.dashboard_status_file_publisher import (
     _normalize_required_text,
     _normalize_optional_text,
     _display_value,
-    _is_owned_temporary_path,
     _directory_open_flags,
     _analyst_confidence_value,
     _has_resolved_analyst_opinion,
@@ -395,6 +394,25 @@ def make_execution_candidate() -> ExecutionCandidate:
         warnings=(),
     )
 
+def make_execution_order_intent() -> ExecutionOrderIntent:
+    return ExecutionOrderIntent(
+        symbol="NVDA",
+        side="buy",
+        quantity=125,
+        order_type="limit",
+        entry_price=500.0,
+        stop_price=499.0,
+        target1_price=501.0,
+        target2_price=502.0,
+        time_in_force="day",
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Execution candidate converted to order intent.",
+        ),
+        warnings=(),
+    )
+
 def make_completed_result() -> AnalysisCycleResult:
     return AnalysisCycleResult(
         status=AnalysisCycleStatus.COMPLETED,
@@ -471,6 +489,9 @@ def make_completed_result_with_execution_candidate() -> (
         position_size=make_position_size(),
         execution_candidate=(
             make_execution_candidate()
+        ),
+        execution_order_intent=(
+            make_execution_order_intent()
         ),
     )
 
@@ -1771,6 +1792,79 @@ def test_publish_result_populates_execution_candidate_details(
     )
     assert (
         payload["execution_candidate_warnings"]
+        == []
+    )
+
+def test_publish_result_populates_execution_order_intent_details(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        make_completed_result_with_execution_candidate()
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["execution_order_intent_side"]
+        == "buy"
+    )
+    assert (
+        payload["execution_order_intent_quantity"]
+        == 125
+    )
+    assert (
+        payload["execution_order_intent_order_type"]
+        == "limit"
+    )
+    assert (
+        payload["execution_order_intent_entry_price"]
+        == 500.0
+    )
+    assert (
+        payload["execution_order_intent_stop_price"]
+        == 499.0
+    )
+    assert (
+        payload["execution_order_intent_target1_price"]
+        == 501.0
+    )
+    assert (
+        payload["execution_order_intent_target2_price"]
+        == 502.0
+    )
+    assert (
+        payload["execution_order_intent_time_in_force"]
+        == "day"
+    )
+    assert (
+        payload["execution_order_intent_valid"]
+        is True
+    )
+    assert (
+        payload["execution_order_intent_actionable"]
+        is True
+    )
+    assert (
+        payload["execution_order_intent_warnings"]
         == []
     )
 

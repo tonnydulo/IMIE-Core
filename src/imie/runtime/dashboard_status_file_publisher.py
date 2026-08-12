@@ -1279,6 +1279,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        execution_order_intent = (
+            cycle.execution_order_intent
+            if cycle is not None
+            else None
+        )
+
         analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
@@ -1482,6 +1488,22 @@ class DashboardStatusFilePublisher:
         )
 
         (
+            execution_order_intent_side,
+            execution_order_intent_quantity,
+            execution_order_intent_order_type,
+            execution_order_intent_entry_price,
+            execution_order_intent_stop_price,
+            execution_order_intent_target1_price,
+            execution_order_intent_target2_price,
+            execution_order_intent_time_in_force,
+            execution_order_intent_valid,
+            execution_order_intent_actionable,
+            execution_order_intent_warnings,
+        ) = _execution_order_intent_dashboard_values(
+            execution_order_intent
+        )
+
+        (
             decision_confidence,
             decision_actionable,
             decision_recommendation,
@@ -1681,6 +1703,40 @@ class DashboardStatusFilePublisher:
             ),
             execution_candidate_warnings=(
                 execution_candidate_warnings
+            ),
+
+            execution_order_intent_side=(
+                execution_order_intent_side
+            ),
+            execution_order_intent_quantity=(
+                execution_order_intent_quantity
+            ),
+            execution_order_intent_order_type=(
+                execution_order_intent_order_type
+            ),
+            execution_order_intent_entry_price=(
+                execution_order_intent_entry_price
+            ),
+            execution_order_intent_stop_price=(
+                execution_order_intent_stop_price
+            ),
+            execution_order_intent_target1_price=(
+                execution_order_intent_target1_price
+            ),
+            execution_order_intent_target2_price=(
+                execution_order_intent_target2_price
+            ),
+            execution_order_intent_time_in_force=(
+                execution_order_intent_time_in_force
+            ),
+            execution_order_intent_valid=(
+                execution_order_intent_valid
+            ),
+            execution_order_intent_actionable=(
+                execution_order_intent_actionable
+            ),
+            execution_order_intent_warnings=(
+                execution_order_intent_warnings
             ),
 
             decision_confidence=decision_confidence,
@@ -2816,6 +2872,52 @@ def _execution_candidate_dashboard_values(
         execution_candidate.actionable,
         tuple(
             execution_candidate.warnings
+        ),
+    )
+
+def _execution_order_intent_dashboard_values(
+    execution_order_intent: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+]:
+    if execution_order_intent is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+        )
+
+    return (
+        execution_order_intent.side,
+        execution_order_intent.quantity,
+        execution_order_intent.order_type,
+        execution_order_intent.entry_price,
+        execution_order_intent.stop_price,
+        execution_order_intent.target1_price,
+        execution_order_intent.target2_price,
+        execution_order_intent.time_in_force,
+        execution_order_intent.valid,
+        execution_order_intent.actionable,
+        tuple(
+            execution_order_intent.warnings
         ),
     )
 

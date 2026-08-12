@@ -208,6 +208,19 @@ class RuntimeDashboardStatus:
     execution_candidate_actionable: bool | None = None
     execution_candidate_warnings: tuple[str, ...] = ()
 
+    execution_order_intent_side: str | None = None
+    execution_order_intent_quantity: int | None = None
+    execution_order_intent_order_type: str | None = None
+    execution_order_intent_entry_price: float | None = None
+    execution_order_intent_stop_price: float | None = None
+    execution_order_intent_target1_price: float | None = None
+    execution_order_intent_target2_price: float | None = None
+    execution_order_intent_time_in_force: str | None = None
+    execution_order_intent_valid: bool | None = None
+    execution_order_intent_actionable: bool | None = None
+    execution_order_intent_warnings: tuple[str, ...] = ()
+
+
     def __post_init__(
         self,
     ) -> None:
@@ -444,6 +457,8 @@ class RuntimeDashboardStatus:
         for field_name in (
             "execution_candidate_valid",
             "execution_candidate_actionable",
+            "execution_order_intent_valid",
+            "execution_order_intent_actionable",
         ):
             value = getattr(
                 self,
@@ -2888,6 +2903,39 @@ class RuntimeDashboardStatus:
                 ),
                 "execution_candidate_warnings": list(
                     self.execution_candidate_warnings
+                ),
+                "execution_order_intent_side": (
+                    self.execution_order_intent_side
+                ),
+                "execution_order_intent_quantity": (
+                    self.execution_order_intent_quantity
+                ),
+                "execution_order_intent_order_type": (
+                    self.execution_order_intent_order_type
+                ),
+                "execution_order_intent_entry_price": (
+                    self.execution_order_intent_entry_price
+                ),
+                "execution_order_intent_stop_price": (
+                    self.execution_order_intent_stop_price
+                ),
+                "execution_order_intent_target1_price": (
+                    self.execution_order_intent_target1_price
+                ),
+                "execution_order_intent_target2_price": (
+                    self.execution_order_intent_target2_price
+                ),
+                "execution_order_intent_time_in_force": (
+                    self.execution_order_intent_time_in_force
+                ),
+                "execution_order_intent_valid": (
+                    self.execution_order_intent_valid
+                ),
+                "execution_order_intent_actionable": (
+                    self.execution_order_intent_actionable
+                ),
+                "execution_order_intent_warnings": list(
+                    self.execution_order_intent_warnings
                 ),
                 "institutional_bias": (
                     self.institutional_bias
