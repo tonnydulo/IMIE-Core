@@ -96,6 +96,9 @@ from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
 )
+from imie.models.broker_submission_result import (
+    BrokerSubmissionResult,
+)
 
 __all__ = [
     "AcceptanceResult",
@@ -162,4 +165,5 @@ __all__ = [
     "ValueAnalysis",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
+    "BrokerSubmissionResult",
 ]
