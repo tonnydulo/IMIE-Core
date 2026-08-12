@@ -34,6 +34,7 @@ from imie.runtime.position_sizing_config import (
 )
 from imie.engines.execution import (
     ExecutionCandidateBuilder,
+    ExecutionOrderIntentBuilder,
 )
 
 
@@ -70,6 +71,7 @@ class SingleAnalysisCycle:
         position_sizing_engine: PositionSizingEngine | None = None,
         position_sizing_config: PositionSizingConfig | None = None,
         execution_candidate_builder: ExecutionCandidateBuilder | None = None,
+        execution_order_intent_builder: ExecutionOrderIntentBuilder | None = None,
     ) -> None:
         if not isinstance(
             config,
@@ -148,6 +150,11 @@ class SingleAnalysisCycle:
             or ExecutionCandidateBuilder()
         )
 
+        self.execution_order_intent_builder = (
+            execution_order_intent_builder
+            or ExecutionOrderIntentBuilder()
+        )
+
         self.market_session_clock = (
             market_session_clock
             or MarketSessionClock()
@@ -200,6 +207,15 @@ class SingleAnalysisCycle:
             raise TypeError(
                 "execution_candidate_builder must be an "
                 "ExecutionCandidateBuilder."
+            )
+
+        if not isinstance(
+            self.execution_order_intent_builder,
+            ExecutionOrderIntentBuilder,
+        ):
+            raise TypeError(
+                "execution_order_intent_builder must be an "
+                "ExecutionOrderIntentBuilder."
             )
 
     def run(
@@ -315,6 +331,7 @@ class SingleAnalysisCycle:
 
             position_size = None
             execution_candidate = None
+            execution_order_intent = None
 
             if (
                 self.position_sizing_config.enabled
@@ -356,6 +373,13 @@ class SingleAnalysisCycle:
                     )
                 )
 
+            if execution_candidate is not None:
+                execution_order_intent = (
+                    self.execution_order_intent_builder.build(
+                        candidate=execution_candidate,
+                    )
+                )
+
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.COMPLETED,
                 symbol=self.config.symbol,
@@ -375,6 +399,7 @@ class SingleAnalysisCycle:
                 decision=decision,
                 position_size=position_size,
                 execution_candidate=execution_candidate,
+                execution_order_intent=execution_order_intent,
             )
 
         except (

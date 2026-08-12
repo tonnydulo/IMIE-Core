@@ -7,6 +7,7 @@ from imie.models import (
     DataFreshness,
     DecisionResult,
     ExecutionCandidate,
+    ExecutionOrderIntent,
     MarketSnapshot,
     PositionSizeResult,
     TradingContext,
@@ -52,6 +53,7 @@ class AnalysisCycleResult:
     decision: DecisionResult | None = None
     position_size: PositionSizeResult | None = None
     execution_candidate: ExecutionCandidate | None = None
+    execution_order_intent: ExecutionOrderIntent | None = None
 
     error_type: str | None = None
 
@@ -188,6 +190,18 @@ class AnalysisCycleResult:
             raise TypeError(
                 "execution_candidate must be an "
                 "ExecutionCandidate or None."
+            )
+
+        if (
+            self.execution_order_intent is not None
+            and not isinstance(
+                self.execution_order_intent,
+                ExecutionOrderIntent,
+            )
+        ):
+            raise TypeError(
+                "execution_order_intent must be an "
+                "ExecutionOrderIntent or None."
             )
 
         error_type = self.error_type

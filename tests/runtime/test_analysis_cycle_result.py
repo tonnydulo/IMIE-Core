@@ -10,6 +10,8 @@ from imie.runtime import (
 from imie.models import (
     DecisionResult,
     DirectorDecision,
+    ExecutionCandidate,
+    ExecutionOrderIntent,
     PositionSizeResult,
     TradePlan,
 )
@@ -54,6 +56,38 @@ def make_position_size_result() -> PositionSizeResult:
         position_notional=15_693.60,
         actual_risk=124.80,
         actual_risk_percent=0.4992,
+        valid=True,
+        actionable=True,
+    )
+
+def make_execution_candidate() -> ExecutionCandidate:
+    return ExecutionCandidate(
+        symbol="NVDA",
+        strategy="Pullback-to-Core",
+        direction="long",
+        quantity=156,
+        entry=100.60,
+        stop=99.80,
+        target1=101.40,
+        target2=102.20,
+        position_notional=15_693.60,
+        risk_amount=124.80,
+        valid=True,
+        actionable=True,
+    )
+
+
+def make_execution_order_intent() -> ExecutionOrderIntent:
+    return ExecutionOrderIntent(
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        order_type="limit",
+        entry_price=100.60,
+        stop_price=99.80,
+        target1_price=101.40,
+        target2_price=102.20,
+        time_in_force="day",
         valid=True,
         actionable=True,
     )
@@ -279,4 +313,91 @@ def test_rejects_invalid_position_size_type() -> None:
             message="Cycle completed.",
             decision=make_decision_result(),
             position_size="invalid",  # type: ignore[arg-type]
+        )
+
+def test_completed_cycle_accepts_execution_candidate() -> None:
+    execution_candidate = make_execution_candidate()
+
+    result = AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=make_time(),
+        completed_at=make_time(),
+        message="Cycle completed.",
+        decision=make_decision_result(),
+        execution_candidate=execution_candidate,
+    )
+
+    assert (
+        result.execution_candidate
+        is execution_candidate
+    )
+
+
+def test_rejects_invalid_execution_candidate_type() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "execution_candidate must be an "
+            "ExecutionCandidate or None"
+        ),
+    ):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            decision=make_decision_result(),
+            execution_candidate=(
+                "invalid"  # type: ignore[arg-type]
+            ),
+        )
+
+
+def test_completed_cycle_accepts_execution_order_intent() -> None:
+    execution_order_intent = (
+        make_execution_order_intent()
+    )
+
+    result = AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=make_time(),
+        completed_at=make_time(),
+        message="Cycle completed.",
+        decision=make_decision_result(),
+        execution_order_intent=(
+            execution_order_intent
+        ),
+    )
+
+    assert (
+        result.execution_order_intent
+        is execution_order_intent
+    )
+
+
+def test_rejects_invalid_execution_order_intent_type() -> None:
+    with pytest.raises(
+        TypeError,
+        match=(
+            "execution_order_intent must be an "
+            "ExecutionOrderIntent or None"
+        ),
+    ):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            decision=make_decision_result(),
+            execution_order_intent=(
+                "invalid"  # type: ignore[arg-type]
+            ),
         )

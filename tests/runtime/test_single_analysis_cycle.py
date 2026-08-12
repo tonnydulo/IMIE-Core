@@ -281,6 +281,26 @@ def test_ready_cycle_calculates_position_size() -> None:
     )
     assert result.execution_candidate.valid is True
     assert result.execution_candidate.actionable is True
+    assert result.execution_order_intent is not None
+    assert result.execution_order_intent.symbol == "NVDA"
+    assert result.execution_order_intent.side == "buy"
+    assert result.execution_order_intent.quantity == 156
+    assert result.execution_order_intent.order_type == "limit"
+    assert result.execution_order_intent.entry_price == pytest.approx(
+        100.60
+    )
+    assert result.execution_order_intent.stop_price == pytest.approx(
+        99.80
+    )
+    assert result.execution_order_intent.target1_price == pytest.approx(
+        101.40
+    )
+    assert result.execution_order_intent.target2_price == pytest.approx(
+        102.20
+    )
+    assert result.execution_order_intent.time_in_force == "day"
+    assert result.execution_order_intent.valid is True
+    assert result.execution_order_intent.actionable is True
 
 def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -339,6 +359,7 @@ def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     assert result.decision.actionable is True
     assert result.position_size is None
     assert result.execution_candidate is None
+    assert result.execution_order_intent is None
 
 def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insufficient() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -421,6 +442,10 @@ def test_ready_cycle_preserves_non_actionable_position_size_when_capital_is_insu
     assert result.execution_candidate.quantity == 0
     assert result.execution_candidate.valid is True
     assert result.execution_candidate.actionable is False
+    assert result.execution_order_intent is not None
+    assert result.execution_order_intent.quantity == 0
+    assert result.execution_order_intent.valid is True
+    assert result.execution_order_intent.actionable is False
 
 def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -481,6 +506,7 @@ def test_non_actionable_cycle_does_not_calculate_position_size() -> None:
     assert result.decision.actionable is False
     assert result.position_size is None
     assert result.execution_candidate is None
+    assert result.execution_order_intent is None
 
 
 def test_config_must_be_runtime_config() -> None:
