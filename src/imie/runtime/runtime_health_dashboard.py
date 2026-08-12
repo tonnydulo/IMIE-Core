@@ -1646,6 +1646,151 @@ def build_dashboard_html(
             </ul>
         </article>
 
+                <article class="card">
+            <div class="label">
+                Order Side
+            </div>
+
+            <div
+                id="executionOrderIntentSide"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Quantity
+            </div>
+
+            <div
+                id="executionOrderIntentQuantity"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Type
+            </div>
+
+            <div
+                id="executionOrderIntentOrderType"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Entry
+            </div>
+
+            <div
+                id="executionOrderIntentEntryPrice"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Stop
+            </div>
+
+            <div
+                id="executionOrderIntentStopPrice"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Target 1
+            </div>
+
+            <div
+                id="executionOrderIntentTarget1Price"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Target 2
+            </div>
+
+            <div
+                id="executionOrderIntentTarget2Price"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Time in Force
+            </div>
+
+            <div
+                id="executionOrderIntentTimeInForce"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Valid
+            </div>
+
+            <div
+                id="executionOrderIntentValid"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Order Actionable
+            </div>
+
+            <div
+                id="executionOrderIntentActionable"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">
+                Order Intent Warnings
+            </div>
+
+            <ul
+                id="executionOrderIntentWarnings"
+                class="explanation-list warning-list"
+            >
+                <li class="empty-list">
+                    No order intent warnings.
+                </li>
+            </ul>
+        </article>
+
             <article class="card">
                 <div class="label">
                     Institutional Bias
@@ -4420,6 +4565,83 @@ def build_dashboard_html(
                 "executionCandidateWarnings",
                 payload.execution_candidate_warnings,
                 "No execution warnings."
+            );
+
+            setText(
+                "executionOrderIntentSide",
+                payload.execution_order_intent_side
+                    ?? "—"
+            );
+
+            setText(
+                "executionOrderIntentQuantity",
+                payload.execution_order_intent_quantity
+                    ?? "—"
+            );
+
+            setText(
+                "executionOrderIntentOrderType",
+                payload.execution_order_intent_order_type
+                    ?? "—"
+            );
+
+            setText(
+                "executionOrderIntentEntryPrice",
+                payload.execution_order_intent_entry_price
+                    === null
+                    || payload.execution_order_intent_entry_price
+                    === undefined
+                    ? "—"
+                    : formatTradePrice(
+                        payload.execution_order_intent_entry_price
+                    )
+            );
+
+            setText(
+                "executionOrderIntentStopPrice",
+                formatTradePrice(
+                    payload.execution_order_intent_stop_price
+                )
+            );
+
+            setText(
+                "executionOrderIntentTarget1Price",
+                formatTradePrice(
+                    payload.execution_order_intent_target1_price
+                )
+            );
+
+            setText(
+                "executionOrderIntentTarget2Price",
+                formatTradePrice(
+                    payload.execution_order_intent_target2_price
+                )
+            );
+
+            setText(
+                "executionOrderIntentTimeInForce",
+                payload.execution_order_intent_time_in_force
+                    ?? "—"
+            );
+
+            setText(
+                "executionOrderIntentValid",
+                formatBoolean(
+                    payload.execution_order_intent_valid
+                )
+            );
+
+            setText(
+                "executionOrderIntentActionable",
+                formatBoolean(
+                    payload.execution_order_intent_actionable
+                )
+            );
+
+            updateTextList(
+                "executionOrderIntentWarnings",
+                payload.execution_order_intent_warnings,
+                "No order intent warnings."
             );
 
                 updateInstitutionalDirection(

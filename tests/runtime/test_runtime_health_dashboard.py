@@ -356,6 +356,33 @@ def test_dashboard_html_contains_execution_candidate_fields() -> None:
     assert "payload.execution_candidate_actionable" in html
     assert "payload.execution_candidate_warnings" in html
 
+def test_dashboard_html_contains_execution_order_intent_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="executionOrderIntentSide"' in html
+    assert 'id="executionOrderIntentQuantity"' in html
+    assert 'id="executionOrderIntentOrderType"' in html
+    assert 'id="executionOrderIntentEntryPrice"' in html
+    assert 'id="executionOrderIntentStopPrice"' in html
+    assert 'id="executionOrderIntentTarget1Price"' in html
+    assert 'id="executionOrderIntentTarget2Price"' in html
+    assert 'id="executionOrderIntentTimeInForce"' in html
+    assert 'id="executionOrderIntentValid"' in html
+    assert 'id="executionOrderIntentActionable"' in html
+    assert 'id="executionOrderIntentWarnings"' in html
+
+    assert "payload.execution_order_intent_side" in html
+    assert "payload.execution_order_intent_quantity" in html
+    assert "payload.execution_order_intent_order_type" in html
+    assert "payload.execution_order_intent_entry_price" in html
+    assert "payload.execution_order_intent_stop_price" in html
+    assert "payload.execution_order_intent_target1_price" in html
+    assert "payload.execution_order_intent_target2_price" in html
+    assert "payload.execution_order_intent_time_in_force" in html
+    assert "payload.execution_order_intent_valid" in html
+    assert "payload.execution_order_intent_actionable" in html
+    assert "payload.execution_order_intent_warnings" in html
+
 def test_dashboard_html_contains_trade_plan_formatters() -> None:
     html = build_dashboard_html()
 
