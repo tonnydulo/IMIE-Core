@@ -195,6 +195,19 @@ class RuntimeDashboardStatus:
     position_size_actionable: bool | None = None
     position_size_warnings: tuple[str, ...] = ()
 
+    execution_candidate_strategy: str | None = None
+    execution_candidate_direction: str | None = None
+    execution_candidate_quantity: int | None = None
+    execution_candidate_entry: float | None = None
+    execution_candidate_stop: float | None = None
+    execution_candidate_target1: float | None = None
+    execution_candidate_target2: float | None = None
+    execution_candidate_notional: float | None = None
+    execution_candidate_risk_amount: float | None = None
+    execution_candidate_valid: bool | None = None
+    execution_candidate_actionable: bool | None = None
+    execution_candidate_warnings: tuple[str, ...] = ()
+
     def __post_init__(
         self,
     ) -> None:
@@ -427,6 +440,27 @@ class RuntimeDashboardStatus:
                 field_name,
                 normalized,
             )
+
+        for field_name in (
+            "execution_candidate_valid",
+            "execution_candidate_actionable",
+        ):
+            value = getattr(
+                self,
+                field_name,
+            )
+
+            if (
+                value is not None
+                and not isinstance(
+                    value,
+                    bool,
+                )
+            ):
+                raise TypeError(
+                    f"{field_name} must be "
+                    "a bool or None."
+                )
 
         for field_name in (
             "confluence_agreement_count",
@@ -2818,6 +2852,42 @@ class RuntimeDashboardStatus:
                 ),
                 "position_size_warnings": list(
                     self.position_size_warnings
+                ),
+                "execution_candidate_strategy": (
+                    self.execution_candidate_strategy
+                ),
+                "execution_candidate_direction": (
+                    self.execution_candidate_direction
+                ),
+                "execution_candidate_quantity": (
+                    self.execution_candidate_quantity
+                ),
+                "execution_candidate_entry": (
+                    self.execution_candidate_entry
+                ),
+                "execution_candidate_stop": (
+                    self.execution_candidate_stop
+                ),
+                "execution_candidate_target1": (
+                    self.execution_candidate_target1
+                ),
+                "execution_candidate_target2": (
+                    self.execution_candidate_target2
+                ),
+                "execution_candidate_notional": (
+                    self.execution_candidate_notional
+                ),
+                "execution_candidate_risk_amount": (
+                    self.execution_candidate_risk_amount
+                ),
+                "execution_candidate_valid": (
+                    self.execution_candidate_valid
+                ),
+                "execution_candidate_actionable": (
+                    self.execution_candidate_actionable
+                ),
+                "execution_candidate_warnings": list(
+                    self.execution_candidate_warnings
                 ),
                 "institutional_bias": (
                     self.institutional_bias

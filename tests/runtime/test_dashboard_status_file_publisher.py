@@ -34,12 +34,14 @@ from imie.models import (
     AnalystResult,
     DecisionResult,
     DirectorDecision,
+    ExecutionCandidate,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
     InstitutionalDirection,
     MarketPhase,
     MarketPhaseType,
+    PositionSizeResult,
     SetupLifecycle,
     TradePlan,
 )
@@ -350,6 +352,49 @@ def make_trade_plan() -> TradePlan:
         ),
     )
 
+def make_position_size() -> PositionSizeResult:
+    return PositionSizeResult(
+        symbol="NVDA",
+        direction="long",
+        account_equity=25_000.0,
+        risk_percent=0.50,
+        risk_budget=125.0,
+        entry=500.0,
+        stop=499.0,
+        risk_per_share=1.0,
+        quantity=125,
+        position_notional=62_500.0,
+        actual_risk=125.0,
+        actual_risk_percent=0.50,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Position size calculated from account risk budget.",
+        ),
+        warnings=(),
+    )
+
+
+def make_execution_candidate() -> ExecutionCandidate:
+    return ExecutionCandidate(
+        symbol="NVDA",
+        strategy="PULLBACK_TO_CORE",
+        direction="long",
+        quantity=125,
+        entry=500.0,
+        stop=499.0,
+        target1=501.0,
+        target2=502.0,
+        position_notional=62_500.0,
+        risk_amount=125.0,
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Trade plan and position size are approved.",
+        ),
+        warnings=(),
+    )
+
 def make_completed_result() -> AnalysisCycleResult:
     return AnalysisCycleResult(
         status=AnalysisCycleStatus.COMPLETED,
@@ -393,6 +438,39 @@ def make_completed_result_with_trade_plan() -> (
                     trade_plan
                 )
             ),
+        ),
+    )
+
+def make_completed_result_with_execution_candidate() -> (
+    AnalysisCycleResult
+):
+    trade_plan = make_trade_plan()
+
+    return AnalysisCycleResult(
+        status=AnalysisCycleStatus.COMPLETED,
+        symbol="NVDA",
+        timeframe="2m",
+        started_at=NOW,
+        completed_at=(
+            NOW
+            + timedelta(
+                seconds=2
+            )
+        ),
+        message="Analysis cycle completed.",
+        market_session=make_market_session(),
+        decision=make_decision(
+            decision=DirectorDecision.READY,
+            trade_plan=trade_plan,
+            institutional_context=(
+                make_institutional_context(
+                    trade_plan
+                )
+            ),
+        ),
+        position_size=make_position_size(),
+        execution_candidate=(
+            make_execution_candidate()
         ),
     )
 
@@ -1617,6 +1695,83 @@ def test_publish_result_populates_trade_plan_details(
     assert (
         payload["analyst_enabled_unresolved_count"]
         == 0
+    )
+
+def test_publish_result_populates_execution_candidate_details(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        make_completed_result_with_execution_candidate()
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert (
+        payload["execution_candidate_strategy"]
+        == "PULLBACK_TO_CORE"
+    )
+    assert (
+        payload["execution_candidate_direction"]
+        == "long"
+    )
+    assert (
+        payload["execution_candidate_quantity"]
+        == 125
+    )
+    assert (
+        payload["execution_candidate_entry"]
+        == 500.0
+    )
+    assert (
+        payload["execution_candidate_stop"]
+        == 499.0
+    )
+    assert (
+        payload["execution_candidate_target1"]
+        == 501.0
+    )
+    assert (
+        payload["execution_candidate_target2"]
+        == 502.0
+    )
+    assert (
+        payload["execution_candidate_notional"]
+        == 62_500.0
+    )
+    assert (
+        payload["execution_candidate_risk_amount"]
+        == 125.0
+    )
+    assert (
+        payload["execution_candidate_valid"]
+        is True
+    )
+    assert (
+        payload["execution_candidate_actionable"]
+        is True
+    )
+    assert (
+        payload["execution_candidate_warnings"]
+        == []
     )
 
 

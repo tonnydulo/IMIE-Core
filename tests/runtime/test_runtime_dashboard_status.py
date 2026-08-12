@@ -865,6 +865,89 @@ def test_market_phase_domain_lists_are_normalized() -> None:
         )
     )
 
+def test_to_dict_includes_execution_candidate_fields() -> None:
+    status = RuntimeDashboardStatus(
+        health=make_health(),
+        symbol="NVDA",
+        timeframe="2m",
+        latest_cycle_status=(
+            AnalysisCycleStatus.COMPLETED
+        ),
+        latest_cycle_message=(
+            "Analysis cycle completed."
+        ),
+        latest_cycle_started_at=NOW,
+        latest_cycle_completed_at=NOW,
+        market_session="REGULAR",
+        latest_decision="READY",
+        latest_error_type=None,
+        execution_candidate_strategy=(
+            "PULLBACK_TO_CORE"
+        ),
+        execution_candidate_direction="long",
+        execution_candidate_quantity=125,
+        execution_candidate_entry=500.0,
+        execution_candidate_stop=499.0,
+        execution_candidate_target1=501.0,
+        execution_candidate_target2=502.0,
+        execution_candidate_notional=62_500.0,
+        execution_candidate_risk_amount=125.0,
+        execution_candidate_valid=True,
+        execution_candidate_actionable=True,
+        execution_candidate_warnings=(),
+    )
+
+    payload = status.to_dict()
+
+    assert (
+        payload["execution_candidate_strategy"]
+        == "PULLBACK_TO_CORE"
+    )
+    assert (
+        payload["execution_candidate_direction"]
+        == "long"
+    )
+    assert (
+        payload["execution_candidate_quantity"]
+        == 125
+    )
+    assert (
+        payload["execution_candidate_entry"]
+        == 500.0
+    )
+    assert (
+        payload["execution_candidate_stop"]
+        == 499.0
+    )
+    assert (
+        payload["execution_candidate_target1"]
+        == 501.0
+    )
+    assert (
+        payload["execution_candidate_target2"]
+        == 502.0
+    )
+    assert (
+        payload["execution_candidate_notional"]
+        == 62_500.0
+    )
+    assert (
+        payload["execution_candidate_risk_amount"]
+        == 125.0
+    )
+    assert (
+        payload["execution_candidate_valid"]
+        is True
+    )
+    assert (
+        payload["execution_candidate_actionable"]
+        is True
+    )
+    assert (
+        payload["execution_candidate_warnings"]
+        == []
+    )
+
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(
         institutional_bias_strength=80.0,

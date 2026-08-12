@@ -1273,6 +1273,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        execution_candidate = (
+            cycle.execution_candidate
+            if cycle is not None
+            else None
+        )
+
         analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
@@ -1459,6 +1465,23 @@ class DashboardStatusFilePublisher:
         )
 
         (
+            execution_candidate_strategy,
+            execution_candidate_direction,
+            execution_candidate_quantity,
+            execution_candidate_entry,
+            execution_candidate_stop,
+            execution_candidate_target1,
+            execution_candidate_target2,
+            execution_candidate_notional,
+            execution_candidate_risk_amount,
+            execution_candidate_valid,
+            execution_candidate_actionable,
+            execution_candidate_warnings,
+        ) = _execution_candidate_dashboard_values(
+            execution_candidate
+        )
+
+        (
             decision_confidence,
             decision_actionable,
             decision_recommendation,
@@ -1622,6 +1645,43 @@ class DashboardStatusFilePublisher:
             position_size_risk_percent=position_size_risk_percent,
             position_size_actionable=position_size_actionable,
             position_size_warnings=position_size_warnings,
+
+            execution_candidate_strategy=(
+                execution_candidate_strategy
+            ),
+            execution_candidate_direction=(
+                execution_candidate_direction
+            ),
+            execution_candidate_quantity=(
+                execution_candidate_quantity
+            ),
+            execution_candidate_entry=(
+                execution_candidate_entry
+            ),
+            execution_candidate_stop=(
+                execution_candidate_stop
+            ),
+            execution_candidate_target1=(
+                execution_candidate_target1
+            ),
+            execution_candidate_target2=(
+                execution_candidate_target2
+            ),
+            execution_candidate_notional=(
+                execution_candidate_notional
+            ),
+            execution_candidate_risk_amount=(
+                execution_candidate_risk_amount
+            ),
+            execution_candidate_valid=(
+                execution_candidate_valid
+            ),
+            execution_candidate_actionable=(
+                execution_candidate_actionable
+            ),
+            execution_candidate_warnings=(
+                execution_candidate_warnings
+            ),
 
             decision_confidence=decision_confidence,
             decision_actionable=decision_actionable,
@@ -2708,6 +2768,55 @@ def _position_size_dashboard_values(
         position_size.risk_percent,
         position_size.actionable,
         tuple(position_size.warnings),
+    )
+
+def _execution_candidate_dashboard_values(
+    execution_candidate: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+]:
+    if execution_candidate is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+        )
+
+    return (
+        execution_candidate.strategy,
+        execution_candidate.direction,
+        execution_candidate.quantity,
+        execution_candidate.entry,
+        execution_candidate.stop,
+        execution_candidate.target1,
+        execution_candidate.target2,
+        execution_candidate.position_notional,
+        execution_candidate.risk_amount,
+        execution_candidate.valid,
+        execution_candidate.actionable,
+        tuple(
+            execution_candidate.warnings
+        ),
     )
 
 def _decision_result_dashboard_values(
