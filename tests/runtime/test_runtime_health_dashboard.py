@@ -327,6 +327,35 @@ def test_dashboard_html_contains_trade_plan_fields() -> None:
     assert "payload.position_size_actionable" in html
     assert "payload.position_size_warnings" in html
 
+def test_dashboard_html_contains_execution_candidate_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="executionCandidateStrategy"' in html
+    assert 'id="executionCandidateDirection"' in html
+    assert 'id="executionCandidateQuantity"' in html
+    assert 'id="executionCandidateEntry"' in html
+    assert 'id="executionCandidateStop"' in html
+    assert 'id="executionCandidateTarget1"' in html
+    assert 'id="executionCandidateTarget2"' in html
+    assert 'id="executionCandidateNotional"' in html
+    assert 'id="executionCandidateRiskAmount"' in html
+    assert 'id="executionCandidateValid"' in html
+    assert 'id="executionCandidateActionable"' in html
+    assert 'id="executionCandidateWarnings"' in html
+
+    assert "payload.execution_candidate_strategy" in html
+    assert "payload.execution_candidate_direction" in html
+    assert "payload.execution_candidate_quantity" in html
+    assert "payload.execution_candidate_entry" in html
+    assert "payload.execution_candidate_stop" in html
+    assert "payload.execution_candidate_target1" in html
+    assert "payload.execution_candidate_target2" in html
+    assert "payload.execution_candidate_notional" in html
+    assert "payload.execution_candidate_risk_amount" in html
+    assert "payload.execution_candidate_valid" in html
+    assert "payload.execution_candidate_actionable" in html
+    assert "payload.execution_candidate_warnings" in html
+
 def test_dashboard_html_contains_trade_plan_formatters() -> None:
     html = build_dashboard_html()
 

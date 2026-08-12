@@ -1488,6 +1488,164 @@ def build_dashboard_html(
             </ul>
         </article>
 
+        <article class="card">
+            <div class="label">
+                Execution Strategy
+            </div>
+
+            <div
+                id="executionCandidateStrategy"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Direction
+            </div>
+
+            <div
+                id="executionCandidateDirection"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Quantity
+            </div>
+
+            <div
+                id="executionCandidateQuantity"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Entry
+            </div>
+
+            <div
+                id="executionCandidateEntry"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Stop
+            </div>
+
+            <div
+                id="executionCandidateStop"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Target 1
+            </div>
+
+            <div
+                id="executionCandidateTarget1"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Target 2
+            </div>
+
+            <div
+                id="executionCandidateTarget2"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Notional
+            </div>
+
+            <div
+                id="executionCandidateNotional"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Risk
+            </div>
+
+            <div
+                id="executionCandidateRiskAmount"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Valid
+            </div>
+
+            <div
+                id="executionCandidateValid"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Execution Actionable
+            </div>
+
+            <div
+                id="executionCandidateActionable"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">
+                Execution Warnings
+            </div>
+
+            <ul
+                id="executionCandidateWarnings"
+                class="explanation-list warning-list"
+            >
+                <li class="empty-list">
+                    No execution warnings.
+                </li>
+            </ul>
+        </article>
+
             <article class="card">
                 <div class="label">
                     Institutional Bias
@@ -4172,6 +4330,96 @@ def build_dashboard_html(
                 "positionSizeWarnings",
                 payload.position_size_warnings,
                 "No sizing warnings."
+            );
+
+            setText(
+                "executionCandidateStrategy",
+                payload.execution_candidate_strategy
+                    ?? "—"
+            );
+
+            setText(
+                "executionCandidateDirection",
+                payload.execution_candidate_direction
+                    ?? "—"
+            );
+
+            setText(
+                "executionCandidateQuantity",
+                payload.execution_candidate_quantity
+                    ?? "—"
+            );
+
+            setText(
+                "executionCandidateEntry",
+                formatTradePrice(
+                    payload.execution_candidate_entry
+                )
+            );
+
+            setText(
+                "executionCandidateStop",
+                formatTradePrice(
+                    payload.execution_candidate_stop
+                )
+            );
+
+            setText(
+                "executionCandidateTarget1",
+                formatTradePrice(
+                    payload.execution_candidate_target1
+                )
+            );
+
+            setText(
+                "executionCandidateTarget2",
+                formatTradePrice(
+                    payload.execution_candidate_target2
+                )
+            );
+
+            setText(
+                "executionCandidateNotional",
+                payload.execution_candidate_notional
+                    === null
+                    || payload.execution_candidate_notional
+                    === undefined
+                    ? "—"
+                    : `$${{Number(
+                        payload.execution_candidate_notional
+                    ).toFixed(2)}}`
+            );
+
+            setText(
+                "executionCandidateRiskAmount",
+                payload.execution_candidate_risk_amount
+                    === null
+                    || payload.execution_candidate_risk_amount
+                    === undefined
+                    ? "—"
+                    : `$${{Number(
+                        payload.execution_candidate_risk_amount
+                    ).toFixed(2)}}`
+            );
+
+            setText(
+                "executionCandidateValid",
+                formatBoolean(
+                    payload.execution_candidate_valid
+                )
+            );
+
+            setText(
+                "executionCandidateActionable",
+                formatBoolean(
+                    payload.execution_candidate_actionable
+                )
+            );
+
+            updateTextList(
+                "executionCandidateWarnings",
+                payload.execution_candidate_warnings,
+                "No execution warnings."
             );
 
                 updateInstitutionalDirection(
