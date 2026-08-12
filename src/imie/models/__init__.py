@@ -93,6 +93,9 @@ from imie.models.position_size_result import (
     PositionSizeResult,
 )
 from imie.models.execution_candidate import ExecutionCandidate
+from imie.models.execution_order_intent import (
+    ExecutionOrderIntent,
+)
 
 __all__ = [
     "AcceptanceResult",
@@ -158,4 +161,5 @@ __all__ = [
     "ParticipationAnalysis",
     "ValueAnalysis",
     "ExecutionCandidate",
+    "ExecutionOrderIntent",
 ]
