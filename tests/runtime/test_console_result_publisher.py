@@ -8,6 +8,7 @@ from imie.models import (
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
+    ExecutionOrderIntent,
     PositionSizeResult,
 )
 from imie.runtime import (
@@ -105,6 +106,25 @@ def make_position_size() -> PositionSizeResult:
         warnings=(),
     )
 
+def make_execution_order_intent() -> ExecutionOrderIntent:
+    return ExecutionOrderIntent(
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        order_type="limit",
+        entry_price=100.60,
+        stop_price=99.80,
+        target1_price=101.40,
+        target2_price=102.20,
+        time_in_force="day",
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Execution candidate converted to order intent.",
+        ),
+        warnings=(),
+    )
+
 def make_execution_candidate() -> ExecutionCandidate:
     return ExecutionCandidate(
         symbol="NVDA",
@@ -153,6 +173,9 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         execution_candidate=(
             make_execution_candidate()
         ),
+        execution_order_intent=(
+            make_execution_order_intent()
+        ),
     )
 
 def test_sized_completed_result_includes_execution_candidate() -> None:
@@ -186,6 +209,18 @@ def test_sized_completed_result_includes_execution_candidate() -> None:
     assert "Risk Amount  : $124.80" in lines
     assert "Exec Valid   : True" in lines
     assert "Exec Actionable: True" in lines
+
+    assert "Execution Order Intent :" in lines
+    assert "Side         : buy" in lines
+    assert "Quantity     : 156" in lines
+    assert "Order Type   : limit" in lines
+    assert "Entry Price  : $100.60" in lines
+    assert "Stop Price   : $99.80" in lines
+    assert "Target 1     : $101.40" in lines
+    assert "Target 2     : $102.20" in lines
+    assert "Time in Force: day" in lines
+    assert "Order Valid  : True" in lines
+    assert "Order Actionable: True" in lines
 
 def test_publisher_can_be_created() -> None:
     lines: list[str] = []
@@ -266,6 +301,7 @@ def test_completed_result_includes_decision() -> None:
 
     assert "Position Size :" not in lines
     assert "Execution Candidate :" not in lines
+    assert "Execution Order Intent :" not in lines
 
 
 def test_publish_sends_every_line_to_output() -> None:

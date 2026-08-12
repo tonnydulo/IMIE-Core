@@ -135,6 +135,7 @@ class JsonResultPublisher:
             "decision": None,
             "position_size": None,
             "execution_candidate": None,
+            "execution_order_intent": None,
         }
 
         if result.completed_bar is not None:
@@ -359,6 +360,49 @@ class JsonResultPublisher:
                 ),
                 "warnings": list(
                     result.execution_candidate.warnings
+                ),
+            }
+
+        if result.execution_order_intent is not None:
+            payload["execution_order_intent"] = {
+                "symbol": (
+                    result.execution_order_intent.symbol
+                ),
+                "side": (
+                    result.execution_order_intent.side
+                ),
+                "quantity": (
+                    result.execution_order_intent.quantity
+                ),
+                "order_type": (
+                    result.execution_order_intent.order_type
+                ),
+                "entry_price": (
+                    result.execution_order_intent.entry_price
+                ),
+                "stop_price": (
+                    result.execution_order_intent.stop_price
+                ),
+                "target1_price": (
+                    result.execution_order_intent.target1_price
+                ),
+                "target2_price": (
+                    result.execution_order_intent.target2_price
+                ),
+                "time_in_force": (
+                    result.execution_order_intent.time_in_force
+                ),
+                "valid": (
+                    result.execution_order_intent.valid
+                ),
+                "actionable": (
+                    result.execution_order_intent.actionable
+                ),
+                "reasons": list(
+                    result.execution_order_intent.reasons
+                ),
+                "warnings": list(
+                    result.execution_order_intent.warnings
                 ),
             }
 

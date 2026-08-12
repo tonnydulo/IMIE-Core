@@ -8,6 +8,7 @@ from imie.models import (
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
+    ExecutionOrderIntent,
     PositionSizeResult,
 )
 from imie.runtime import (
@@ -108,6 +109,9 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         execution_candidate=(
             make_execution_candidate()
         ),
+        execution_order_intent=(
+            make_execution_order_intent()
+        ),
     )
 
 def make_position_size() -> PositionSizeResult:
@@ -148,6 +152,25 @@ def make_execution_candidate() -> ExecutionCandidate:
         actionable=True,
         reasons=(
             "Trade plan and position size are approved.",
+        ),
+        warnings=(),
+    )
+
+def make_execution_order_intent() -> ExecutionOrderIntent:
+    return ExecutionOrderIntent(
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        order_type="limit",
+        entry_price=100.60,
+        stop_price=99.80,
+        target1_price=101.40,
+        target2_price=102.20,
+        time_in_force="day",
+        valid=True,
+        actionable=True,
+        reasons=(
+            "Execution candidate converted to order intent.",
         ),
         warnings=(),
     )
@@ -304,6 +327,7 @@ def test_completed_result_converts_to_dict() -> None:
         is False
     )
     assert payload["execution_candidate"] is None
+    assert payload["execution_order_intent"] is None
 
 
 def test_failed_result_converts_to_dict() -> None:
@@ -322,6 +346,7 @@ def test_failed_result_converts_to_dict() -> None:
     assert payload["decision"] is None
     assert payload["position_size"] is None
     assert payload["execution_candidate"] is None
+    assert payload["execution_order_intent"] is None
 
 
 def test_dumps_returns_valid_json() -> None:
@@ -467,3 +492,30 @@ def test_position_size_converts_to_dict() -> None:
         "Trade plan and position size are approved.",
     ]
     assert execution_candidate["warnings"] == []
+
+def test_execution_order_intent_converts_to_dict() -> None:
+    publisher = JsonResultPublisher(
+        output=lambda value: None,
+    )
+
+    payload = publisher.to_dict(
+        make_sized_completed_result()
+    )
+
+    assert payload["execution_order_intent"] == {
+        "symbol": "NVDA",
+        "side": "buy",
+        "quantity": 156,
+        "order_type": "limit",
+        "entry_price": 100.60,
+        "stop_price": 99.80,
+        "target1_price": 101.40,
+        "target2_price": 102.20,
+        "time_in_force": "day",
+        "valid": True,
+        "actionable": True,
+        "reasons": [
+            "Execution candidate converted to order intent.",
+        ],
+        "warnings": [],
+    }

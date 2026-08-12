@@ -314,6 +314,76 @@ class ConsoleResultPublisher:
                     in execution_candidate.warnings
                 )
 
+        if result.execution_order_intent is not None:
+            execution_order_intent = (
+                result.execution_order_intent
+            )
+
+            entry_price = (
+                "market"
+                if execution_order_intent.entry_price is None
+                else (
+                    f"${execution_order_intent.entry_price:.2f}"
+                )
+            )
+
+            lines.extend(
+                [
+                    "Execution Order Intent :",
+                    (
+                        "Side         : "
+                        f"{execution_order_intent.side}"
+                    ),
+                    (
+                        "Quantity     : "
+                        f"{execution_order_intent.quantity}"
+                    ),
+                    (
+                        "Order Type   : "
+                        f"{execution_order_intent.order_type}"
+                    ),
+                    (
+                        "Entry Price  : "
+                        f"{entry_price}"
+                    ),
+                    (
+                        "Stop Price   : "
+                        f"${execution_order_intent.stop_price:.2f}"
+                    ),
+                    (
+                        "Target 1     : "
+                        f"${execution_order_intent.target1_price:.2f}"
+                    ),
+                    (
+                        "Target 2     : "
+                        f"${execution_order_intent.target2_price:.2f}"
+                    ),
+                    (
+                        "Time in Force: "
+                        f"{execution_order_intent.time_in_force}"
+                    ),
+                    (
+                        "Order Valid  : "
+                        f"{execution_order_intent.valid}"
+                    ),
+                    (
+                        "Order Actionable: "
+                        f"{execution_order_intent.actionable}"
+                    ),
+                ]
+            )
+
+            if execution_order_intent.warnings:
+                lines.append(
+                    "Order Intent Warnings:"
+                )
+
+                lines.extend(
+                    f" - {warning}"
+                    for warning
+                    in execution_order_intent.warnings
+                )
+
         if (
             result.status
             is AnalysisCycleStatus.FAILED
