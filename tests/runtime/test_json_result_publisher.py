@@ -10,6 +10,7 @@ from imie.models import (
     ExecutionCandidate,
     ExecutionOrderIntent,
     PositionSizeResult,
+    BrokerSubmissionResult,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -112,6 +113,9 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         execution_order_intent=(
             make_execution_order_intent()
         ),
+        broker_submission_result=(
+            make_broker_submission_result()
+        ),
     )
 
 def make_position_size() -> PositionSizeResult:
@@ -172,6 +176,19 @@ def make_execution_order_intent() -> ExecutionOrderIntent:
         reasons=(
             "Execution candidate converted to order intent.",
         ),
+        warnings=(),
+    )
+
+def make_broker_submission_result() -> BrokerSubmissionResult:
+    return BrokerSubmissionResult(
+        broker="mock",
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        accepted=True,
+        broker_order_id="mock-nvda-000001",
+        status="accepted",
+        message="Mock order accepted.",
         warnings=(),
     )
 
@@ -347,6 +364,7 @@ def test_failed_result_converts_to_dict() -> None:
     assert payload["position_size"] is None
     assert payload["execution_candidate"] is None
     assert payload["execution_order_intent"] is None
+    assert payload["broker_submission_result"] is None
 
 
 def test_dumps_returns_valid_json() -> None:
@@ -517,5 +535,26 @@ def test_execution_order_intent_converts_to_dict() -> None:
         "reasons": [
             "Execution candidate converted to order intent.",
         ],
+        "warnings": [],
+    }
+
+def test_broker_submission_result_converts_to_dict() -> None:
+    publisher = JsonResultPublisher(
+        output=lambda value: None,
+    )
+
+    payload = publisher.to_dict(
+        make_sized_completed_result()
+    )
+
+    assert payload["broker_submission_result"] == {
+        "broker": "mock",
+        "symbol": "NVDA",
+        "side": "buy",
+        "quantity": 156,
+        "accepted": True,
+        "broker_order_id": "mock-nvda-000001",
+        "status": "accepted",
+        "message": "Mock order accepted.",
         "warnings": [],
     }

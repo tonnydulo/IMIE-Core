@@ -10,6 +10,7 @@ from imie.models import (
     ExecutionCandidate,
     ExecutionOrderIntent,
     PositionSizeResult,
+    BrokerSubmissionResult,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -145,6 +146,19 @@ def make_execution_candidate() -> ExecutionCandidate:
         warnings=(),
     )
 
+def make_broker_submission_result() -> BrokerSubmissionResult:
+    return BrokerSubmissionResult(
+        broker="mock",
+        symbol="NVDA",
+        side="buy",
+        quantity=156,
+        accepted=True,
+        broker_order_id="mock-nvda-000001",
+        status="accepted",
+        message="Mock order accepted.",
+        warnings=(),
+    )
+
 def make_sized_completed_result() -> AnalysisCycleResult:
     decision = DecisionResult(
         decision=DirectorDecision.PREPARE,
@@ -175,6 +189,9 @@ def make_sized_completed_result() -> AnalysisCycleResult:
         ),
         execution_order_intent=(
             make_execution_order_intent()
+        ),
+        broker_submission_result=(
+            make_broker_submission_result()
         ),
     )
 
@@ -221,6 +238,16 @@ def test_sized_completed_result_includes_execution_candidate() -> None:
     assert "Time in Force: day" in lines
     assert "Order Valid  : True" in lines
     assert "Order Actionable: True" in lines
+
+    assert "Broker Submission Result :" in lines
+    assert "Broker       : mock" in lines
+    assert "Symbol       : NVDA" in lines
+    assert "Side         : buy" in lines
+    assert "Quantity     : 156" in lines
+    assert "Accepted     : True" in lines
+    assert "Broker Order : mock-nvda-000001" in lines
+    assert "Status       : accepted" in lines
+    assert "Message      : Mock order accepted." in lines
 
 def test_publisher_can_be_created() -> None:
     lines: list[str] = []
@@ -302,6 +329,7 @@ def test_completed_result_includes_decision() -> None:
     assert "Position Size :" not in lines
     assert "Execution Candidate :" not in lines
     assert "Execution Order Intent :" not in lines
+    assert "Broker Submission Result :" not in lines
 
 
 def test_publish_sends_every_line_to_output() -> None:

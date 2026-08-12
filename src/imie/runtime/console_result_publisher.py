@@ -384,6 +384,60 @@ class ConsoleResultPublisher:
                     in execution_order_intent.warnings
                 )
 
+        if result.broker_submission_result is not None:
+            broker_submission_result = (
+                result.broker_submission_result
+            )
+
+            lines.extend(
+                [
+                    "Broker Submission Result :",
+                    (
+                        "Broker       : "
+                        f"{broker_submission_result.broker}"
+                    ),
+                    (
+                        "Symbol       : "
+                        f"{broker_submission_result.symbol}"
+                    ),
+                    (
+                        "Side         : "
+                        f"{broker_submission_result.side}"
+                    ),
+                    (
+                        "Quantity     : "
+                        f"{broker_submission_result.quantity}"
+                    ),
+                    (
+                        "Accepted     : "
+                        f"{broker_submission_result.accepted}"
+                    ),
+                    (
+                        "Broker Order : "
+                        f"{broker_submission_result.broker_order_id or '—'}"
+                    ),
+                    (
+                        "Status       : "
+                        f"{broker_submission_result.status}"
+                    ),
+                    (
+                        "Message      : "
+                        f"{broker_submission_result.message}"
+                    ),
+                ]
+            )
+
+            if broker_submission_result.warnings:
+                lines.append(
+                    "Broker Submission Warnings:"
+                )
+
+                lines.extend(
+                    f" - {warning}"
+                    for warning
+                    in broker_submission_result.warnings
+                )
+
         if (
             result.status
             is AnalysisCycleStatus.FAILED

@@ -136,6 +136,7 @@ class JsonResultPublisher:
             "position_size": None,
             "execution_candidate": None,
             "execution_order_intent": None,
+            "broker_submission_result": None,
         }
 
         if result.completed_bar is not None:
@@ -403,6 +404,37 @@ class JsonResultPublisher:
                 ),
                 "warnings": list(
                     result.execution_order_intent.warnings
+                ),
+            }
+
+        if result.broker_submission_result is not None:
+            payload["broker_submission_result"] = {
+                "broker": (
+                    result.broker_submission_result.broker
+                ),
+                "symbol": (
+                    result.broker_submission_result.symbol
+                ),
+                "side": (
+                    result.broker_submission_result.side
+                ),
+                "quantity": (
+                    result.broker_submission_result.quantity
+                ),
+                "accepted": (
+                    result.broker_submission_result.accepted
+                ),
+                "broker_order_id": (
+                    result.broker_submission_result.broker_order_id
+                ),
+                "status": (
+                    result.broker_submission_result.status
+                ),
+                "message": (
+                    result.broker_submission_result.message
+                ),
+                "warnings": list(
+                    result.broker_submission_result.warnings
                 ),
             }
 
