@@ -101,6 +101,12 @@ from imie.models.protective_coverage_assessment import (
 from imie.models.existing_position_protection_plan import (
     ExistingPositionProtectionPlan,
 )
+from imie.models.existing_position_protection_submission import (
+    ExistingPositionProtectionSubmission,
+)
+from imie.models.existing_position_protection_result import (
+    ExistingPositionProtectionResult,
+)
 from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
@@ -201,6 +207,8 @@ __all__ = [
     "ProtectiveCoverageStatus",
     "ProtectiveCoverageAssessment",
     "ExistingPositionProtectionPlan",
+    "ExistingPositionProtectionSubmission",
+    "ExistingPositionProtectionResult",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "ExecutionReconciliationResult",
