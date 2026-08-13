@@ -83,6 +83,9 @@ from imie.execution.position_protection_reconciliation_service import (
 from imie.execution.position_protection_reconciliation_store import (
     PositionProtectionReconciliationStore,
 )
+from imie.execution.position_protection_reconciliation_history_service import (
+    PositionProtectionReconciliationHistoryService,
+)
 from imie.execution.json_file_position_protection_reconciliation_store import (
     JsonFilePositionProtectionReconciliationStore,
 )
@@ -125,6 +128,7 @@ __all__ = [
     "PositionProtectionReconciliationEngine",
     "PositionProtectionReconciliationService",
     "PositionProtectionReconciliationStore",
+    "PositionProtectionReconciliationHistoryService",
     "JsonFilePositionProtectionReconciliationStore",
     "JsonFilePositionStateStore",
 ]
