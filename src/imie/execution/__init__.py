@@ -40,6 +40,12 @@ from imie.execution.json_reconciliation_result_publisher import (
 from imie.execution.position_state_engine import PositionStateEngine
 from imie.execution.position_state_store import PositionStateStore
 from imie.execution.position_protection_store import PositionProtectionStore
+from imie.execution.position_protection_attempt_store import (
+    PositionProtectionAttemptStore,
+)
+from imie.execution.json_file_position_protection_attempt_store import (
+    JsonFilePositionProtectionAttemptStore,
+)
 from imie.execution.json_file_position_protection_store import (
     JsonFilePositionProtectionStore,
 )
@@ -89,6 +95,8 @@ __all__ = [
     "PositionStateEngine",
     "PositionStateStore",
     "PositionProtectionStore",
+    "PositionProtectionAttemptStore",
+    "JsonFilePositionProtectionAttemptStore",
     "JsonFilePositionProtectionStore",
     "PositionReconciliationService",
     "ProtectiveCoverageEngine",
