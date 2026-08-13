@@ -93,6 +93,9 @@ from imie.execution.position_protection_monitoring_service import (
     PositionProtectionMonitoringService,
 )
 from imie.execution.execution_safety_engine import ExecutionSafetyEngine
+from imie.execution.execution_safety_submission_service import (
+    ExecutionSafetySubmissionService,
+)
 from imie.execution.json_file_position_protection_reconciliation_store import (
     JsonFilePositionProtectionReconciliationStore,
 )
@@ -139,6 +142,7 @@ __all__ = [
     "PositionProtectionMonitoringEngine",
     "PositionProtectionMonitoringService",
     "ExecutionSafetyEngine",
+    "ExecutionSafetySubmissionService",
     "JsonFilePositionProtectionReconciliationStore",
     "JsonFilePositionStateStore",
 ]

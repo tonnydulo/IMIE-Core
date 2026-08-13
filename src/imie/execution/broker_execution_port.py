@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from imie.models import (
     BrokerSubmissionResult,
@@ -8,6 +8,7 @@ from imie.models import (
 )
 
 
+@runtime_checkable
 class BrokerExecutionPort(Protocol):
     def submit_order(
         self,
