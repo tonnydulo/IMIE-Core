@@ -12,6 +12,7 @@ from imie.execution.protected_execution_plan_builder import (
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
+    "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
@@ -25,6 +26,13 @@ def __getattr__(name: str) -> Any:
         )
 
         return AlpacaPaperExecutionAdapter
+
+    if name == "AlpacaProtectedOrderRequestBuilder":
+        from imie.execution.alpaca_protected_order_request_builder import (
+            AlpacaProtectedOrderRequestBuilder,
+        )
+
+        return AlpacaProtectedOrderRequestBuilder
 
     raise AttributeError(
         f"module {__name__!r} has no attribute {name!r}"
