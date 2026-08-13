@@ -111,6 +111,7 @@ def _build_broker_execution_port(
 def _build_protected_execution_port(
     *,
     execution_mode: str,
+    paper_execution_confirmed: bool,
     settings: AppSettings,
 ) -> ProtectedExecutionPort | None:
     if execution_mode in {
@@ -123,6 +124,12 @@ def _build_protected_execution_port(
         raise ValueError(
             "Unsupported execution mode: "
             f"{execution_mode}."
+        )
+
+    if paper_execution_confirmed is not True:
+        raise ValueError(
+            "alpaca-paper execution requires explicit "
+            "--confirm-paper-execution."
         )
 
     if settings.alpaca_paper is not True:
@@ -276,6 +283,9 @@ class RuntimeApplicationFactory:
         protected_execution_port = (
             _build_protected_execution_port(
                 execution_mode=runtime_config.execution_mode,
+                paper_execution_confirmed=(
+                    runtime_config.paper_execution_confirmed
+                ),
                 settings=settings,
             )
         )
@@ -640,6 +650,9 @@ class RuntimeApplicationFactory:
             protected_execution_port=(
                 _build_protected_execution_port(
                     execution_mode=runtime_config.execution_mode,
+                    paper_execution_confirmed=(
+                        runtime_config.paper_execution_confirmed
+                    ),
                     settings=settings,
                 )
             ),

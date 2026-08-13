@@ -206,6 +206,7 @@ def test_factory_injects_protected_alpaca_paper_port(
         ),
         config=RuntimeConfig(
             execution_mode="alpaca-paper",
+            paper_execution_confirmed=True,
         ),
         history_file=tmp_path / "cycles.jsonl",
     )
@@ -215,6 +216,27 @@ def test_factory_injects_protected_alpaca_paper_port(
         application.cycle.protected_execution_port,
         AlpacaPaperExecutionAdapter,
     )
+
+
+def test_factory_rejects_unconfirmed_alpaca_paper_mode(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="--confirm-paper-execution",
+    ):
+        RuntimeApplicationFactory.create(
+            settings=AppSettings(
+                default_provider="mock",
+                alpaca_api_key="paper-key",
+                alpaca_secret_key="paper-secret",
+                alpaca_paper=True,
+            ),
+            config=RuntimeConfig(
+                execution_mode="alpaca-paper",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
 
 
 def test_factory_rejects_alpaca_paper_mode_when_paper_is_false(
@@ -233,6 +255,7 @@ def test_factory_rejects_alpaca_paper_mode_when_paper_is_false(
             ),
             config=RuntimeConfig(
                 execution_mode="alpaca-paper",
+                paper_execution_confirmed=True,
             ),
             history_file=tmp_path / "cycles.jsonl",
         )
@@ -264,6 +287,7 @@ def test_factory_rejects_alpaca_paper_mode_without_credentials(
             ),
             config=RuntimeConfig(
                 execution_mode="alpaca-paper",
+                paper_execution_confirmed=True,
             ),
             history_file=tmp_path / "cycles.jsonl",
         )
@@ -856,6 +880,7 @@ def test_multi_symbol_factory_injects_shared_alpaca_paper_port() -> None:
             ),
             config=RuntimeConfig(
                 execution_mode="alpaca-paper",
+                paper_execution_confirmed=True,
             ),
         )
     )

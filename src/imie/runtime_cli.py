@@ -128,6 +128,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--confirm-paper-execution",
+        action="store_true",
+        help=(
+            "Explicitly arm Alpaca paper-order submission. "
+            "Required with --execution-mode alpaca-paper."
+        ),
+    )
+
+    parser.add_argument(
         "--account-equity",
         type=float,
         default=None,
@@ -358,6 +367,11 @@ def build_runtime_config(
             arguments,
             "execution_mode",
             "disabled",
+        ),
+        paper_execution_confirmed=getattr(
+            arguments,
+            "confirm_paper_execution",
+            False,
         ),
     )
 

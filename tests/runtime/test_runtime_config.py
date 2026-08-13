@@ -19,6 +19,7 @@ def test_defaults() -> None:
     )
     assert config.heartbeat_interval_seconds == 60.0
     assert config.execution_mode == "disabled"
+    assert config.paper_execution_confirmed is False
 
 
 def test_symbol_and_timeframe_are_normalized() -> None:
@@ -75,6 +76,16 @@ def test_execution_mode_must_be_a_string() -> None:
     ):
         RuntimeConfig(
             execution_mode=None,  # type: ignore[arg-type]
+        )
+
+
+def test_paper_execution_confirmation_must_be_a_bool() -> None:
+    with pytest.raises(
+        TypeError,
+        match="paper_execution_confirmed",
+    ):
+        RuntimeConfig(
+            paper_execution_confirmed=1,  # type: ignore[arg-type]
         )
 
 

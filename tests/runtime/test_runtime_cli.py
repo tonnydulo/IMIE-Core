@@ -55,6 +55,7 @@ def make_arguments(
         "heartbeat_seconds": 60.0,
         "completion_delay": 3.0,
         "execution_mode": "disabled",
+        "confirm_paper_execution": False,
         "continuous": False,
         "max_cycles": None,
         "history_file": Path(
@@ -121,6 +122,7 @@ def test_parser_defaults() -> None:
     )
 
     assert arguments.execution_mode == "disabled"
+    assert arguments.confirm_paper_execution is False
 
     assert arguments.symbol == "NVDA"
     assert arguments.symbols is None
@@ -248,10 +250,23 @@ def test_parser_accepts_alpaca_paper_execution_mode() -> None:
         [
             "--execution-mode",
             "alpaca-paper",
+            "--confirm-paper-execution",
         ]
     )
 
     assert arguments.execution_mode == "alpaca-paper"
+    assert arguments.confirm_paper_execution is True
+
+
+def test_runtime_config_carries_paper_execution_confirmation() -> None:
+    config = build_runtime_config(
+        make_arguments(
+            execution_mode="alpaca-paper",
+            confirm_paper_execution=True,
+        )
+    )
+
+    assert config.paper_execution_confirmed is True
 
 def test_parser_accepts_session_overrides() -> None:
     arguments = build_parser().parse_args(

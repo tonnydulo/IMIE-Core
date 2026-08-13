@@ -23,6 +23,7 @@ class RuntimeConfig:
     require_new_completed_bar: bool = True
     heartbeat_interval_seconds: float = 60.0
     execution_mode: str = "disabled"
+    paper_execution_confirmed: bool = False
 
     def __post_init__(self) -> None:
         symbol = self._normalize_symbol(
@@ -62,6 +63,14 @@ class RuntimeConfig:
         ):
             raise TypeError(
                 "require_new_completed_bar must be a bool."
+            )
+
+        if not isinstance(
+            self.paper_execution_confirmed,
+            bool,
+        ):
+            raise TypeError(
+                "paper_execution_confirmed must be a bool."
             )
 
         if isinstance(
