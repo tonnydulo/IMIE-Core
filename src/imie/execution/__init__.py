@@ -9,6 +9,9 @@ from imie.execution.broker_order_query_port import (
 from imie.execution.broker_order_intent_store import (
     BrokerOrderIntentStore,
 )
+from imie.execution.json_file_broker_order_intent_store import (
+    JsonFileBrokerOrderIntentStore,
+)
 from imie.execution.mock_broker_execution_adapter import (
     MockBrokerExecutionAdapter,
 )
@@ -42,6 +45,7 @@ __all__ = [
     "ExecutionReconciliationEngine",
     "ExecutionReconciliationService",
     "JsonReconciliationResultPublisher",
+    "JsonFileBrokerOrderIntentStore",
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
     "ProtectedExecutionPort",
