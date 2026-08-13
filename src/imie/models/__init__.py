@@ -108,6 +108,7 @@ from imie.models.existing_position_protection_result import (
     ExistingPositionProtectionResult,
 )
 from imie.models.broker_position_snapshot import BrokerPositionSnapshot
+from imie.models.position_protection_record import PositionProtectionRecord
 from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
@@ -211,6 +212,7 @@ __all__ = [
     "ExistingPositionProtectionSubmission",
     "ExistingPositionProtectionResult",
     "BrokerPositionSnapshot",
+    "PositionProtectionRecord",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "ExecutionReconciliationResult",
