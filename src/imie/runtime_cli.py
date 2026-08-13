@@ -161,6 +161,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--execution-kill-switch",
+        action="store_true",
+        help=(
+            "Emergency execution stop. Requires --execution-safety and "
+            "blocks broker submission before reservation."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-reservation-store",
         type=Path,
         default=Path("runtime/execution/submission_reservations.json"),
@@ -457,6 +466,9 @@ def build_execution_safety_config(
             arguments, "maximum_order_notional", None
         ),
         maximum_risk_amount=getattr(arguments, "maximum_risk_amount", None),
+        kill_switch_active=getattr(
+            arguments, "execution_kill_switch", False
+        ),
         reservation_store_path=getattr(
             arguments,
             "execution_reservation_store",

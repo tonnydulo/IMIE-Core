@@ -238,6 +238,27 @@ def test_factory_wraps_mock_execution_when_safety_is_explicitly_enabled(
     assert reservation_path.exists() is False
 
 
+def test_factory_wires_active_execution_kill_switch(
+    tmp_path: Path,
+) -> None:
+    application = RuntimeApplicationFactory.create(
+        settings=make_settings(),
+        config=RuntimeConfig(execution_mode="mock"),
+        execution_safety_config=ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            kill_switch_active=True,
+            reservation_store_path=tmp_path / "reservations.json",
+        ),
+        history_file=tmp_path / "cycles.jsonl",
+    )
+
+    service = application.cycle.execution_safety_submission_service
+    assert isinstance(service, ExecutionSafetySubmissionService)
+    assert service._policy.kill_switch_active is True
+
+
 def test_factory_rejects_safety_without_compatible_broker_port(
     tmp_path: Path,
 ) -> None:

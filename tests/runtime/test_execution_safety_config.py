@@ -15,6 +15,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.enabled is False
     assert config.maximum_order_notional is None
     assert config.maximum_risk_amount is None
+    assert config.kill_switch_active is False
     assert config.reservation_store_path == Path(
         "runtime/execution/submission_reservations.json"
     )
@@ -85,3 +86,25 @@ def test_enabled_config_builds_typed_financial_policy():
     assert isinstance(policy, ExecutionSafetyPolicy)
     assert policy.maximum_order_notional == 25_000.0
     assert policy.maximum_risk_amount == 125.0
+    assert policy.kill_switch_active is False
+
+
+def test_enabled_config_builds_active_kill_switch_policy():
+    policy = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        kill_switch_active=True,
+    ).build_policy()
+
+    assert policy.kill_switch_active is True
+
+
+def test_kill_switch_requires_execution_safety():
+    with pytest.raises(ValueError, match="requires execution safety"):
+        ExecutionSafetyConfig(kill_switch_active=True)
+
+
+def test_kill_switch_must_be_bool():
+    with pytest.raises(TypeError, match="kill_switch_active"):
+        ExecutionSafetyConfig(kill_switch_active=1)

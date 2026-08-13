@@ -20,11 +20,18 @@ class ExecutionSafetyConfig:
     enabled: bool = False
     maximum_order_notional: float | None = None
     maximum_risk_amount: float | None = None
+    kill_switch_active: bool = False
     reservation_store_path: Path = DEFAULT_EXECUTION_RESERVATION_STORE
 
     def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise TypeError("enabled must be a bool.")
+        if not isinstance(self.kill_switch_active, bool):
+            raise TypeError("kill_switch_active must be a bool.")
+        if self.kill_switch_active and not self.enabled:
+            raise ValueError(
+                "kill_switch_active requires execution safety to be enabled."
+            )
         maximum_order_notional = self._optional_positive_float(
             self.maximum_order_notional,
             "maximum_order_notional",
@@ -61,6 +68,7 @@ class ExecutionSafetyConfig:
         return ExecutionSafetyPolicy(
             maximum_order_notional=self.maximum_order_notional,
             maximum_risk_amount=self.maximum_risk_amount,
+            kill_switch_active=self.kill_switch_active,
         )
 
     @staticmethod
