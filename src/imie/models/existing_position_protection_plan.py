@@ -17,6 +17,7 @@ class ExistingPositionProtectionPlan:
     uncovered_quantity: int
     time_in_force: str
     position_updated_at: datetime
+    position_fill_ids: tuple[str, ...]
     slices: tuple[ProtectedOrderSlice, ...]
     valid: bool
     actionable: bool
@@ -77,6 +78,16 @@ class ExistingPositionProtectionPlan:
             raise TypeError("position_updated_at must be a datetime.")
         if self.position_updated_at.tzinfo is None:
             raise ValueError("position_updated_at must be timezone-aware.")
+        if not isinstance(self.position_fill_ids, tuple) or not all(
+            isinstance(item, str) for item in self.position_fill_ids
+        ):
+            raise TypeError("position_fill_ids must be a tuple of strings.")
+        position_fill_ids = tuple(
+            item.strip() for item in self.position_fill_ids if item.strip()
+        )
+        if len(set(position_fill_ids)) != len(position_fill_ids):
+            raise ValueError("position_fill_ids cannot contain duplicates.")
+        object.__setattr__(self, "position_fill_ids", position_fill_ids)
         for name in ("valid", "actionable"):
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be a bool.")

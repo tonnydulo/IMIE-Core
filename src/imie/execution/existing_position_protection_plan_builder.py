@@ -86,6 +86,7 @@ class ExistingPositionProtectionPlanBuilder:
             uncovered_quantity=quantity,
             time_in_force=intent.time_in_force,
             position_updated_at=position.last_updated_at,
+            position_fill_ids=position.processed_fill_ids,
             slices=tuple(slices),
             valid=True,
             actionable=True,

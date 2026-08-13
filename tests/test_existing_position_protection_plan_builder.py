@@ -32,7 +32,12 @@ def intent(*, side="buy", stop=199.0, target1=201.0, target2=202.0):
     )
 
 
-def position(*, direction=PositionDirection.LONG, quantity=40):
+def position(
+    *,
+    direction=PositionDirection.LONG,
+    quantity=40,
+    processed_fill_ids=("fill-1",),
+):
     return ExecutionPosition(
         broker="alpaca-paper",
         symbol="NVDA",
@@ -43,6 +48,7 @@ def position(*, direction=PositionDirection.LONG, quantity=40):
         unrealized_pnl=0.0,
         realized_pnl=0.0,
         last_updated_at=NOW,
+        processed_fill_ids=processed_fill_ids,
     )
 
 
@@ -71,6 +77,7 @@ def test_long_position_plan_uses_sell_exit_without_new_entry():
     assert tuple(item.quantity for item in plan.slices) == (20, 20)
     assert plan.stop_price == 199.0
     assert plan.position_updated_at == NOW
+    assert plan.position_fill_ids == ("fill-1",)
 
 
 def test_short_position_plan_uses_buy_exit():

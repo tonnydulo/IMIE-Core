@@ -48,6 +48,9 @@ from imie.execution.existing_position_protection_plan_builder import (
 from imie.execution.existing_position_protection_port import (
     ExistingPositionProtectionPort,
 )
+from imie.execution.existing_position_protection_guard import (
+    ExistingPositionProtectionGuard,
+)
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -70,6 +73,7 @@ __all__ = [
     "ProtectiveCoverageEngine",
     "ExistingPositionProtectionPlanBuilder",
     "ExistingPositionProtectionPort",
+    "ExistingPositionProtectionGuard",
     "JsonFilePositionStateStore",
 ]
 
