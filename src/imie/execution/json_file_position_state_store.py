@@ -137,6 +137,7 @@ class JsonFilePositionStateStore:
             "realized_pnl": position.realized_pnl,
             "last_updated_at": position.last_updated_at.isoformat(),
             "warnings": list(position.warnings),
+            "processed_fill_ids": list(position.processed_fill_ids),
         }
 
     @staticmethod
@@ -152,6 +153,13 @@ class JsonFilePositionStateStore:
                 isinstance(item, str) for item in warnings
             ):
                 raise TypeError("Position store warnings must be a list of strings.")
+            processed_fill_ids = value.get("processed_fill_ids", [])
+            if not isinstance(processed_fill_ids, list) or not all(
+                isinstance(item, str) for item in processed_fill_ids
+            ):
+                raise TypeError(
+                    "Position store processed_fill_ids must be a list of strings."
+                )
             return ExecutionPosition(
                 broker=value["broker"],
                 symbol=value["symbol"],
@@ -163,6 +171,7 @@ class JsonFilePositionStateStore:
                 realized_pnl=value["realized_pnl"],
                 last_updated_at=datetime.fromisoformat(timestamp),
                 warnings=tuple(warnings),
+                processed_fill_ids=tuple(processed_fill_ids),
             )
         except KeyError as exc:
             raise ValueError(

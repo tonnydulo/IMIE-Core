@@ -132,6 +132,40 @@ def test_empty_fill_set_preserves_position() -> None:
     assert result == original
 
 
+def test_already_processed_fill_is_not_applied_twice() -> None:
+    first = PositionStateEngine().apply_fills(
+        position=position(),
+        fills=(fill("fill-1", "buy", 40, 200.0, 1),),
+    )
+
+    result = PositionStateEngine().apply_fills(
+        position=first,
+        fills=(fill("fill-1", "buy", 40, 200.0, 1),),
+    )
+
+    assert result == first
+    assert result.processed_fill_ids == ("fill-1",)
+
+
+def test_only_new_fills_are_applied_from_complete_broker_history() -> None:
+    first = PositionStateEngine().apply_fills(
+        position=position(),
+        fills=(fill("fill-1", "buy", 40, 200.0, 1),),
+    )
+
+    result = PositionStateEngine().apply_fills(
+        position=first,
+        fills=(
+            fill("fill-1", "buy", 40, 200.0, 1),
+            fill("fill-2", "buy", 10, 202.0, 2),
+        ),
+    )
+
+    assert result.quantity == 50
+    assert result.average_entry_price == pytest.approx(200.4)
+    assert result.processed_fill_ids == ("fill-1", "fill-2")
+
+
 @pytest.mark.parametrize(
     "fills, message",
     [
@@ -157,4 +191,3 @@ def test_invalid_fill_sequence_is_rejected(
 ) -> None:
     with pytest.raises(ValueError, match=message):
         PositionStateEngine().apply_fills(position=position(), fills=fills)
-

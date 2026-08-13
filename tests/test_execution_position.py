@@ -165,3 +165,35 @@ def test_direction_requires_enum() -> None:
             last_updated_at=NOW,
         )
 
+
+def test_processed_fill_ids_are_normalized() -> None:
+    position = ExecutionPosition(
+        broker="alpaca-paper",
+        symbol="NVDA",
+        direction=PositionDirection.FLAT,
+        quantity=0,
+        average_entry_price=None,
+        market_price=None,
+        unrealized_pnl=0.0,
+        realized_pnl=0.0,
+        last_updated_at=NOW,
+        processed_fill_ids=(" fill-1 ", "fill-2"),
+    )
+
+    assert position.processed_fill_ids == ("fill-1", "fill-2")
+
+
+def test_duplicate_processed_fill_ids_are_rejected() -> None:
+    with pytest.raises(ValueError, match="cannot contain duplicates"):
+        ExecutionPosition(
+            broker="alpaca-paper",
+            symbol="NVDA",
+            direction=PositionDirection.FLAT,
+            quantity=0,
+            average_entry_price=None,
+            market_price=None,
+            unrealized_pnl=0.0,
+            realized_pnl=0.0,
+            last_updated_at=NOW,
+            processed_fill_ids=("fill-1", "fill-1"),
+        )

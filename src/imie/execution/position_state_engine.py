@@ -24,7 +24,8 @@ class PositionStateEngine:
         ):
             raise TypeError("fills must be a tuple of BrokerFill.")
 
-        seen: set[str] = set()
+        seen: set[str] = set(position.processed_fill_ids)
+        new_fill_ids: list[str] = []
         previous_time = position.last_updated_at
         signed_quantity = position.signed_quantity
         average_entry = position.average_entry_price
@@ -34,8 +35,11 @@ class PositionStateEngine:
             if fill.broker != position.broker or fill.symbol != position.symbol:
                 raise ValueError("fill broker and symbol must match position.")
             if fill.fill_id in seen:
-                raise ValueError(f"duplicate fill_id {fill.fill_id!r}.")
+                if fill.fill_id in new_fill_ids:
+                    raise ValueError(f"duplicate fill_id {fill.fill_id!r}.")
+                continue
             seen.add(fill.fill_id)
+            new_fill_ids.append(fill.fill_id)
             if fill.executed_at < previous_time:
                 raise ValueError("fills must be chronological and not predate position.")
             previous_time = fill.executed_at
@@ -97,7 +101,7 @@ class PositionStateEngine:
             market_price=resolved_market_price,
             unrealized_pnl=unrealized_pnl,
             realized_pnl=realized_pnl,
-            last_updated_at=(fills[-1].executed_at if fills else position.last_updated_at),
+            last_updated_at=(previous_time if new_fill_ids else position.last_updated_at),
             warnings=position.warnings,
+            processed_fill_ids=position.processed_fill_ids + tuple(new_fill_ids),
         )
-

@@ -20,6 +20,7 @@ class ExecutionPosition:
     realized_pnl: float
     last_updated_at: datetime
     warnings: tuple[str, ...] = ()
+    processed_fill_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for name, case in (("broker", "lower"), ("symbol", "upper")):
@@ -89,6 +90,15 @@ class ExecutionPosition:
             isinstance(item, str) for item in self.warnings
         ):
             raise TypeError("warnings must be a tuple of strings.")
+        if not isinstance(self.processed_fill_ids, tuple) or not all(
+            isinstance(item, str) for item in self.processed_fill_ids
+        ):
+            raise TypeError("processed_fill_ids must be a tuple of strings.")
+        processed_fill_ids = tuple(
+            item.strip() for item in self.processed_fill_ids if item.strip()
+        )
+        if len(set(processed_fill_ids)) != len(processed_fill_ids):
+            raise ValueError("processed_fill_ids cannot contain duplicates.")
 
         object.__setattr__(self, "average_entry_price", average_entry)
         object.__setattr__(self, "market_price", market_price)
@@ -99,6 +109,7 @@ class ExecutionPosition:
             "warnings",
             tuple(item.strip() for item in self.warnings if item.strip()),
         )
+        object.__setattr__(self, "processed_fill_ids", processed_fill_ids)
 
     @property
     def is_flat(self) -> bool:
@@ -129,4 +140,3 @@ class ExecutionPosition:
         if not math.isfinite(normalized):
             raise ValueError(f"{name} must be finite.")
         return normalized
-

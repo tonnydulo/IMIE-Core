@@ -11,7 +11,13 @@ from imie.models import ExecutionPosition, PositionDirection
 NOW = datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc)
 
 
-def position(*, updated_at=NOW, quantity=10, market_price=102.0):
+def position(
+    *,
+    updated_at=NOW,
+    quantity=10,
+    market_price=102.0,
+    processed_fill_ids=("fill-1",),
+):
     return ExecutionPosition(
         broker="alpaca-paper",
         symbol="NVDA",
@@ -23,6 +29,7 @@ def position(*, updated_at=NOW, quantity=10, market_price=102.0):
         realized_pnl=12.5,
         last_updated_at=updated_at,
         warnings=("paper",),
+        processed_fill_ids=processed_fill_ids,
     )
 
 
