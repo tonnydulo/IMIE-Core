@@ -71,6 +71,9 @@ from imie.execution.existing_position_protection_service import (
 from imie.execution.protection_audit_persistence_error import (
     ProtectionAuditPersistenceError,
 )
+from imie.execution.position_protection_status_service import (
+    PositionProtectionStatusService,
+)
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -106,6 +109,7 @@ __all__ = [
     "ExistingPositionProtectionGuard",
     "ExistingPositionProtectionService",
     "ProtectionAuditPersistenceError",
+    "PositionProtectionStatusService",
     "JsonFilePositionStateStore",
 ]
 
