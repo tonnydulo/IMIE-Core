@@ -18,6 +18,9 @@ from imie.execution.protected_execution_port import (
 from imie.execution.execution_reconciliation_engine import (
     ExecutionReconciliationEngine,
 )
+from imie.execution.execution_reconciliation_service import (
+    ExecutionReconciliationService,
+)
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -26,6 +29,7 @@ __all__ = [
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
     "ExecutionReconciliationEngine",
+    "ExecutionReconciliationService",
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
     "ProtectedExecutionPort",
