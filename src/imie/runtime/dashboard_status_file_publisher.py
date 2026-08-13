@@ -1285,6 +1285,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        broker_submission_result = (
+            cycle.broker_submission_result
+            if cycle is not None
+            else None
+        )
+
         analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
@@ -1501,6 +1507,20 @@ class DashboardStatusFilePublisher:
             execution_order_intent_warnings,
         ) = _execution_order_intent_dashboard_values(
             execution_order_intent
+        )
+
+        (
+            broker_submission_broker,
+            broker_submission_symbol,
+            broker_submission_side,
+            broker_submission_quantity,
+            broker_submission_accepted,
+            broker_submission_order_id,
+            broker_submission_status,
+            broker_submission_message,
+            broker_submission_warnings,
+        ) = _broker_submission_dashboard_values(
+            broker_submission_result
         )
 
         (
@@ -1737,6 +1757,34 @@ class DashboardStatusFilePublisher:
             ),
             execution_order_intent_warnings=(
                 execution_order_intent_warnings
+            ),
+
+            broker_submission_broker=(
+                broker_submission_broker
+            ),
+            broker_submission_symbol=(
+                broker_submission_symbol
+            ),
+            broker_submission_side=(
+                broker_submission_side
+            ),
+            broker_submission_quantity=(
+                broker_submission_quantity
+            ),
+            broker_submission_accepted=(
+                broker_submission_accepted
+            ),
+            broker_submission_order_id=(
+                broker_submission_order_id
+            ),
+            broker_submission_status=(
+                broker_submission_status
+            ),
+            broker_submission_message=(
+                broker_submission_message
+            ),
+            broker_submission_warnings=(
+                broker_submission_warnings
             ),
 
             decision_confidence=decision_confidence,
@@ -2918,6 +2966,46 @@ def _execution_order_intent_dashboard_values(
         execution_order_intent.actionable,
         tuple(
             execution_order_intent.warnings
+        ),
+    )
+
+def _broker_submission_dashboard_values(
+    broker_submission_result: object | None,
+) -> tuple[
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    object | None,
+    tuple[object, ...],
+]:
+    if broker_submission_result is None:
+        return (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            (),
+        )
+
+    return (
+        broker_submission_result.broker,
+        broker_submission_result.symbol,
+        broker_submission_result.side,
+        broker_submission_result.quantity,
+        broker_submission_result.accepted,
+        broker_submission_result.broker_order_id,
+        broker_submission_result.status,
+        broker_submission_result.message,
+        tuple(
+            broker_submission_result.warnings
         ),
     )
 

@@ -1024,6 +1024,55 @@ def test_execution_order_intent_fields_are_serialized() -> None:
         == []
     )
 
+def test_broker_submission_fields_are_serialized() -> None:
+    status = RuntimeDashboardStatus(
+        health=make_health(),
+        symbol="NVDA",
+        timeframe="2m",
+        latest_cycle_status=(
+            AnalysisCycleStatus.COMPLETED
+        ),
+        latest_cycle_message=(
+            "Analysis cycle completed."
+        ),
+        latest_cycle_started_at=NOW,
+        latest_cycle_completed_at=NOW,
+        market_session="REGULAR",
+        latest_decision="READY",
+        latest_error_type=None,
+        broker_submission_broker="mock",
+        broker_submission_symbol="NVDA",
+        broker_submission_side="buy",
+        broker_submission_quantity=125,
+        broker_submission_accepted=True,
+        broker_submission_order_id=(
+            "mock-nvda-000001"
+        ),
+        broker_submission_status="accepted",
+        broker_submission_message=(
+            "Mock order accepted."
+        ),
+        broker_submission_warnings=(),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["broker_submission_broker"] == "mock"
+    assert payload["broker_submission_symbol"] == "NVDA"
+    assert payload["broker_submission_side"] == "buy"
+    assert payload["broker_submission_quantity"] == 125
+    assert payload["broker_submission_accepted"] is True
+    assert (
+        payload["broker_submission_order_id"]
+        == "mock-nvda-000001"
+    )
+    assert payload["broker_submission_status"] == "accepted"
+    assert (
+        payload["broker_submission_message"]
+        == "Mock order accepted."
+    )
+    assert payload["broker_submission_warnings"] == []
+
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(
         institutional_bias_strength=80.0,

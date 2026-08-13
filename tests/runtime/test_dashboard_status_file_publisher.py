@@ -45,6 +45,7 @@ from imie.models import (
     PositionSizeResult,
     SetupLifecycle,
     TradePlan,
+    BrokerSubmissionResult,
 )
 
 from imie.runtime import (
@@ -413,6 +414,19 @@ def make_execution_order_intent() -> ExecutionOrderIntent:
         warnings=(),
     )
 
+def make_broker_submission_result() -> BrokerSubmissionResult:
+    return BrokerSubmissionResult(
+        broker="mock",
+        symbol="NVDA",
+        side="buy",
+        quantity=125,
+        accepted=True,
+        broker_order_id="mock-nvda-000001",
+        status="accepted",
+        message="Mock order accepted.",
+        warnings=(),
+    )
+
 def make_completed_result() -> AnalysisCycleResult:
     return AnalysisCycleResult(
         status=AnalysisCycleStatus.COMPLETED,
@@ -492,6 +506,9 @@ def make_completed_result_with_execution_candidate() -> (
         ),
         execution_order_intent=(
             make_execution_order_intent()
+        ),
+        broker_submission_result=(
+            make_broker_submission_result()
         ),
     )
 
@@ -11995,3 +12012,47 @@ def test_analyst_domain_dashboard_values_returns_none_when_missing() -> None:
         None,
         None,
     )
+
+def test_publish_result_populates_broker_submission_details(
+    tmp_path: Path,
+) -> None:
+    path = (
+        tmp_path
+        / "dashboard.json"
+    )
+
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(
+        make_health()
+    )
+
+    publisher.publish_result(
+        make_completed_result_with_execution_candidate()
+    )
+
+    payload = json.loads(
+        path.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["broker_submission_broker"] == "mock"
+    assert payload["broker_submission_symbol"] == "NVDA"
+    assert payload["broker_submission_side"] == "buy"
+    assert payload["broker_submission_quantity"] == 125
+    assert payload["broker_submission_accepted"] is True
+    assert (
+        payload["broker_submission_order_id"]
+        == "mock-nvda-000001"
+    )
+    assert payload["broker_submission_status"] == "accepted"
+    assert (
+        payload["broker_submission_message"]
+        == "Mock order accepted."
+    )
+    assert payload["broker_submission_warnings"] == []

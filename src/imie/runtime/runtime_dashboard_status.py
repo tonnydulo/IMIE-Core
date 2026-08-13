@@ -220,6 +220,16 @@ class RuntimeDashboardStatus:
     execution_order_intent_actionable: bool | None = None
     execution_order_intent_warnings: tuple[str, ...] = ()
 
+    broker_submission_broker: str | None = None
+    broker_submission_symbol: str | None = None
+    broker_submission_side: str | None = None
+    broker_submission_quantity: int | None = None
+    broker_submission_accepted: bool | None = None
+    broker_submission_order_id: str | None = None
+    broker_submission_status: str | None = None
+    broker_submission_message: str | None = None
+    broker_submission_warnings: tuple[str, ...] = ()
+
 
     def __post_init__(
         self,
@@ -459,6 +469,7 @@ class RuntimeDashboardStatus:
             "execution_candidate_actionable",
             "execution_order_intent_valid",
             "execution_order_intent_actionable",
+            "broker_submission_accepted",
         ):
             value = getattr(
                 self,
@@ -3267,6 +3278,33 @@ class RuntimeDashboardStatus:
                 ),
                 "analyst_operational_percentage": (
                     self.analyst_operational_percentage
+                ),
+                "broker_submission_broker": (
+                    self.broker_submission_broker
+                ),
+                "broker_submission_symbol": (
+                    self.broker_submission_symbol
+                ),
+                "broker_submission_side": (
+                    self.broker_submission_side
+                ),
+                "broker_submission_quantity": (
+                    self.broker_submission_quantity
+                ),
+                "broker_submission_accepted": (
+                    self.broker_submission_accepted
+                ),
+                "broker_submission_order_id": (
+                    self.broker_submission_order_id
+                ),
+                "broker_submission_status": (
+                    self.broker_submission_status
+                ),
+                "broker_submission_message": (
+                    self.broker_submission_message
+                ),
+                "broker_submission_warnings": list(
+                    self.broker_submission_warnings
                 ),
             }
         )
