@@ -107,6 +107,9 @@ from imie.models.broker_order_snapshot import (
     BrokerOrderSnapshot,
 )
 from imie.models.broker_order_status import BrokerOrderStatus
+from imie.models.broker_order_intent_record import (
+    BrokerOrderIntentRecord,
+)
 from imie.models.protected_order_slice import (
     ProtectedOrderSlice,
 )
@@ -190,6 +193,7 @@ __all__ = [
     "BrokerFill",
     "BrokerOrderSnapshot",
     "BrokerOrderStatus",
+    "BrokerOrderIntentRecord",
     "ProtectedExecutionPlan",
     "ProtectedOrderSlice",
     "ProtectedOrderSubmission",

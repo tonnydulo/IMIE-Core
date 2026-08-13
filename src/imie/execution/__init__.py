@@ -6,6 +6,9 @@ from imie.execution.broker_execution_port import (
 from imie.execution.broker_order_query_port import (
     BrokerOrderQueryPort,
 )
+from imie.execution.broker_order_intent_store import (
+    BrokerOrderIntentStore,
+)
 from imie.execution.mock_broker_execution_adapter import (
     MockBrokerExecutionAdapter,
 )
@@ -34,6 +37,7 @@ __all__ = [
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
+    "BrokerOrderIntentStore",
     "ConsoleReconciliationResultPublisher",
     "ExecutionReconciliationEngine",
     "ExecutionReconciliationService",
