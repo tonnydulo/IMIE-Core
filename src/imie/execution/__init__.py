@@ -21,6 +21,12 @@ from imie.execution.execution_reconciliation_engine import (
 from imie.execution.execution_reconciliation_service import (
     ExecutionReconciliationService,
 )
+from imie.execution.console_reconciliation_result_publisher import (
+    ConsoleReconciliationResultPublisher,
+)
+from imie.execution.json_reconciliation_result_publisher import (
+    JsonReconciliationResultPublisher,
+)
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -28,8 +34,10 @@ __all__ = [
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
+    "ConsoleReconciliationResultPublisher",
     "ExecutionReconciliationEngine",
     "ExecutionReconciliationService",
+    "JsonReconciliationResultPublisher",
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
     "ProtectedExecutionPort",
