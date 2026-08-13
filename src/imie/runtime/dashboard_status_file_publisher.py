@@ -1291,6 +1291,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        protected_submission_result = (
+            cycle.protected_submission_result
+            if cycle is not None
+            else None
+        )
+
         analyst_domain_values = _analyst_domain_dashboard_map(
             analyst_summary
         )
@@ -1521,6 +1527,20 @@ class DashboardStatusFilePublisher:
             broker_submission_warnings,
         ) = _broker_submission_dashboard_values(
             broker_submission_result
+        )
+
+        (
+            protected_submission_broker,
+            protected_submission_quantity,
+            protected_submission_accepted,
+            protected_submission_status,
+            protected_submission_message,
+            protected_submission_order_count,
+            protected_submission_rollback_attempted,
+            protected_submission_rollback_succeeded,
+            protected_submission_warnings,
+        ) = _protected_submission_dashboard_values(
+            protected_submission_result
         )
 
         (
@@ -1786,6 +1806,19 @@ class DashboardStatusFilePublisher:
             broker_submission_warnings=(
                 broker_submission_warnings
             ),
+            protected_submission_broker=protected_submission_broker,
+            protected_submission_quantity=protected_submission_quantity,
+            protected_submission_accepted=protected_submission_accepted,
+            protected_submission_status=protected_submission_status,
+            protected_submission_message=protected_submission_message,
+            protected_submission_order_count=protected_submission_order_count,
+            protected_submission_rollback_attempted=(
+                protected_submission_rollback_attempted
+            ),
+            protected_submission_rollback_succeeded=(
+                protected_submission_rollback_succeeded
+            ),
+            protected_submission_warnings=protected_submission_warnings,
 
             decision_confidence=decision_confidence,
             decision_actionable=decision_actionable,
@@ -3007,6 +3040,25 @@ def _broker_submission_dashboard_values(
         tuple(
             broker_submission_result.warnings
         ),
+    )
+
+
+def _protected_submission_dashboard_values(
+    result: object | None,
+) -> tuple[object | None, ...]:
+    if result is None:
+        return (None, None, None, None, None, None, None, None, ())
+
+    return (
+        result.broker,
+        result.quantity,
+        result.accepted,
+        result.status,
+        result.message,
+        len(result.submissions),
+        result.rollback_attempted,
+        result.rollback_succeeded,
+        tuple(result.warnings),
     )
 
 def _decision_result_dashboard_values(

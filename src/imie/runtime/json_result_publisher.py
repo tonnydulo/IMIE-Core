@@ -137,6 +137,7 @@ class JsonResultPublisher:
             "execution_candidate": None,
             "execution_order_intent": None,
             "broker_submission_result": None,
+            "protected_submission_result": None,
         }
 
         if result.completed_bar is not None:
@@ -436,6 +437,35 @@ class JsonResultPublisher:
                 "warnings": list(
                     result.broker_submission_result.warnings
                 ),
+            }
+
+        if result.protected_submission_result is not None:
+            protected = result.protected_submission_result
+            payload["protected_submission_result"] = {
+                "broker": protected.broker,
+                "symbol": protected.symbol,
+                "side": protected.side,
+                "quantity": protected.quantity,
+                "accepted": protected.accepted,
+                "status": protected.status,
+                "message": protected.message,
+                "rollback_attempted": protected.rollback_attempted,
+                "rollback_succeeded": protected.rollback_succeeded,
+                "rolled_back_order_ids": list(
+                    protected.rolled_back_order_ids
+                ),
+                "warnings": list(protected.warnings),
+                "submissions": [
+                    {
+                        "label": item.label,
+                        "quantity": item.quantity,
+                        "accepted": item.accepted,
+                        "broker_order_id": item.broker_order_id,
+                        "status": item.status,
+                        "message": item.message,
+                    }
+                    for item in protected.submissions
+                ],
             }
 
         return payload

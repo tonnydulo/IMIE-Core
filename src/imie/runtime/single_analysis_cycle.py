@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from imie.execution import BrokerExecutionPort
+from imie.execution import (
+    BrokerExecutionPort,
+    ProtectedExecutionPlanBuilder,
+    ProtectedExecutionPort,
+)
 
 from imie.models import MarketSnapshot
 from imie.runtime.analysis_cycle_result import (
@@ -76,6 +80,10 @@ class SingleAnalysisCycle:
         execution_candidate_builder: ExecutionCandidateBuilder | None = None,
         execution_order_intent_builder: ExecutionOrderIntentBuilder | None = None,
         broker_execution_port: BrokerExecutionPort | None = None,
+        protected_execution_port: ProtectedExecutionPort | None = None,
+        protected_execution_plan_builder: (
+            ProtectedExecutionPlanBuilder | None
+        ) = None,
     ) -> None:
         if not isinstance(
             config,
@@ -160,6 +168,11 @@ class SingleAnalysisCycle:
         )
 
         self.broker_execution_port = broker_execution_port
+        self.protected_execution_port = protected_execution_port
+        self.protected_execution_plan_builder = (
+            protected_execution_plan_builder
+            or ProtectedExecutionPlanBuilder()
+        )
 
         self.market_session_clock = (
             market_session_clock
@@ -233,9 +246,42 @@ class SingleAnalysisCycle:
                     None,
                 )
             )
+
         ):
             raise TypeError(
                 "broker_execution_port must provide submit_order()."
+            )
+
+        if (
+            self.protected_execution_port is not None
+            and not callable(
+                getattr(
+                    self.protected_execution_port,
+                    "submit_protected_plan",
+                    None,
+                )
+            )
+        ):
+            raise TypeError(
+                "protected_execution_port must provide "
+                "submit_protected_plan()."
+            )
+
+        if (
+            self.broker_execution_port is not None
+            and self.protected_execution_port is not None
+        ):
+            raise ValueError(
+                "Only one broker execution port may be configured."
+            )
+
+        if not isinstance(
+            self.protected_execution_plan_builder,
+            ProtectedExecutionPlanBuilder,
+        ):
+            raise TypeError(
+                "protected_execution_plan_builder must be a "
+                "ProtectedExecutionPlanBuilder."
             )
 
     def run(
@@ -352,7 +398,8 @@ class SingleAnalysisCycle:
             position_size = None
             execution_candidate = None
             execution_order_intent = None
-            broker_submission_result = Noneexecution_order_intent = None
+            broker_submission_result = None
+            protected_submission_result = None
 
             if (
                 self.position_sizing_config.enabled
@@ -413,6 +460,23 @@ class SingleAnalysisCycle:
                     )
                 )
 
+            if (
+                execution_order_intent is not None
+                and execution_order_intent.valid
+                and execution_order_intent.actionable
+                and self.protected_execution_port is not None
+            ):
+                protected_plan = (
+                    self.protected_execution_plan_builder.build(
+                        execution_order_intent
+                    )
+                )
+                protected_submission_result = (
+                    self.protected_execution_port.submit_protected_plan(
+                        protected_plan
+                    )
+                )
+
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.COMPLETED,
                 symbol=self.config.symbol,
@@ -434,6 +498,7 @@ class SingleAnalysisCycle:
                 execution_candidate=execution_candidate,
                 execution_order_intent=execution_order_intent,
                 broker_submission_result=broker_submission_result,
+                protected_submission_result=protected_submission_result,
             )
 
         except (

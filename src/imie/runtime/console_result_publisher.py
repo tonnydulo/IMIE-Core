@@ -431,11 +431,39 @@ class ConsoleResultPublisher:
                 lines.append(
                     "Broker Submission Warnings:"
                 )
-
                 lines.extend(
                     f" - {warning}"
                     for warning
                     in broker_submission_result.warnings
+                )
+
+        if result.protected_submission_result is not None:
+            protected = result.protected_submission_result
+            lines.extend(
+                [
+                    "Protected Submission Result :",
+                    f"Broker           : {protected.broker}",
+                    f"Quantity         : {protected.quantity}",
+                    f"Accepted         : {protected.accepted}",
+                    f"Status           : {protected.status}",
+                    f"Rollback Attempt : {protected.rollback_attempted}",
+                    f"Rollback Success : {protected.rollback_succeeded}",
+                    f"Message          : {protected.message}",
+                ]
+            )
+            for item in protected.submissions:
+                lines.append(
+                    " - "
+                    f"{item.label}: qty={item.quantity}, "
+                    f"accepted={item.accepted}, "
+                    f"order={item.broker_order_id or '—'}, "
+                    f"status={item.status}"
+                )
+            if protected.warnings:
+                lines.append("Protected Submission Warnings:")
+                lines.extend(
+                    f" - {warning}"
+                    for warning in protected.warnings
                 )
 
         if (

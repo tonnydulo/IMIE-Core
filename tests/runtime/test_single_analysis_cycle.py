@@ -10,6 +10,8 @@ from imie.models import (
     MarketSnapshot,
     Quote,
     TradePlan,
+    ProtectedPlanSubmissionResult,
+    ProtectedOrderSubmission,
 )
 from imie.runtime import (
     AnalysisCycleStatus,
@@ -181,6 +183,35 @@ class RaisingAnalysisPipeline:
         )
 
 
+class RecordingProtectedExecutionPort:
+    def __init__(self) -> None:
+        self.plans: list[object] = []
+
+    def submit_protected_plan(self, plan) -> ProtectedPlanSubmissionResult:
+        self.plans.append(plan)
+        submissions = tuple(
+            ProtectedOrderSubmission(
+                label=item.label,
+                quantity=item.quantity,
+                accepted=True,
+                broker_order_id=f"paper-{item.label}",
+                status="accepted",
+                message="Accepted.",
+            )
+            for item in plan.slices
+        )
+        return ProtectedPlanSubmissionResult(
+            broker="alpaca-paper",
+            symbol=plan.symbol,
+            side=plan.side,
+            quantity=plan.quantity,
+            accepted=True,
+            status="accepted",
+            message="Accepted.",
+            submissions=submissions,
+        )
+
+
 def test_cycle_can_be_created() -> None:
     config = RuntimeConfig()
 
@@ -320,6 +351,53 @@ def test_ready_cycle_calculates_position_size() -> None:
     assert result.execution_order_intent.time_in_force == "day"
     assert result.execution_order_intent.valid is True
     assert result.execution_order_intent.actionable is True
+
+
+def test_ready_cycle_submits_protected_plan_through_explicit_port() -> None:
+    checked_at = BASE_TIME + timedelta(minutes=2, seconds=3)
+    market_data = StaticMarketData(
+        quote=make_quote(timestamp=checked_at),
+        bars=[make_bar(timestamp=BASE_TIME)],
+    )
+    protected_port = RecordingProtectedExecutionPort()
+    cycle = SingleAnalysisCycle(
+        config=RuntimeConfig(),
+        market_data=market_data,
+        freshness_guard=FixedFreshnessGuard(
+            make_freshness(actionable=True, checked_at=checked_at)
+        ),
+        analysis_pipeline=RecordingAnalysisPipeline(
+            make_ready_decision()
+        ),
+        session_policy=make_permissive_session_policy(),
+        position_sizing_config=PositionSizingConfig(
+            enabled=True,
+            account_equity=25_000.0,
+            risk_percent=0.50,
+        ),
+        protected_execution_port=protected_port,
+    )
+
+    result = cycle.run(checked_at=checked_at)
+
+    assert result.status is AnalysisCycleStatus.COMPLETED
+    assert result.broker_submission_result is None
+    assert result.protected_submission_result is not None
+    assert result.protected_submission_result.accepted is True
+    assert len(protected_port.plans) == 1
+    plan = protected_port.plans[0]
+    assert plan.quantity == 156
+    assert tuple(item.quantity for item in plan.slices) == (78, 78)
+
+
+def test_cycle_rejects_single_and_protected_ports_together() -> None:
+    with pytest.raises(ValueError, match="Only one broker execution port"):
+        SingleAnalysisCycle(
+            config=RuntimeConfig(),
+            market_data=FakeMarketData(),
+            broker_execution_port=MockBrokerExecutionAdapter(),
+            protected_execution_port=RecordingProtectedExecutionPort(),
+        )
 
 def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
     checked_at = BASE_TIME + timedelta(
@@ -1116,4 +1194,3 @@ def test_run_rejects_timezone_naive_checked_at() -> None:
                 30,
             ),
         )
-        

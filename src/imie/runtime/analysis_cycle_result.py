@@ -11,6 +11,7 @@ from imie.models import (
     ExecutionOrderIntent,
     MarketSnapshot,
     PositionSizeResult,
+    ProtectedPlanSubmissionResult,
     TradingContext,
 )
 from imie.runtime.analysis_cycle_status import (
@@ -56,6 +57,7 @@ class AnalysisCycleResult:
     execution_candidate: ExecutionCandidate | None = None
     execution_order_intent: ExecutionOrderIntent | None = None
     broker_submission_result: BrokerSubmissionResult | None = None
+    protected_submission_result: ProtectedPlanSubmissionResult | None = None
 
     error_type: str | None = None
 
@@ -216,6 +218,27 @@ class AnalysisCycleResult:
             raise TypeError(
                 "broker_submission_result must be a "
                 "BrokerSubmissionResult or None."
+            )
+
+        if (
+            self.protected_submission_result is not None
+            and not isinstance(
+                self.protected_submission_result,
+                ProtectedPlanSubmissionResult,
+            )
+        ):
+            raise TypeError(
+                "protected_submission_result must be a "
+                "ProtectedPlanSubmissionResult or None."
+            )
+
+        if (
+            self.broker_submission_result is not None
+            and self.protected_submission_result is not None
+        ):
+            raise ValueError(
+                "A cycle cannot contain both single and protected "
+                "submission results."
             )
 
         error_type = self.error_type

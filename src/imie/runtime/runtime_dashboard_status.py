@@ -230,6 +230,16 @@ class RuntimeDashboardStatus:
     broker_submission_message: str | None = None
     broker_submission_warnings: tuple[str, ...] = ()
 
+    protected_submission_broker: str | None = None
+    protected_submission_quantity: int | None = None
+    protected_submission_accepted: bool | None = None
+    protected_submission_status: str | None = None
+    protected_submission_message: str | None = None
+    protected_submission_order_count: int | None = None
+    protected_submission_rollback_attempted: bool | None = None
+    protected_submission_rollback_succeeded: bool | None = None
+    protected_submission_warnings: tuple[str, ...] = ()
+
 
     def __post_init__(
         self,
@@ -470,6 +480,9 @@ class RuntimeDashboardStatus:
             "execution_order_intent_valid",
             "execution_order_intent_actionable",
             "broker_submission_accepted",
+            "protected_submission_accepted",
+            "protected_submission_rollback_attempted",
+            "protected_submission_rollback_succeeded",
         ):
             value = getattr(
                 self,
@@ -3305,6 +3318,21 @@ class RuntimeDashboardStatus:
                 ),
                 "broker_submission_warnings": list(
                     self.broker_submission_warnings
+                ),
+                "protected_submission_broker": self.protected_submission_broker,
+                "protected_submission_quantity": self.protected_submission_quantity,
+                "protected_submission_accepted": self.protected_submission_accepted,
+                "protected_submission_status": self.protected_submission_status,
+                "protected_submission_message": self.protected_submission_message,
+                "protected_submission_order_count": self.protected_submission_order_count,
+                "protected_submission_rollback_attempted": (
+                    self.protected_submission_rollback_attempted
+                ),
+                "protected_submission_rollback_succeeded": (
+                    self.protected_submission_rollback_succeeded
+                ),
+                "protected_submission_warnings": list(
+                    self.protected_submission_warnings
                 ),
             }
         )
