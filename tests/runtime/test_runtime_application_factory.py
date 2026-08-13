@@ -33,6 +33,7 @@ from imie.execution import (
     AlpacaPaperExecutionAdapter,
     AlpacaPaperFillActivitySource,
     BrokerOrderQueryPort,
+    JsonFileBrokerOrderIntentStore,
     MockBrokerExecutionAdapter,
 )
 from imie.runtime.runtime_application_factory import (
@@ -226,6 +227,13 @@ def test_factory_injects_protected_alpaca_paper_port(
         application.cycle.protected_execution_port._fill_activity_source,
         AlpacaPaperFillActivitySource,
     )
+    assert isinstance(
+        application.cycle.protected_execution_port._intent_store,
+        JsonFileBrokerOrderIntentStore,
+    )
+    assert str(
+        application.cycle.protected_execution_port._intent_store.path
+    ) == "runtime/execution/broker_order_intents.json"
 
 
 def test_factory_rejects_unconfirmed_alpaca_paper_mode(
@@ -915,6 +923,10 @@ def test_multi_symbol_factory_injects_shared_alpaca_paper_port() -> None:
     assert isinstance(
         protected_execution_ports[0]._fill_activity_source,
         AlpacaPaperFillActivitySource,
+    )
+    assert isinstance(
+        protected_execution_ports[0]._intent_store,
+        JsonFileBrokerOrderIntentStore,
     )
     assert all(
         port is protected_execution_ports[0]

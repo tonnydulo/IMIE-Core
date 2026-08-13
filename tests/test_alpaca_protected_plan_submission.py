@@ -10,6 +10,7 @@ from imie.execution import (
     ProtectedExecutionPlanBuilder,
 )
 from imie.models import ExecutionOrderIntent
+from imie.models import BrokerOrderIntentRecord
 
 
 ORDER_1 = UUID("11111111-1111-1111-1111-111111111111")
@@ -62,11 +63,36 @@ def make_plan(quantity: int = 100):
     return ProtectedExecutionPlanBuilder().build(intent)
 
 
-def make_adapter(client: object) -> AlpacaPaperExecutionAdapter:
+class RecordingIntentStore:
+    def __init__(self, error: Exception | None = None) -> None:
+        self.error = error
+        self.records: list[BrokerOrderIntentRecord] = []
+
+    def save(self, record: BrokerOrderIntentRecord) -> None:
+        if self.error is not None:
+            raise self.error
+        self.records.append(record)
+
+    def get(self, *, broker: str, broker_order_id: str):
+        return next(
+            (
+                item
+                for item in self.records
+                if item.key == (broker, broker_order_id)
+            ),
+            None,
+        )
+
+
+def make_adapter(
+    client: object,
+    intent_store: RecordingIntentStore | None = None,
+) -> AlpacaPaperExecutionAdapter:
     return AlpacaPaperExecutionAdapter(
         api_key="paper-key",
         secret_key="paper-secret",
         trading_client=client,  # type: ignore[arg-type]
+        intent_store=intent_store,
     )
 
 
@@ -81,6 +107,56 @@ def test_all_brackets_accepted() -> None:
         str(ORDER_2),
     )
     assert client.cancelled == []
+
+
+def test_accepted_slices_are_recorded_with_exact_quantities() -> None:
+    client = SequencedTradingClient([order(ORDER_1), order(ORDER_2)])
+    store = RecordingIntentStore()
+
+    result = make_adapter(client, store).submit_protected_plan(make_plan())
+
+    assert result.accepted is True
+    assert tuple(item.broker_order_id for item in store.records) == (
+        str(ORDER_1),
+        str(ORDER_2),
+    )
+    assert tuple(item.submission_label for item in store.records) == (
+        "target1",
+        "target2",
+    )
+    assert tuple(item.intent.quantity for item in store.records) == (50, 50)
+    assert all(item.intent.symbol == "NVDA" for item in store.records)
+
+
+def test_persistence_failure_rolls_back_accepted_order() -> None:
+    client = SequencedTradingClient([order(ORDER_1), order(ORDER_2)])
+    store = RecordingIntentStore(RuntimeError("disk unavailable"))
+
+    result = make_adapter(client, store).submit_protected_plan(make_plan())
+
+    assert result.accepted is False
+    assert result.status == "rolled_back"
+    assert result.rollback_attempted is True
+    assert result.rollback_succeeded is True
+    assert result.rolled_back_order_ids == (str(ORDER_1),)
+    assert client.cancelled == [str(ORDER_1)]
+    assert len(client.requests) == 1
+    assert any("disk unavailable" in item for item in result.warnings)
+
+
+def test_persistence_and_cancel_failure_are_both_visible() -> None:
+    client = SequencedTradingClient(
+        [order(ORDER_1), order(ORDER_2)],
+        cancel_error=RuntimeError("cancel denied"),
+    )
+    store = RecordingIntentStore(RuntimeError("disk unavailable"))
+
+    result = make_adapter(client, store).submit_protected_plan(make_plan())
+
+    assert result.status == "rollback_failed"
+    assert result.rollback_succeeded is False
+    assert any("disk unavailable" in item for item in result.warnings)
+    assert any("cancel denied" in item for item in result.warnings)
 
 
 def test_second_rejection_cancels_first_bracket() -> None:

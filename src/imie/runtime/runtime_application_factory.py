@@ -150,6 +150,7 @@ def _build_protected_execution_port(
     from imie.execution import (
         AlpacaPaperExecutionAdapter,
         AlpacaPaperFillActivitySource,
+        JsonFileBrokerOrderIntentStore,
     )
 
     return AlpacaPaperExecutionAdapter(
@@ -158,6 +159,9 @@ def _build_protected_execution_port(
         fill_activity_source=AlpacaPaperFillActivitySource(
             api_key=settings.alpaca_api_key,
             secret_key=settings.alpaca_secret_key,
+        ),
+        intent_store=JsonFileBrokerOrderIntentStore(
+            "runtime/execution/broker_order_intents.json",
         ),
     )
 

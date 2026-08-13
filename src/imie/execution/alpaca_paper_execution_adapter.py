@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Iterable, Protocol
 
@@ -16,6 +16,7 @@ from alpaca.trading.requests import (
 )
 
 from imie.models import (
+    BrokerOrderIntentRecord,
     BrokerSubmissionResult,
     BrokerFill,
     BrokerOrderSnapshot,
@@ -25,6 +26,7 @@ from imie.models import (
     ProtectedOrderSubmission,
     ProtectedPlanSubmissionResult,
 )
+from imie.execution.broker_order_intent_store import BrokerOrderIntentStore
 from imie.execution.alpaca_protected_order_request_builder import (
     AlpacaProtectedOrderRequestBuilder,
 )
@@ -73,6 +75,7 @@ class AlpacaPaperExecutionAdapter:
             AlpacaProtectedOrderRequestBuilder | None
         ) = None,
         fill_activity_source: AlpacaFillActivitySource | None = None,
+        intent_store: BrokerOrderIntentStore | None = None,
     ) -> None:
         self._api_key = self._normalize_credential(
             api_key,
@@ -128,6 +131,13 @@ class AlpacaPaperExecutionAdapter:
                 "fill_activity_source must expose get_fill_activities()."
             )
         self._fill_activity_source = fill_activity_source
+
+        if intent_store is not None and not isinstance(
+            intent_store,
+            BrokerOrderIntentStore,
+        ):
+            raise TypeError("intent_store must satisfy BrokerOrderIntentStore.")
+        self._intent_store = intent_store
 
     def get_order_snapshot(
         self,
@@ -217,12 +227,12 @@ class AlpacaPaperExecutionAdapter:
 
         requests = self._protected_request_builder.build(plan)
 
-        if len(requests) > 1 and not callable(
+        if (len(requests) > 1 or self._intent_store is not None) and not callable(
             getattr(self._trading_client, "cancel_order_by_id", None)
         ):
             raise TypeError(
                 "trading_client must expose cancel_order_by_id() "
-                "for multi-slice protected plans."
+                "for compensatable protected plans."
             )
 
         submissions: list[ProtectedOrderSubmission] = []
@@ -260,6 +270,27 @@ class AlpacaPaperExecutionAdapter:
 
             if submission.accepted and submission.broker_order_id is not None:
                 accepted_order_ids.append(submission.broker_order_id)
+                if self._intent_store is not None:
+                    try:
+                        self._intent_store.save(
+                            BrokerOrderIntentRecord(
+                                broker=self.broker_name,
+                                broker_order_id=submission.broker_order_id,
+                                intent=self._slice_intent(plan, order_slice.label),
+                                recorded_at=datetime.now(timezone.utc),
+                                submission_label=order_slice.label,
+                            )
+                        )
+                    except Exception as exc:
+                        return self._rollback_protected_plan(
+                            plan=plan,
+                            submissions=tuple(submissions),
+                            accepted_order_ids=tuple(accepted_order_ids),
+                            extra_warnings=(
+                                "Broker order intent persistence failed: "
+                                f"{exc}",
+                            ),
+                        )
                 continue
 
             return self._rollback_protected_plan(
@@ -286,6 +317,7 @@ class AlpacaPaperExecutionAdapter:
         plan: ProtectedExecutionPlan,
         submissions: tuple[ProtectedOrderSubmission, ...],
         accepted_order_ids: tuple[str, ...],
+        extra_warnings: tuple[str, ...] = (),
     ) -> ProtectedPlanSubmissionResult:
         if not accepted_order_ids:
             return ProtectedPlanSubmissionResult(
@@ -297,7 +329,7 @@ class AlpacaPaperExecutionAdapter:
                 status="rejected",
                 message="Alpaca paper rejected the protected plan.",
                 submissions=submissions,
-                warnings=plan.warnings,
+                warnings=plan.warnings + extra_warnings,
             )
 
         rolled_back: list[str] = []
@@ -330,7 +362,35 @@ class AlpacaPaperExecutionAdapter:
             rollback_attempted=True,
             rollback_succeeded=rollback_succeeded,
             rolled_back_order_ids=tuple(rolled_back),
-            warnings=plan.warnings + tuple(rollback_warnings),
+            warnings=(
+                plan.warnings
+                + extra_warnings
+                + tuple(rollback_warnings)
+            ),
+        )
+
+    @staticmethod
+    def _slice_intent(
+        plan: ProtectedExecutionPlan,
+        label: str,
+    ) -> ExecutionOrderIntent:
+        slices = {item.label: item for item in plan.slices}
+        order_slice = slices[label]
+        target1 = slices["target1"].target_price
+        target2 = slices.get("target2", slices["target1"]).target_price
+        return ExecutionOrderIntent(
+            symbol=plan.symbol,
+            side=plan.side,
+            quantity=order_slice.quantity,
+            order_type=plan.order_type,
+            entry_price=plan.entry_price,
+            stop_price=order_slice.stop_price,
+            target1_price=target1,
+            target2_price=target2,
+            time_in_force=plan.time_in_force,
+            valid=plan.valid,
+            actionable=plan.actionable,
+            warnings=plan.warnings,
         )
 
     def submit_order(
