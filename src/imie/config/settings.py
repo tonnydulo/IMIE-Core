@@ -18,7 +18,7 @@ class AppSettings:
 
     alpaca_api_key: str = ""
     alpaca_secret_key: str = ""
-    alpaca_paper: bool = True
+    alpaca_paper: bool = False
 
 
 def load_settings() -> AppSettings:
@@ -33,5 +33,5 @@ def load_settings() -> AppSettings:
         schwab_callback_url=os.getenv("SCHWAB_CALLBACK_URL", "https://127.0.0.1"),
         alpaca_api_key=os.getenv("ALPACA_API_KEY", ""),
         alpaca_secret_key=os.getenv("ALPACA_SECRET_KEY", ""),
-        alpaca_paper=os.getenv("ALPACA_PAPER", "true").lower() == "true",
+        alpaca_paper=os.getenv("ALPACA_PAPER", "false").lower() == "true",
     )

@@ -221,9 +221,11 @@ class RuntimeConfig:
         if execution_mode not in {
             "disabled",
             "mock",
+            "alpaca-paper",
         }:
             raise ValueError(
-                "execution_mode must be disabled or mock."
+                "execution_mode must be disabled, mock, "
+                "or alpaca-paper."
             )
 
         return execution_mode

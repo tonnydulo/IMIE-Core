@@ -40,6 +40,14 @@ def test_execution_mode_is_normalized() -> None:
     assert config.execution_mode == "mock"
 
 
+def test_alpaca_paper_execution_mode_is_normalized() -> None:
+    config = RuntimeConfig(
+        execution_mode=" ALPACA-PAPER ",
+    )
+
+    assert config.execution_mode == "alpaca-paper"
+
+
 @pytest.mark.parametrize(
     "execution_mode",
     [
@@ -251,4 +259,3 @@ def test_heartbeat_interval_must_be_positive(
         RuntimeConfig(
             heartbeat_interval_seconds=value,
         )
-

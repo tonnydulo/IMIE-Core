@@ -30,6 +30,7 @@ from imie.services import (
     MarketDataService,
 )
 from imie.execution import (
+    AlpacaPaperExecutionAdapter,
     MockBrokerExecutionAdapter,
 )
 from imie.runtime.runtime_application_factory import (
@@ -190,6 +191,82 @@ def test_factory_injects_mock_broker_only_when_enabled(
         application.cycle.broker_execution_port,
         MockBrokerExecutionAdapter,
     )
+    assert application.cycle.protected_execution_port is None
+
+
+def test_factory_injects_protected_alpaca_paper_port(
+    tmp_path: Path,
+) -> None:
+    application = RuntimeApplicationFactory.create(
+        settings=AppSettings(
+            default_provider="mock",
+            alpaca_api_key="paper-key",
+            alpaca_secret_key="paper-secret",
+            alpaca_paper=True,
+        ),
+        config=RuntimeConfig(
+            execution_mode="alpaca-paper",
+        ),
+        history_file=tmp_path / "cycles.jsonl",
+    )
+
+    assert application.cycle.broker_execution_port is None
+    assert isinstance(
+        application.cycle.protected_execution_port,
+        AlpacaPaperExecutionAdapter,
+    )
+
+
+def test_factory_rejects_alpaca_paper_mode_when_paper_is_false(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="ALPACA_PAPER=true",
+    ):
+        RuntimeApplicationFactory.create(
+            settings=AppSettings(
+                default_provider="mock",
+                alpaca_api_key="paper-key",
+                alpaca_secret_key="paper-secret",
+                alpaca_paper=False,
+            ),
+            config=RuntimeConfig(
+                execution_mode="alpaca-paper",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
+
+
+@pytest.mark.parametrize(
+    ("api_key", "secret_key"),
+    [
+        ("", "paper-secret"),
+        ("paper-key", ""),
+        (" ", "paper-secret"),
+    ],
+)
+def test_factory_rejects_alpaca_paper_mode_without_credentials(
+    tmp_path: Path,
+    api_key: str,
+    secret_key: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="ALPACA_API_KEY.*ALPACA_SECRET_KEY",
+    ):
+        RuntimeApplicationFactory.create(
+            settings=AppSettings(
+                default_provider="mock",
+                alpaca_api_key=api_key,
+                alpaca_secret_key=secret_key,
+                alpaca_paper=True,
+            ),
+            config=RuntimeConfig(
+                execution_mode="alpaca-paper",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
 
 
 def test_factory_builds_console_and_history_publishers(
@@ -755,6 +832,50 @@ def test_multi_symbol_factory_injects_shared_mock_broker() -> None:
     assert all(
         port is broker_execution_ports[0]
         for port in broker_execution_ports
+    )
+    assert all(
+        cycle.protected_execution_port is None
+        for cycle in application.cycles
+    )
+
+
+def test_multi_symbol_factory_injects_shared_alpaca_paper_port() -> None:
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=AppSettings(
+                default_provider="mock",
+                alpaca_api_key="paper-key",
+                alpaca_secret_key="paper-secret",
+                alpaca_paper=True,
+            ),
+            universe=RuntimeSymbolUniverse(
+                symbols=(
+                    "NVDA",
+                    "AMD",
+                )
+            ),
+            config=RuntimeConfig(
+                execution_mode="alpaca-paper",
+            ),
+        )
+    )
+
+    protected_execution_ports = tuple(
+        cycle.protected_execution_port
+        for cycle in application.cycles
+    )
+
+    assert all(
+        cycle.broker_execution_port is None
+        for cycle in application.cycles
+    )
+    assert isinstance(
+        protected_execution_ports[0],
+        AlpacaPaperExecutionAdapter,
+    )
+    assert all(
+        port is protected_execution_ports[0]
+        for port in protected_execution_ports
     )
 
 

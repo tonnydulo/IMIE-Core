@@ -242,6 +242,17 @@ def test_parser_accepts_mock_execution_mode() -> None:
 
     assert arguments.execution_mode == "mock"
 
+
+def test_parser_accepts_alpaca_paper_execution_mode() -> None:
+    arguments = build_parser().parse_args(
+        [
+            "--execution-mode",
+            "alpaca-paper",
+        ]
+    )
+
+    assert arguments.execution_mode == "alpaca-paper"
+
 def test_parser_accepts_session_overrides() -> None:
     arguments = build_parser().parse_args(
         [

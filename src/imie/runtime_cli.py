@@ -117,11 +117,13 @@ def build_parser() -> argparse.ArgumentParser:
         choices=(
             "disabled",
             "mock",
+            "alpaca-paper",
         ),
         default="disabled",
         help=(
             "Broker execution mode. Default: disabled. "
-            "Use mock for deterministic simulated submissions."
+            "Use mock for deterministic simulated submissions "
+            "or alpaca-paper for protected paper orders."
         ),
     )
 

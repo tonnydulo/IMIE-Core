@@ -86,6 +86,7 @@ from imie.runtime.position_sizing_config import (
 from imie.execution import (
     BrokerExecutionPort,
     MockBrokerExecutionAdapter,
+    ProtectedExecutionPort,
 )
 
 
@@ -98,10 +99,56 @@ def _build_broker_execution_port(
     if execution_mode == "mock":
         return MockBrokerExecutionAdapter()
 
+    if execution_mode == "alpaca-paper":
+        return None
+
     raise ValueError(
         "Unsupported execution mode: "
         f"{execution_mode}."
     )
+
+
+def _build_protected_execution_port(
+    *,
+    execution_mode: str,
+    settings: AppSettings,
+) -> ProtectedExecutionPort | None:
+    if execution_mode in {
+        "disabled",
+        "mock",
+    }:
+        return None
+
+    if execution_mode != "alpaca-paper":
+        raise ValueError(
+            "Unsupported execution mode: "
+            f"{execution_mode}."
+        )
+
+    if settings.alpaca_paper is not True:
+        raise ValueError(
+            "alpaca-paper execution requires "
+            "ALPACA_PAPER=true."
+        )
+
+    if (
+        not settings.alpaca_api_key.strip()
+        or not settings.alpaca_secret_key.strip()
+    ):
+        raise ValueError(
+            "alpaca-paper execution requires ALPACA_API_KEY "
+            "and ALPACA_SECRET_KEY."
+        )
+
+    from imie.execution import (
+        AlpacaPaperExecutionAdapter,
+    )
+
+    return AlpacaPaperExecutionAdapter(
+        api_key=settings.alpaca_api_key,
+        secret_key=settings.alpaca_secret_key,
+    )
+
 
 def _build_symbol_cycles(
     *,
@@ -112,6 +159,7 @@ def _build_symbol_cycles(
     session_policy: SessionPolicy,
     position_sizing_config: PositionSizingConfig | None = None,
     broker_execution_port: BrokerExecutionPort | None = None,
+    protected_execution_port: ProtectedExecutionPort | None = None,
 ) -> tuple[
     SingleAnalysisCycle,
     ...,
@@ -134,6 +182,7 @@ def _build_symbol_cycles(
                 resolved_position_sizing_config
             ),
             broker_execution_port=broker_execution_port,
+            protected_execution_port=protected_execution_port,
         )
         for symbol in universe.symbols
     )
@@ -224,6 +273,12 @@ class RuntimeApplicationFactory:
                 runtime_config.execution_mode
             )
         )
+        protected_execution_port = (
+            _build_protected_execution_port(
+                execution_mode=runtime_config.execution_mode,
+                settings=settings,
+            )
+        )
 
         resolved_calendar_years = (
             calendar_years
@@ -288,6 +343,7 @@ class RuntimeApplicationFactory:
                 resolved_position_sizing_config
             ),
             broker_execution_port=broker_execution_port,
+            protected_execution_port=protected_execution_port,
         )
 
         cycle_runner = MultiSymbolCycleRunner(
@@ -579,6 +635,12 @@ class RuntimeApplicationFactory:
             broker_execution_port=(
                 _build_broker_execution_port(
                     runtime_config.execution_mode
+                )
+            ),
+            protected_execution_port=(
+                _build_protected_execution_port(
+                    execution_mode=runtime_config.execution_mode,
+                    settings=settings,
                 )
             ),
         )
