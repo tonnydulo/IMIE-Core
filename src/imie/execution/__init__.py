@@ -33,6 +33,7 @@ from imie.execution.console_reconciliation_result_publisher import (
 from imie.execution.json_reconciliation_result_publisher import (
     JsonReconciliationResultPublisher,
 )
+from imie.execution.position_state_engine import PositionStateEngine
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -49,6 +50,7 @@ __all__ = [
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
     "ProtectedExecutionPort",
+    "PositionStateEngine",
 ]
 
 
