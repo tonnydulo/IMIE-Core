@@ -20,6 +20,7 @@ test = [
 imie-runtime = "imie.runtime_cli:main"
 imie-reconcile = "imie.reconcile_cli:main"
 imie-position-reconcile = "imie.position_reconcile_cli:main"
+imie-position-protect = "imie.position_protect_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
