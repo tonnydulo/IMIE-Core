@@ -1084,6 +1084,7 @@ def test_execution_safety_fields_are_serialized() -> None:
         execution_safety_maximum_order_notional=25000.0,
         execution_safety_maximum_risk_amount=250.0,
         execution_safety_allowed=True,
+        execution_safety_kill_switch_active=False,
         execution_safety_violations=(),
         execution_safety_warnings=("Paper execution only.",),
         execution_submission_fingerprint="a" * 64,
@@ -1099,6 +1100,7 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["execution_safety_maximum_order_notional"] == 25000.0
     assert payload["execution_safety_maximum_risk_amount"] == 250.0
     assert payload["execution_safety_allowed"] is True
+    assert payload["execution_safety_kill_switch_active"] is False
     assert payload["execution_safety_violations"] == []
     assert payload["execution_safety_warnings"] == ["Paper execution only."]
     assert payload["execution_submission_fingerprint"] == "a" * 64

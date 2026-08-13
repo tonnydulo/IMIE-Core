@@ -454,6 +454,7 @@ class JsonResultPublisher:
                 "notional_within_limit": safety.notional_within_limit,
                 "risk_within_limit": safety.risk_within_limit,
                 "allowed": safety.allowed,
+                "kill_switch_active": safety.kill_switch_active,
                 "violations": list(safety.violations),
                 "warnings": list(safety.warnings),
             }

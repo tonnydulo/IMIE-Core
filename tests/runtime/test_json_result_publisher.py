@@ -570,6 +570,7 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         candidate_valid=True, candidate_actionable=True,
         notional_within_limit=True, risk_within_limit=True,
         allowed=True,
+        kill_switch_active=False,
     )
     reservation = ExecutionSubmissionReservation(
         fingerprint="a" * 64, symbol="NVDA", side="buy", quantity=156,
@@ -584,6 +585,7 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
     )
 
     assert payload["execution_safety_assessment"]["allowed"] is True
+    assert payload["execution_safety_assessment"]["kill_switch_active"] is False
     assert payload["execution_safety_assessment"]["maximum_risk_amount"] == 125.0
     assert payload["execution_submission_reservation"] == {
         "fingerprint": "a" * 64,

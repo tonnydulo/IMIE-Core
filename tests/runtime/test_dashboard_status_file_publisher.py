@@ -12075,6 +12075,7 @@ def test_publish_result_populates_execution_safety_details(
         notional_within_limit=True,
         risk_within_limit=True,
         allowed=True,
+        kill_switch_active=False,
     )
     reservation = ExecutionSubmissionReservation(
         fingerprint="a" * 64,
@@ -12105,6 +12106,7 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["execution_safety_maximum_order_notional"] == 25000.0
     assert payload["execution_safety_maximum_risk_amount"] == 250.0
     assert payload["execution_safety_allowed"] is True
+    assert payload["execution_safety_kill_switch_active"] is False
     assert payload["execution_safety_violations"] == []
     assert payload["execution_safety_warnings"] == []
     assert payload["execution_submission_fingerprint"] == "a" * 64
@@ -12126,7 +12128,11 @@ def test_publish_result_identifies_safety_block(
         notional_within_limit=False,
         risk_within_limit=True,
         allowed=False,
-        violations=("Order notional exceeds maximum.",),
+        kill_switch_active=True,
+        violations=(
+            "Order notional exceeds maximum.",
+            "Execution kill switch is active.",
+        ),
     )
     result = dataclasses.replace(
         make_completed_result_with_execution_candidate(),
@@ -12145,6 +12151,8 @@ def test_publish_result_identifies_safety_block(
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["execution_safety_state"] == "BLOCKED"
     assert payload["execution_safety_allowed"] is False
+    assert payload["execution_safety_kill_switch_active"] is True
     assert payload["execution_safety_violations"] == [
-        "Order notional exceeds maximum."
+        "Order notional exceeds maximum.",
+        "Execution kill switch is active.",
     ]

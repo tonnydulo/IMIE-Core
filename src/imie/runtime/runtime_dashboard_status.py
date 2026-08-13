@@ -237,6 +237,7 @@ class RuntimeDashboardStatus:
     execution_safety_maximum_order_notional: float | None = None
     execution_safety_maximum_risk_amount: float | None = None
     execution_safety_allowed: bool | None = None
+    execution_safety_kill_switch_active: bool | None = None
     execution_safety_violations: tuple[str, ...] = ()
     execution_safety_warnings: tuple[str, ...] = ()
     execution_submission_fingerprint: str | None = None
@@ -494,6 +495,7 @@ class RuntimeDashboardStatus:
             "execution_order_intent_actionable",
             "broker_submission_accepted",
             "execution_safety_allowed",
+            "execution_safety_kill_switch_active",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3346,6 +3348,9 @@ class RuntimeDashboardStatus:
                     self.execution_safety_maximum_risk_amount
                 ),
                 "execution_safety_allowed": self.execution_safety_allowed,
+                "execution_safety_kill_switch_active": (
+                    self.execution_safety_kill_switch_active
+                ),
                 "execution_safety_violations": list(
                     self.execution_safety_violations
                 ),

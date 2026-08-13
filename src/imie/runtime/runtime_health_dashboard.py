@@ -1826,6 +1826,11 @@ def build_dashboard_html(
             <div id="executionSafetyAllowed" class="value">—</div>
         </article>
 
+        <article class="card">
+            <div class="label">Execution Kill Switch</div>
+            <div id="executionSafetyKillSwitchActive" class="value">—</div>
+        </article>
+
         <article class="card wide">
             <div class="label">Safety Violations</div>
             <ul id="executionSafetyViolations" class="explanation-list warning-list">
@@ -4921,6 +4926,10 @@ def build_dashboard_html(
             setText(
                 "executionSafetyAllowed",
                 formatBoolean(payload.execution_safety_allowed)
+            );
+            setText(
+                "executionSafetyKillSwitchActive",
+                formatBoolean(payload.execution_safety_kill_switch_active)
             );
             updateTextList(
                 "executionSafetyViolations",

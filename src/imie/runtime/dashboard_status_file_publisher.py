@@ -1549,6 +1549,7 @@ class DashboardStatusFilePublisher:
             execution_safety_maximum_order_notional,
             execution_safety_maximum_risk_amount,
             execution_safety_allowed,
+            execution_safety_kill_switch_active,
             execution_safety_violations,
             execution_safety_warnings,
             execution_submission_fingerprint,
@@ -1848,6 +1849,9 @@ class DashboardStatusFilePublisher:
                 execution_safety_maximum_risk_amount
             ),
             execution_safety_allowed=execution_safety_allowed,
+            execution_safety_kill_switch_active=(
+                execution_safety_kill_switch_active
+            ),
             execution_safety_violations=execution_safety_violations,
             execution_safety_warnings=execution_safety_warnings,
             execution_submission_fingerprint=execution_submission_fingerprint,
@@ -3096,7 +3100,9 @@ def _execution_safety_dashboard_values(
     broker_submission_result: object | None,
 ) -> tuple[object | None, ...]:
     if assessment is None:
-        return (None, None, None, None, None, None, None, (), (), None, None)
+        return (
+            None, None, None, None, None, None, None, None, (), (), None, None
+        )
 
     if not assessment.allowed:
         state = "BLOCKED"
@@ -3115,6 +3121,7 @@ def _execution_safety_dashboard_values(
         assessment.maximum_order_notional,
         assessment.maximum_risk_amount,
         assessment.allowed,
+        assessment.kill_switch_active,
         tuple(assessment.violations),
         tuple(assessment.warnings),
         reservation.fingerprint if reservation is not None else None,

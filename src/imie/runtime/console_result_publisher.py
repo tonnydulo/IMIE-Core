@@ -442,6 +442,7 @@ class ConsoleResultPublisher:
             lines.extend([
                 "Execution Safety Assessment :",
                 f"Allowed      : {safety.allowed}",
+                f"Kill Switch  : {safety.kill_switch_active}",
                 f"Notional     : ${safety.order_notional:.2f}",
                 f"Notional Max : ${safety.maximum_order_notional:.2f}",
                 f"Risk Amount  : ${safety.risk_amount:.2f}",

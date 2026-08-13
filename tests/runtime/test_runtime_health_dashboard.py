@@ -422,6 +422,9 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
             "execution_safety_maximum_risk_amount"
         ),
         "executionSafetyAllowed": "execution_safety_allowed",
+        "executionSafetyKillSwitchActive": (
+            "execution_safety_kill_switch_active"
+        ),
         "executionSafetyViolations": "execution_safety_violations",
         "executionSafetyWarnings": "execution_safety_warnings",
         "executionSubmissionFingerprint": (

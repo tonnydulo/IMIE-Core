@@ -225,7 +225,11 @@ def test_safety_block_and_reservation_are_visible() -> None:
         candidate_valid=True, candidate_actionable=True,
         notional_within_limit=False, risk_within_limit=True,
         allowed=False,
-        violations=("Order notional exceeds maximum.",),
+        kill_switch_active=True,
+        violations=(
+            "Order notional exceeds maximum.",
+            "Execution kill switch is active.",
+        ),
     )
     blocked_lines = ConsoleResultPublisher(output=lambda line: None).format_lines(
         replace(
@@ -236,6 +240,7 @@ def test_safety_block_and_reservation_are_visible() -> None:
     )
     assert "Execution Safety Assessment :" in blocked_lines
     assert "Allowed      : False" in blocked_lines
+    assert "Kill Switch  : True" in blocked_lines
     assert "Safety Block : Order notional exceeds maximum." in blocked_lines
 
     reservation = ExecutionSubmissionReservation(
@@ -247,6 +252,7 @@ def test_safety_block_and_reservation_are_visible() -> None:
         maximum_order_notional=25_000,
         notional_within_limit=True,
         allowed=True,
+        kill_switch_active=False,
         violations=(),
     )
     reserved_lines = ConsoleResultPublisher(output=lambda line: None).format_lines(
