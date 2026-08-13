@@ -83,6 +83,7 @@ __all__ = [
     "BrokerPositionQueryPort",
     "BrokerPositionProtectionValidator",
     "AlpacaPaperPositionQueryAdapter",
+    "AlpacaPaperPositionProtectionServiceFactory",
     "BrokerOrderIntentStore",
     "ConsoleReconciliationResultPublisher",
     "ExecutionReconciliationEngine",
@@ -110,6 +111,13 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name == "AlpacaPaperPositionProtectionServiceFactory":
+        from imie.execution.alpaca_paper_position_protection_service_factory import (
+            AlpacaPaperPositionProtectionServiceFactory,
+        )
+
+        return AlpacaPaperPositionProtectionServiceFactory
+
     if name == "AlpacaPaperPositionQueryAdapter":
         from imie.execution.alpaca_paper_position_query_adapter import (
             AlpacaPaperPositionQueryAdapter,
