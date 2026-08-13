@@ -132,6 +132,23 @@ def test_financial_limit_failure_never_reaches_broker(policy_overrides):
     assert broker.calls == []
 
 
+def test_active_kill_switch_never_reserves_or_reaches_broker():
+    broker = Broker()
+    reservation_store = ReservationStore()
+
+    result = service(
+        broker,
+        reservation_store=reservation_store,
+        kill_switch_active=True,
+    ).submit(candidate=candidate(), intent=intent())
+
+    assert result.submitted is False
+    assert result.assessment.kill_switch_active is True
+    assert result.reservation is None
+    assert reservation_store.values == {}
+    assert broker.calls == []
+
+
 def test_non_actionable_pair_never_reaches_broker():
     broker = Broker()
     value = candidate(valid=True, actionable=False, quantity=0)

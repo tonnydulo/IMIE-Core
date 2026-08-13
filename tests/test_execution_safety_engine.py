@@ -48,6 +48,27 @@ def test_candidate_within_both_limits_is_allowed():
     assert result.violations == ()
 
 
+def test_active_kill_switch_blocks_otherwise_safe_candidate():
+    result = ExecutionSafetyEngine().assess(
+        candidate=candidate(),
+        policy=policy(kill_switch_active=True),
+    )
+
+    assert result.allowed is False
+    assert result.kill_switch_active is True
+    assert result.violations == ("Execution kill switch is active.",)
+
+
+def test_inactive_kill_switch_preserves_safe_candidate():
+    result = ExecutionSafetyEngine().assess(
+        candidate=candidate(),
+        policy=policy(kill_switch_active=False),
+    )
+
+    assert result.allowed is True
+    assert result.kill_switch_active is False
+
+
 def test_exact_limit_boundaries_are_allowed():
     result = ExecutionSafetyEngine().assess(
         candidate=candidate(),
@@ -127,6 +148,7 @@ def test_candidate_warnings_are_preserved():
         ("maximum_order_notional", float("inf")),
         ("maximum_risk_amount", 0),
         ("maximum_risk_amount", True),
+        ("kill_switch_active", "yes"),
     ],
 )
 def test_policy_requires_finite_positive_limits(field, value):

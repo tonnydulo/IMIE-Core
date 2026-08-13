@@ -43,8 +43,15 @@ class ExecutionSafetyEngine:
             violations.append("Execution candidate is invalid.")
         if not candidate.actionable:
             violations.append("Execution candidate is not actionable.")
+        if policy.kill_switch_active:
+            violations.append("Execution kill switch is active.")
         limits_pass = notional_within_limit and risk_within_limit
-        allowed = limits_pass and candidate.valid and candidate.actionable
+        allowed = (
+            limits_pass
+            and candidate.valid
+            and candidate.actionable
+            and not policy.kill_switch_active
+        )
         return ExecutionSafetyAssessment(
             symbol=candidate.symbol,
             order_notional=candidate.position_notional,
@@ -56,6 +63,7 @@ class ExecutionSafetyEngine:
             notional_within_limit=notional_within_limit,
             risk_within_limit=risk_within_limit,
             allowed=allowed,
+            kill_switch_active=policy.kill_switch_active,
             violations=tuple(violations),
             warnings=tuple(warnings),
         )

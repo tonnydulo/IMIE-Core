@@ -17,6 +17,7 @@ class ExecutionSafetyAssessment:
     notional_within_limit: bool
     risk_within_limit: bool
     allowed: bool
+    kill_switch_active: bool = False
     violations: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
@@ -43,6 +44,7 @@ class ExecutionSafetyAssessment:
             "candidate_valid",
             "candidate_actionable",
             "allowed",
+            "kill_switch_active",
         ):
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be a bool.")
@@ -51,6 +53,7 @@ class ExecutionSafetyAssessment:
             and self.risk_within_limit
             and self.candidate_valid
             and self.candidate_actionable
+            and not self.kill_switch_active
         ):
             raise ValueError("allowed must match the individual safety checks.")
         for name in ("violations", "warnings"):

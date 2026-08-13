@@ -9,8 +9,11 @@ from dataclasses import dataclass
 class ExecutionSafetyPolicy:
     maximum_order_notional: float
     maximum_risk_amount: float
+    kill_switch_active: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.kill_switch_active, bool):
+            raise TypeError("kill_switch_active must be a bool.")
         for name in ("maximum_order_notional", "maximum_risk_amount"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int | float):
