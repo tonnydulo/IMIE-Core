@@ -1910,6 +1910,60 @@ def build_dashboard_html(
             </ul>
         </article>
 
+        <article class="card">
+            <div class="label">Protected Broker</div>
+            <div id="protectedSubmissionBroker" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Protected Quantity</div>
+            <div id="protectedSubmissionQuantity" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Protected Accepted</div>
+            <div id="protectedSubmissionAccepted" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Protected Status</div>
+            <div id="protectedSubmissionStatus" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Bracket Count</div>
+            <div id="protectedSubmissionOrderCount" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Rollback Attempted</div>
+            <div id="protectedSubmissionRollbackAttempted" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Rollback Succeeded</div>
+            <div id="protectedSubmissionRollbackSucceeded" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Protected Submission Message</div>
+            <div id="protectedSubmissionMessage" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Protected Brackets</div>
+            <ul id="protectedSubmissionOrders" class="explanation-list">
+                <li class="empty-list">No protected brackets.</li>
+            </ul>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Protected Submission Warnings</div>
+            <ul id="protectedSubmissionWarnings" class="explanation-list warning-list">
+                <li class="empty-list">No protected submission warnings.</li>
+            </ul>
+        </article>
+
             <article class="card">
                 <div class="label">
                     Institutional Bias
@@ -4816,6 +4870,53 @@ def build_dashboard_html(
                 "brokerSubmissionWarnings",
                 payload.broker_submission_warnings,
                 "No broker submission warnings."
+            );
+
+            setText(
+                "protectedSubmissionBroker",
+                payload.protected_submission_broker ?? "—"
+            );
+            setText(
+                "protectedSubmissionQuantity",
+                payload.protected_submission_quantity ?? "—"
+            );
+            setText(
+                "protectedSubmissionAccepted",
+                formatBoolean(payload.protected_submission_accepted)
+            );
+            setText(
+                "protectedSubmissionStatus",
+                payload.protected_submission_status ?? "—"
+            );
+            setText(
+                "protectedSubmissionMessage",
+                payload.protected_submission_message ?? "—"
+            );
+            setText(
+                "protectedSubmissionOrderCount",
+                payload.protected_submission_order_count ?? "—"
+            );
+            setText(
+                "protectedSubmissionRollbackAttempted",
+                formatBoolean(
+                    payload.protected_submission_rollback_attempted
+                )
+            );
+            setText(
+                "protectedSubmissionRollbackSucceeded",
+                formatBoolean(
+                    payload.protected_submission_rollback_succeeded
+                )
+            );
+            updateTextList(
+                "protectedSubmissionOrders",
+                payload.protected_submission_orders,
+                "No protected brackets."
+            );
+            updateTextList(
+                "protectedSubmissionWarnings",
+                payload.protected_submission_warnings,
+                "No protected submission warnings."
             );
 
                 updateInstitutionalDirection(

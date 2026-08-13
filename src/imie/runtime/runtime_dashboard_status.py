@@ -238,6 +238,7 @@ class RuntimeDashboardStatus:
     protected_submission_order_count: int | None = None
     protected_submission_rollback_attempted: bool | None = None
     protected_submission_rollback_succeeded: bool | None = None
+    protected_submission_orders: tuple[str, ...] = ()
     protected_submission_warnings: tuple[str, ...] = ()
 
 
@@ -3330,6 +3331,9 @@ class RuntimeDashboardStatus:
                 ),
                 "protected_submission_rollback_succeeded": (
                     self.protected_submission_rollback_succeeded
+                ),
+                "protected_submission_orders": list(
+                    self.protected_submission_orders
                 ),
                 "protected_submission_warnings": list(
                     self.protected_submission_warnings

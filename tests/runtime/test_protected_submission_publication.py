@@ -19,6 +19,9 @@ from imie.runtime import (
     RuntimeHealthState,
     RuntimeHealthSummary,
 )
+from imie.runtime.dashboard_status_file_publisher import (
+    _protected_submission_dashboard_values,
+)
 
 
 CHECKED_AT = datetime(2026, 8, 13, 15, 30, tzinfo=timezone.utc)
@@ -186,3 +189,18 @@ def test_dashboard_status_serializes_protected_summary() -> None:
     assert payload["protected_submission_warnings"] == [
         "Second bracket rejected."
     ]
+
+
+def test_dashboard_values_include_individual_brackets() -> None:
+    values = _protected_submission_dashboard_values(
+        make_protected_result()
+    )
+
+    assert values[5] == 2
+    assert values[8] == (
+        "target1: qty=50, accepted=True, order=order-1, "
+        "status=accepted",
+        "target2: qty=50, accepted=False, order=—, "
+        "status=rejected",
+    )
+    assert values[9] == ("Second bracket rejected.",)

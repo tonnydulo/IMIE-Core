@@ -1538,6 +1538,7 @@ class DashboardStatusFilePublisher:
             protected_submission_order_count,
             protected_submission_rollback_attempted,
             protected_submission_rollback_succeeded,
+            protected_submission_orders,
             protected_submission_warnings,
         ) = _protected_submission_dashboard_values(
             protected_submission_result
@@ -1818,6 +1819,7 @@ class DashboardStatusFilePublisher:
             protected_submission_rollback_succeeded=(
                 protected_submission_rollback_succeeded
             ),
+            protected_submission_orders=protected_submission_orders,
             protected_submission_warnings=protected_submission_warnings,
 
             decision_confidence=decision_confidence,
@@ -3047,7 +3049,7 @@ def _protected_submission_dashboard_values(
     result: object | None,
 ) -> tuple[object | None, ...]:
     if result is None:
-        return (None, None, None, None, None, None, None, None, ())
+        return (None, None, None, None, None, None, None, None, (), ())
 
     return (
         result.broker,
@@ -3058,6 +3060,15 @@ def _protected_submission_dashboard_values(
         len(result.submissions),
         result.rollback_attempted,
         result.rollback_succeeded,
+        tuple(
+            (
+                f"{item.label}: qty={item.quantity}, "
+                f"accepted={item.accepted}, "
+                f"order={item.broker_order_id or '—'}, "
+                f"status={item.status}"
+            )
+            for item in result.submissions
+        ),
         tuple(result.warnings),
     )
 

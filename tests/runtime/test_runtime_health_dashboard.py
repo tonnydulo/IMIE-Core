@@ -406,6 +406,31 @@ def test_dashboard_html_contains_broker_submission_fields() -> None:
     assert "payload.broker_submission_message" in html
     assert "payload.broker_submission_warnings" in html
 
+
+def test_dashboard_html_contains_protected_submission_fields() -> None:
+    html = build_dashboard_html()
+
+    mappings = {
+        "protectedSubmissionBroker": "protected_submission_broker",
+        "protectedSubmissionQuantity": "protected_submission_quantity",
+        "protectedSubmissionAccepted": "protected_submission_accepted",
+        "protectedSubmissionStatus": "protected_submission_status",
+        "protectedSubmissionMessage": "protected_submission_message",
+        "protectedSubmissionOrderCount": "protected_submission_order_count",
+        "protectedSubmissionRollbackAttempted": (
+            "protected_submission_rollback_attempted"
+        ),
+        "protectedSubmissionRollbackSucceeded": (
+            "protected_submission_rollback_succeeded"
+        ),
+        "protectedSubmissionOrders": "protected_submission_orders",
+        "protectedSubmissionWarnings": "protected_submission_warnings",
+    }
+
+    for element_id, payload_field in mappings.items():
+        assert f'id="{element_id}"' in html
+        assert f"payload.{payload_field}" in html
+
 def test_dashboard_html_contains_trade_plan_formatters() -> None:
     html = build_dashboard_html()
 
@@ -2245,4 +2270,3 @@ def test_dashboard_does_not_use_generic_count_renderer_for_missing_confidence(
         '"analystEnabledMissingConfidenceCount",'
         not in html
     )
-
