@@ -6,11 +6,15 @@ from imie.execution.broker_execution_port import (
 from imie.execution.mock_broker_execution_adapter import (
     MockBrokerExecutionAdapter,
 )
+from imie.execution.protected_execution_plan_builder import (
+    ProtectedExecutionPlanBuilder,
+)
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
     "BrokerExecutionPort",
     "MockBrokerExecutionAdapter",
+    "ProtectedExecutionPlanBuilder",
 ]
 
 

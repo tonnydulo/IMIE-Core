@@ -99,6 +99,12 @@ from imie.models.execution_order_intent import (
 from imie.models.broker_submission_result import (
     BrokerSubmissionResult,
 )
+from imie.models.protected_order_slice import (
+    ProtectedOrderSlice,
+)
+from imie.models.protected_execution_plan import (
+    ProtectedExecutionPlan,
+)
 
 __all__ = [
     "AcceptanceResult",
@@ -166,4 +172,6 @@ __all__ = [
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "BrokerSubmissionResult",
+    "ProtectedExecutionPlan",
+    "ProtectedOrderSlice",
 ]
