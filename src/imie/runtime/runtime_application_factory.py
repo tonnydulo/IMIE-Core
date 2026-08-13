@@ -83,11 +83,34 @@ from imie.runtime.multi_symbol_continuous_runtime_runner import (
 from imie.runtime.position_sizing_config import (
     PositionSizingConfig,
 )
+from imie.runtime.execution_safety_config import ExecutionSafetyConfig
 from imie.execution import (
     BrokerExecutionPort,
+    ExecutionSafetySubmissionService,
+    JsonFileExecutionSubmissionReservationStore,
     MockBrokerExecutionAdapter,
     ProtectedExecutionPort,
 )
+
+
+def _build_execution_safety_submission_service(
+    *,
+    broker_execution_port: BrokerExecutionPort | None,
+    safety_config: ExecutionSafetyConfig | None,
+) -> ExecutionSafetySubmissionService | None:
+    if safety_config is None or not safety_config.enabled:
+        return None
+    if broker_execution_port is None:
+        raise ValueError(
+            "execution safety requires a broker execution port."
+        )
+    return ExecutionSafetySubmissionService(
+        broker_execution_port=broker_execution_port,
+        policy=safety_config.build_policy(),
+        reservation_store=JsonFileExecutionSubmissionReservationStore(
+            safety_config.reservation_store_path
+        ),
+    )
 
 
 def _build_broker_execution_port(
@@ -175,6 +198,9 @@ def _build_symbol_cycles(
     session_policy: SessionPolicy,
     position_sizing_config: PositionSizingConfig | None = None,
     broker_execution_port: BrokerExecutionPort | None = None,
+    execution_safety_submission_service: (
+        ExecutionSafetySubmissionService | None
+    ) = None,
     protected_execution_port: ProtectedExecutionPort | None = None,
 ) -> tuple[
     SingleAnalysisCycle,
@@ -198,6 +224,9 @@ def _build_symbol_cycles(
                 resolved_position_sizing_config
             ),
             broker_execution_port=broker_execution_port,
+            execution_safety_submission_service=(
+                execution_safety_submission_service
+            ),
             protected_execution_port=protected_execution_port,
         )
         for symbol in universe.symbols
@@ -221,6 +250,7 @@ class RuntimeApplicationFactory:
         session_policy: SessionPolicy | None = None,
         calendar_years: tuple[int, ...] | None = None,
         position_sizing_config: PositionSizingConfig | None = None,
+        execution_safety_config: ExecutionSafetyConfig | None = None,
     ) -> MultiSymbolRuntimeApplication:
         if not isinstance(
             settings,
@@ -272,6 +302,15 @@ class RuntimeApplicationFactory:
                 "PositionSizingConfig or None."
             )
 
+        if (
+            execution_safety_config is not None
+            and not isinstance(execution_safety_config, ExecutionSafetyConfig)
+        ):
+            raise TypeError(
+                "execution_safety_config must be an "
+                "ExecutionSafetyConfig or None."
+            )
+
         resolved_position_sizing_config = (
             position_sizing_config
             or PositionSizingConfig()
@@ -289,6 +328,14 @@ class RuntimeApplicationFactory:
                 runtime_config.execution_mode
             )
         )
+        execution_safety_submission_service = (
+            _build_execution_safety_submission_service(
+                broker_execution_port=broker_execution_port,
+                safety_config=execution_safety_config,
+            )
+        )
+        if execution_safety_submission_service is not None:
+            broker_execution_port = None
         protected_execution_port = (
             _build_protected_execution_port(
                 execution_mode=runtime_config.execution_mode,
@@ -362,6 +409,9 @@ class RuntimeApplicationFactory:
                 resolved_position_sizing_config
             ),
             broker_execution_port=broker_execution_port,
+            execution_safety_submission_service=(
+                execution_safety_submission_service
+            ),
             protected_execution_port=protected_execution_port,
         )
 
@@ -416,6 +466,7 @@ class RuntimeApplicationFactory:
         session_policy: SessionPolicy | None = None,
         calendar_years: tuple[int, ...] | None = None,
         position_sizing_config: PositionSizingConfig | None = None,
+        execution_safety_config: ExecutionSafetyConfig | None = None,
         health_console_output: bool = True,
         health_history_file: str | Path = (
             "runtime/history/imie_health.jsonl"
@@ -494,6 +545,15 @@ class RuntimeApplicationFactory:
             raise TypeError(
                 "position_sizing_config must be a "
                 "PositionSizingConfig or None."
+            )
+
+        if (
+            execution_safety_config is not None
+            and not isinstance(execution_safety_config, ExecutionSafetyConfig)
+        ):
+            raise TypeError(
+                "execution_safety_config must be an "
+                "ExecutionSafetyConfig or None."
             )
 
         if (
@@ -643,6 +703,18 @@ class RuntimeApplicationFactory:
             session_policy=resolved_session_policy,
         )
 
+        broker_execution_port = _build_broker_execution_port(
+            runtime_config.execution_mode
+        )
+        execution_safety_submission_service = (
+            _build_execution_safety_submission_service(
+                broker_execution_port=broker_execution_port,
+                safety_config=execution_safety_config,
+            )
+        )
+        if execution_safety_submission_service is not None:
+            broker_execution_port = None
+
         cycle = SingleAnalysisCycle(
             config=runtime_config,
             market_data=market_data,
@@ -651,10 +723,9 @@ class RuntimeApplicationFactory:
             position_sizing_config=(
                 resolved_position_sizing_config
             ),
-            broker_execution_port=(
-                _build_broker_execution_port(
-                    runtime_config.execution_mode
-                )
+            broker_execution_port=broker_execution_port,
+            execution_safety_submission_service=(
+                execution_safety_submission_service
             ),
             protected_execution_port=(
                 _build_protected_execution_port(

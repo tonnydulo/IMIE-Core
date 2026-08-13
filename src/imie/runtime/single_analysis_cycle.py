@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from imie.execution import (
     BrokerExecutionPort,
+    ExecutionSafetySubmissionService,
     ProtectedExecutionPlanBuilder,
     ProtectedExecutionPort,
 )
@@ -80,6 +81,9 @@ class SingleAnalysisCycle:
         execution_candidate_builder: ExecutionCandidateBuilder | None = None,
         execution_order_intent_builder: ExecutionOrderIntentBuilder | None = None,
         broker_execution_port: BrokerExecutionPort | None = None,
+        execution_safety_submission_service: (
+            ExecutionSafetySubmissionService | None
+        ) = None,
         protected_execution_port: ProtectedExecutionPort | None = None,
         protected_execution_plan_builder: (
             ProtectedExecutionPlanBuilder | None
@@ -168,6 +172,9 @@ class SingleAnalysisCycle:
         )
 
         self.broker_execution_port = broker_execution_port
+        self.execution_safety_submission_service = (
+            execution_safety_submission_service
+        )
         self.protected_execution_port = protected_execution_port
         self.protected_execution_plan_builder = (
             protected_execution_plan_builder
@@ -268,11 +275,36 @@ class SingleAnalysisCycle:
             )
 
         if (
+            self.execution_safety_submission_service is not None
+            and not isinstance(
+                self.execution_safety_submission_service,
+                ExecutionSafetySubmissionService,
+            )
+        ):
+            raise TypeError(
+                "execution_safety_submission_service must be an "
+                "ExecutionSafetySubmissionService or None."
+            )
+
+        if (
             self.broker_execution_port is not None
             and self.protected_execution_port is not None
         ):
             raise ValueError(
                 "Only one broker execution port may be configured."
+            )
+
+        configured_submission_paths = sum(
+            value is not None
+            for value in (
+                self.broker_execution_port,
+                self.protected_execution_port,
+                self.execution_safety_submission_service,
+            )
+        )
+        if configured_submission_paths > 1:
+            raise ValueError(
+                "Only one broker execution path may be configured."
             )
 
         if not isinstance(
@@ -458,6 +490,21 @@ class SingleAnalysisCycle:
                     self.broker_execution_port.submit_order(
                         execution_order_intent
                     )
+                )
+
+            if (
+                execution_candidate is not None
+                and execution_order_intent is not None
+                and self.execution_safety_submission_service is not None
+            ):
+                safety_submission = (
+                    self.execution_safety_submission_service.submit(
+                        candidate=execution_candidate,
+                        intent=execution_order_intent,
+                    )
+                )
+                broker_submission_result = (
+                    safety_submission.broker_submission
                 )
 
             if (

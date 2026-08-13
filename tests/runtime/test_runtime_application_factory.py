@@ -21,6 +21,7 @@ from imie.runtime import (
     RuntimeApplication,
     RuntimeApplicationFactory,
     RuntimeConfig,
+    ExecutionSafetyConfig,
     RuntimeHealthTracker,
     RuntimeRunner,
     SingleAnalysisCycle,
@@ -35,6 +36,8 @@ from imie.execution import (
     BrokerOrderQueryPort,
     JsonFileBrokerOrderIntentStore,
     MockBrokerExecutionAdapter,
+    ExecutionSafetySubmissionService,
+    JsonFileExecutionSubmissionReservationStore,
 )
 from imie.runtime.runtime_application_factory import (
     _build_symbol_cycles,
@@ -195,6 +198,72 @@ def test_factory_injects_mock_broker_only_when_enabled(
         MockBrokerExecutionAdapter,
     )
     assert application.cycle.protected_execution_port is None
+
+
+def test_factory_wraps_mock_execution_when_safety_is_explicitly_enabled(
+    tmp_path: Path,
+) -> None:
+    reservation_path = tmp_path / "reservations.json"
+    application = RuntimeApplicationFactory.create(
+        settings=make_settings(),
+        config=RuntimeConfig(execution_mode="mock"),
+        execution_safety_config=ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            reservation_store_path=reservation_path,
+        ),
+        history_file=tmp_path / "cycles.jsonl",
+    )
+
+    cycle = application.cycle
+    assert cycle.broker_execution_port is None
+    assert cycle.protected_execution_port is None
+    assert isinstance(
+        cycle.execution_safety_submission_service,
+        ExecutionSafetySubmissionService,
+    )
+    assert isinstance(
+        cycle.execution_safety_submission_service._broker_execution_port,
+        MockBrokerExecutionAdapter,
+    )
+    assert isinstance(
+        cycle.execution_safety_submission_service._reservation_store,
+        JsonFileExecutionSubmissionReservationStore,
+    )
+    assert (
+        cycle.execution_safety_submission_service._reservation_store.path
+        == reservation_path
+    )
+    assert reservation_path.exists() is False
+
+
+def test_factory_rejects_safety_without_compatible_broker_port(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="requires a broker execution port"):
+        RuntimeApplicationFactory.create(
+            settings=make_settings(),
+            config=RuntimeConfig(execution_mode="disabled"),
+            execution_safety_config=ExecutionSafetyConfig(
+                enabled=True,
+                maximum_order_notional=25_000,
+                maximum_risk_amount=125,
+                reservation_store_path=tmp_path / "reservations.json",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
+
+
+def test_factory_rejects_wrong_execution_safety_config_type(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(TypeError, match="execution_safety_config"):
+        RuntimeApplicationFactory.create(
+            settings=make_settings(),
+            history_file=tmp_path / "cycles.jsonl",
+            execution_safety_config=object(),
+        )
 
 
 def test_factory_injects_protected_alpaca_paper_port(
@@ -882,6 +951,30 @@ def test_multi_symbol_factory_injects_shared_mock_broker() -> None:
         cycle.protected_execution_port is None
         for cycle in application.cycles
     )
+
+
+def test_multi_symbol_factory_shares_one_guarded_mock_service(
+    tmp_path: Path,
+) -> None:
+    application = RuntimeApplicationFactory.create_multi_symbol(
+        settings=make_settings(),
+        universe=RuntimeSymbolUniverse(symbols=("NVDA", "AMD")),
+        config=RuntimeConfig(execution_mode="mock"),
+        execution_safety_config=ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            reservation_store_path=tmp_path / "reservations.json",
+        ),
+    )
+
+    services = tuple(
+        cycle.execution_safety_submission_service
+        for cycle in application.cycles
+    )
+    assert isinstance(services[0], ExecutionSafetySubmissionService)
+    assert all(service is services[0] for service in services)
+    assert all(cycle.broker_execution_port is None for cycle in application.cycles)
 
 
 def test_multi_symbol_factory_injects_shared_alpaca_paper_port() -> None:
