@@ -8,11 +8,18 @@ from imie.execution.existing_position_protection_port import (
     ExistingPositionProtectionPort,
 )
 from imie.execution.position_state_store import PositionStateStore
+from imie.execution.position_protection_store import PositionProtectionStore
+from imie.execution.protection_audit_persistence_error import (
+    ProtectionAuditPersistenceError,
+)
+from datetime import datetime, timezone
+from typing import Callable
 from imie.models import (
     BrokerPositionSnapshot,
     ExecutionPosition,
     ExistingPositionProtectionPlan,
     ExistingPositionProtectionResult,
+    PositionProtectionRecord,
 )
 
 
@@ -25,7 +32,9 @@ class ExistingPositionProtectionService:
         position_store: PositionStateStore,
         position_query_port: BrokerPositionQueryPort,
         protection_port: ExistingPositionProtectionPort,
+        protection_store: PositionProtectionStore,
         validator: BrokerPositionProtectionValidator | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not isinstance(position_store, PositionStateStore):
             raise TypeError("position_store must satisfy PositionStateStore.")
@@ -37,6 +46,13 @@ class ExistingPositionProtectionService:
             raise TypeError(
                 "protection_port must satisfy ExistingPositionProtectionPort."
             )
+        if not isinstance(protection_store, PositionProtectionStore):
+            raise TypeError(
+                "protection_store must satisfy PositionProtectionStore."
+            )
+        resolved_clock = clock or (lambda: datetime.now(timezone.utc))
+        if not callable(resolved_clock):
+            raise TypeError("clock must be callable or None.")
         resolved_validator = validator or BrokerPositionProtectionValidator()
         if not isinstance(
             resolved_validator, BrokerPositionProtectionValidator
@@ -47,7 +63,9 @@ class ExistingPositionProtectionService:
         self._position_store = position_store
         self._position_query_port = position_query_port
         self._protection_port = protection_port
+        self._protection_store = protection_store
         self._validator = resolved_validator
+        self._clock = resolved_clock
 
     def protect(
         self,
@@ -66,6 +84,22 @@ class ExistingPositionProtectionService:
         if not isinstance(recorded_position, ExecutionPosition):
             raise TypeError(
                 "position_store.get() must return ExecutionPosition or None."
+            )
+
+        prior = self._protection_store.get_for_position(
+            broker=plan.broker,
+            symbol=plan.symbol,
+            position_updated_at=plan.position_updated_at,
+            position_fill_ids=plan.position_fill_ids,
+        )
+        if prior is not None:
+            if not isinstance(prior, PositionProtectionRecord):
+                raise TypeError(
+                    "protection_store.get_for_position() must return "
+                    "PositionProtectionRecord or None."
+                )
+            raise RuntimeError(
+                "Accepted protection already exists for this position fingerprint."
             )
 
         broker_position = self._position_query_port.get_position(plan.symbol)
@@ -95,4 +129,21 @@ class ExistingPositionProtectionService:
             raise ValueError("Protection result position timestamp does not match plan.")
         if result.requested_quantity != plan.uncovered_quantity:
             raise ValueError("Protection result quantity does not match plan.")
+        if result.accepted:
+            recorded_at = self._clock()
+            if not isinstance(recorded_at, datetime):
+                raise TypeError("clock must return a datetime.")
+            try:
+                self._protection_store.save(
+                    PositionProtectionRecord(
+                        result=result,
+                        position_fill_ids=plan.position_fill_ids,
+                        recorded_at=recorded_at,
+                    )
+                )
+            except Exception as exc:
+                raise ProtectionAuditPersistenceError(
+                    result=result,
+                    cause=exc,
+                ) from exc
         return result

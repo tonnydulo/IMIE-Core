@@ -6,6 +6,7 @@ from imie.execution import (
     BrokerPositionProtectionValidator,
     ExistingPositionProtectionPlanBuilder,
     ExistingPositionProtectionService,
+    ProtectionAuditPersistenceError,
 )
 from imie.models import (
     BrokerPositionSnapshot,
@@ -16,6 +17,7 @@ from imie.models import (
     PositionDirection,
     ProtectiveCoverageAssessment,
     ProtectiveCoverageStatus,
+    PositionProtectionRecord,
 )
 
 
@@ -150,12 +152,32 @@ class Protection:
         return self.result
 
 
-def service(store, query, protection):
+class Ledger:
+    def __init__(self, prior=None, save_error=None):
+        self.prior = prior
+        self.save_error = save_error
+        self.get_calls = []
+        self.saved = []
+
+    def get_for_position(self, **kwargs):
+        self.get_calls.append(kwargs)
+        return self.prior
+
+    def save(self, record):
+        if self.save_error is not None:
+            raise self.save_error
+        self.saved.append(record)
+        self.prior = record
+
+
+def service(store, query, protection, ledger=None):
     return ExistingPositionProtectionService(
         position_store=store,
         position_query_port=query,
         protection_port=protection,
+        protection_store=ledger or Ledger(),
         validator=BrokerPositionProtectionValidator(clock=lambda: NOW),
+        clock=lambda: NOW,
     )
 
 
@@ -166,12 +188,17 @@ def test_service_validates_two_truths_then_submits_once():
     query = Query(broker_position())
     protection = Protection(accepted_result(plan_value))
 
-    result = service(store, query, protection).protect(plan_value)
+    ledger = Ledger()
+    result = service(store, query, protection, ledger).protect(plan_value)
 
     assert result.accepted is True
     assert store.calls == [("alpaca-paper", "NVDA")]
     assert query.calls == ["NVDA"]
     assert protection.calls == [(plan_value, current)]
+    assert len(ledger.saved) == 1
+    assert ledger.saved[0].result is result
+    assert ledger.saved[0].position_fill_ids == ("fill-1",)
+    assert ledger.saved[0].recorded_at == NOW
 
 
 def test_missing_persisted_position_fails_before_broker_query():
@@ -183,6 +210,65 @@ def test_missing_persisted_position_fails_before_broker_query():
 
     assert query.calls == []
     assert protection.calls == []
+
+
+def test_existing_accepted_record_blocks_before_broker_query_or_submission():
+    current = position()
+    plan_value = plan(current)
+    prior = PositionProtectionRecord(
+        result=accepted_result(plan_value),
+        position_fill_ids=plan_value.position_fill_ids,
+        recorded_at=NOW,
+    )
+    query = Query(broker_position())
+    protection = Protection(accepted_result(plan_value))
+
+    with pytest.raises(RuntimeError, match="already exists"):
+        service(Store(current), query, protection, Ledger(prior)).protect(plan_value)
+
+    assert query.calls == []
+    assert protection.calls == []
+
+
+def test_rejected_protection_result_is_not_recorded():
+    plan_value = plan()
+    rejected = ExistingPositionProtectionResult(
+        broker="alpaca-paper", symbol="NVDA", exit_side="sell",
+        position_quantity=40, requested_quantity=40, accepted_quantity=0,
+        position_updated_at=plan_value.position_updated_at,
+        accepted=False, status="rejected", message="rejected",
+        submissions=tuple(
+            ExistingPositionProtectionSubmission(
+                label=item.label, quantity=item.quantity, accepted=False,
+                target_order_id=None, stop_order_id=None,
+                status="rejected", message="rejected",
+            ) for item in accepted_result(plan_value).submissions
+        ),
+    )
+    ledger = Ledger()
+
+    result = service(
+        Store(position()), Query(broker_position()), Protection(rejected), ledger
+    ).protect(plan_value)
+
+    assert result.accepted is False
+    assert ledger.saved == []
+
+
+def test_accepted_broker_result_with_audit_failure_raises_critical_error():
+    plan_value = plan()
+    result_value = accepted_result(plan_value)
+    ledger = Ledger(save_error=OSError("disk unavailable"))
+
+    with pytest.raises(ProtectionAuditPersistenceError, match="CRITICAL") as caught:
+        service(
+            Store(position()), Query(broker_position()),
+            Protection(result_value), ledger,
+        ).protect(plan_value)
+
+    assert caught.value.result is result_value
+    assert isinstance(caught.value.cause, OSError)
+    assert "disk unavailable" in str(caught.value)
 
 
 @pytest.mark.parametrize(
