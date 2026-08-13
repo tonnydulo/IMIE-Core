@@ -18,6 +18,7 @@ from imie.models import (
     ProtectiveCoverageAssessment,
     ProtectiveCoverageStatus,
     PositionProtectionRecord,
+    PositionProtectionAttemptStatus,
 )
 
 
@@ -170,14 +171,40 @@ class Ledger:
         self.prior = record
 
 
-def service(store, query, protection, ledger=None):
+class Attempts:
+    def __init__(self, prior=None, reserve_error=None, transition_error=None):
+        self.prior = prior
+        self.reserve_error = reserve_error
+        self.transition_error = transition_error
+        self.reserved = []
+        self.transitions = []
+
+    def get_for_position(self, **kwargs):
+        return self.prior
+
+    def reserve(self, attempt):
+        if self.reserve_error:
+            raise self.reserve_error
+        self.reserved.append(attempt)
+        self.prior = attempt
+
+    def transition(self, attempt):
+        if self.transition_error:
+            raise self.transition_error
+        self.transitions.append(attempt)
+        self.prior = attempt
+
+
+def service(store, query, protection, ledger=None, attempts=None):
     return ExistingPositionProtectionService(
         position_store=store,
         position_query_port=query,
         protection_port=protection,
         protection_store=ledger or Ledger(),
+        attempt_store=attempts or Attempts(),
         validator=BrokerPositionProtectionValidator(clock=lambda: NOW),
         clock=lambda: NOW,
+        attempt_id_factory=lambda: "attempt-1",
     )
 
 
@@ -189,7 +216,8 @@ def test_service_validates_two_truths_then_submits_once():
     protection = Protection(accepted_result(plan_value))
 
     ledger = Ledger()
-    result = service(store, query, protection, ledger).protect(plan_value)
+    attempts = Attempts()
+    result = service(store, query, protection, ledger, attempts).protect(plan_value)
 
     assert result.accepted is True
     assert store.calls == [("alpaca-paper", "NVDA")]
@@ -199,6 +227,9 @@ def test_service_validates_two_truths_then_submits_once():
     assert ledger.saved[0].result is result
     assert ledger.saved[0].position_fill_ids == ("fill-1",)
     assert ledger.saved[0].recorded_at == NOW
+    assert attempts.reserved[0].status is PositionProtectionAttemptStatus.RESERVED
+    assert attempts.transitions[0].status is PositionProtectionAttemptStatus.ACCEPTED
+    assert attempts.transitions[0].result is result
 
 
 def test_missing_persisted_position_fails_before_broker_query():
@@ -230,6 +261,25 @@ def test_existing_accepted_record_blocks_before_broker_query_or_submission():
     assert protection.calls == []
 
 
+def test_existing_attempt_blocks_before_broker_query_or_submission():
+    current = position()
+    plan_value = plan(current)
+    attempts = Attempts()
+    first = service(
+        Store(current), Query(broker_position()),
+        Protection(accepted_result(plan_value)), Ledger(), attempts,
+    )
+    first.protect(plan_value)
+    query = Query(broker_position())
+    protection = Protection(accepted_result(plan_value))
+
+    with pytest.raises(RuntimeError, match="attempt already exists"):
+        service(Store(current), query, protection, Ledger(), attempts).protect(plan_value)
+
+    assert query.calls == []
+    assert protection.calls == []
+
+
 def test_rejected_protection_result_is_not_recorded():
     plan_value = plan()
     rejected = ExistingPositionProtectionResult(
@@ -247,12 +297,15 @@ def test_rejected_protection_result_is_not_recorded():
     )
     ledger = Ledger()
 
+    attempts = Attempts()
     result = service(
-        Store(position()), Query(broker_position()), Protection(rejected), ledger
+        Store(position()), Query(broker_position()), Protection(rejected), ledger,
+        attempts,
     ).protect(plan_value)
 
     assert result.accepted is False
     assert ledger.saved == []
+    assert attempts.transitions[0].status is PositionProtectionAttemptStatus.FAILED
 
 
 def test_accepted_broker_result_with_audit_failure_raises_critical_error():
@@ -260,15 +313,49 @@ def test_accepted_broker_result_with_audit_failure_raises_critical_error():
     result_value = accepted_result(plan_value)
     ledger = Ledger(save_error=OSError("disk unavailable"))
 
+    attempts = Attempts()
     with pytest.raises(ProtectionAuditPersistenceError, match="CRITICAL") as caught:
         service(
             Store(position()), Query(broker_position()),
-            Protection(result_value), ledger,
+            Protection(result_value), ledger, attempts,
         ).protect(plan_value)
 
     assert caught.value.result is result_value
     assert isinstance(caught.value.cause, OSError)
     assert "disk unavailable" in str(caught.value)
+    assert attempts.transitions[0].status is PositionProtectionAttemptStatus.UNCERTAIN
+    assert attempts.transitions[0].result is result_value
+
+
+def test_transport_exception_transitions_reserved_attempt_to_uncertain():
+    class RaisingProtection(Protection):
+        def submit_existing_position_protection(self, **kwargs):
+            self.calls.append(kwargs)
+            raise TimeoutError("broker timeout")
+
+    attempts = Attempts()
+
+    with pytest.raises(TimeoutError, match="broker timeout"):
+        service(
+            Store(position()), Query(broker_position()),
+            RaisingProtection(None), Ledger(), attempts,
+        ).protect(plan())
+
+    assert attempts.reserved[0].status is PositionProtectionAttemptStatus.RESERVED
+    assert attempts.transitions[0].status is PositionProtectionAttemptStatus.UNCERTAIN
+    assert "broker timeout" in attempts.transitions[0].message
+
+
+def test_reservation_failure_prevents_broker_mutation():
+    protection = Protection(accepted_result(plan()))
+
+    with pytest.raises(OSError, match="disk unavailable"):
+        service(
+            Store(position()), Query(broker_position()), protection, Ledger(),
+            Attempts(reserve_error=OSError("disk unavailable")),
+        ).protect(plan())
+
+    assert protection.calls == []
 
 
 @pytest.mark.parametrize(
