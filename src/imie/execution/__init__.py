@@ -6,6 +6,7 @@ from imie.execution.broker_execution_port import (
 from imie.execution.broker_order_query_port import (
     BrokerOrderQueryPort,
 )
+from imie.execution.broker_position_query_port import BrokerPositionQueryPort
 from imie.execution.broker_order_intent_store import (
     BrokerOrderIntentStore,
 )
@@ -60,6 +61,8 @@ __all__ = [
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
+    "BrokerPositionQueryPort",
+    "AlpacaPaperPositionQueryAdapter",
     "BrokerOrderIntentStore",
     "ConsoleReconciliationResultPublisher",
     "ExecutionReconciliationEngine",
@@ -81,6 +84,13 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name == "AlpacaPaperPositionQueryAdapter":
+        from imie.execution.alpaca_paper_position_query_adapter import (
+            AlpacaPaperPositionQueryAdapter,
+        )
+
+        return AlpacaPaperPositionQueryAdapter
+
     if name == "AlpacaPaperExistingPositionProtectionAdapter":
         from imie.execution.alpaca_paper_existing_position_protection_adapter import (
             AlpacaPaperExistingPositionProtectionAdapter,
