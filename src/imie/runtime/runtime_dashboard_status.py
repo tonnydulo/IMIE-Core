@@ -230,6 +230,18 @@ class RuntimeDashboardStatus:
     broker_submission_message: str | None = None
     broker_submission_warnings: tuple[str, ...] = ()
 
+    execution_safety_state: str | None = None
+    execution_safety_symbol: str | None = None
+    execution_safety_order_notional: float | None = None
+    execution_safety_risk_amount: float | None = None
+    execution_safety_maximum_order_notional: float | None = None
+    execution_safety_maximum_risk_amount: float | None = None
+    execution_safety_allowed: bool | None = None
+    execution_safety_violations: tuple[str, ...] = ()
+    execution_safety_warnings: tuple[str, ...] = ()
+    execution_submission_fingerprint: str | None = None
+    execution_submission_reserved_at: str | None = None
+
     protected_submission_broker: str | None = None
     protected_submission_quantity: int | None = None
     protected_submission_accepted: bool | None = None
@@ -481,6 +493,7 @@ class RuntimeDashboardStatus:
             "execution_order_intent_valid",
             "execution_order_intent_actionable",
             "broker_submission_accepted",
+            "execution_safety_allowed",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3319,6 +3332,31 @@ class RuntimeDashboardStatus:
                 ),
                 "broker_submission_warnings": list(
                     self.broker_submission_warnings
+                ),
+                "execution_safety_state": self.execution_safety_state,
+                "execution_safety_symbol": self.execution_safety_symbol,
+                "execution_safety_order_notional": (
+                    self.execution_safety_order_notional
+                ),
+                "execution_safety_risk_amount": self.execution_safety_risk_amount,
+                "execution_safety_maximum_order_notional": (
+                    self.execution_safety_maximum_order_notional
+                ),
+                "execution_safety_maximum_risk_amount": (
+                    self.execution_safety_maximum_risk_amount
+                ),
+                "execution_safety_allowed": self.execution_safety_allowed,
+                "execution_safety_violations": list(
+                    self.execution_safety_violations
+                ),
+                "execution_safety_warnings": list(
+                    self.execution_safety_warnings
+                ),
+                "execution_submission_fingerprint": (
+                    self.execution_submission_fingerprint
+                ),
+                "execution_submission_reserved_at": (
+                    self.execution_submission_reserved_at
                 ),
                 "protected_submission_broker": self.protected_submission_broker,
                 "protected_submission_quantity": self.protected_submission_quantity,

@@ -8,7 +8,7 @@ from datetime import (
     timezone,
 )
 
-from dataclasses import fields
+from dataclasses import fields, replace
 import pytest
 
 from imie.runtime import (
@@ -1072,6 +1072,37 @@ def test_broker_submission_fields_are_serialized() -> None:
         == "Mock order accepted."
     )
     assert payload["broker_submission_warnings"] == []
+
+
+def test_execution_safety_fields_are_serialized() -> None:
+    status = replace(
+        make_status(),
+        execution_safety_state="RESERVED",
+        execution_safety_symbol="NVDA",
+        execution_safety_order_notional=12500.0,
+        execution_safety_risk_amount=125.0,
+        execution_safety_maximum_order_notional=25000.0,
+        execution_safety_maximum_risk_amount=250.0,
+        execution_safety_allowed=True,
+        execution_safety_violations=(),
+        execution_safety_warnings=("Paper execution only.",),
+        execution_submission_fingerprint="a" * 64,
+        execution_submission_reserved_at=NOW.isoformat(),
+    )
+
+    payload = status.to_dict()
+
+    assert payload["execution_safety_state"] == "RESERVED"
+    assert payload["execution_safety_symbol"] == "NVDA"
+    assert payload["execution_safety_order_notional"] == 12500.0
+    assert payload["execution_safety_risk_amount"] == 125.0
+    assert payload["execution_safety_maximum_order_notional"] == 25000.0
+    assert payload["execution_safety_maximum_risk_amount"] == 250.0
+    assert payload["execution_safety_allowed"] is True
+    assert payload["execution_safety_violations"] == []
+    assert payload["execution_safety_warnings"] == ["Paper execution only."]
+    assert payload["execution_submission_fingerprint"] == "a" * 64
+    assert payload["execution_submission_reserved_at"] == NOW.isoformat()
 
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(

@@ -36,6 +36,8 @@ from imie.models import (
     DirectorDecision,
     ExecutionCandidate,
     ExecutionOrderIntent,
+    ExecutionSafetyAssessment,
+    ExecutionSubmissionReservation,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
@@ -12056,3 +12058,93 @@ def test_publish_result_populates_broker_submission_details(
         == "Mock order accepted."
     )
     assert payload["broker_submission_warnings"] == []
+
+
+def test_publish_result_populates_execution_safety_details(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA",
+        order_notional=12500.0,
+        risk_amount=125.0,
+        maximum_order_notional=25000.0,
+        maximum_risk_amount=250.0,
+        candidate_valid=True,
+        candidate_actionable=True,
+        notional_within_limit=True,
+        risk_within_limit=True,
+        allowed=True,
+    )
+    reservation = ExecutionSubmissionReservation(
+        fingerprint="a" * 64,
+        symbol="NVDA",
+        side="buy",
+        quantity=125,
+        reserved_at=NOW,
+    )
+    result = dataclasses.replace(
+        make_completed_result_with_execution_candidate(),
+        execution_safety_assessment=assessment,
+        execution_submission_reservation=reservation,
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(make_health())
+    publisher.publish_result(result)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["execution_safety_state"] == "SUBMITTED"
+    assert payload["execution_safety_symbol"] == "NVDA"
+    assert payload["execution_safety_order_notional"] == 12500.0
+    assert payload["execution_safety_risk_amount"] == 125.0
+    assert payload["execution_safety_maximum_order_notional"] == 25000.0
+    assert payload["execution_safety_maximum_risk_amount"] == 250.0
+    assert payload["execution_safety_allowed"] is True
+    assert payload["execution_safety_violations"] == []
+    assert payload["execution_safety_warnings"] == []
+    assert payload["execution_submission_fingerprint"] == "a" * 64
+    assert payload["execution_submission_reserved_at"] == NOW.isoformat()
+
+
+def test_publish_result_identifies_safety_block(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA",
+        order_notional=30000.0,
+        risk_amount=125.0,
+        maximum_order_notional=25000.0,
+        maximum_risk_amount=250.0,
+        candidate_valid=True,
+        candidate_actionable=True,
+        notional_within_limit=False,
+        risk_within_limit=True,
+        allowed=False,
+        violations=("Order notional exceeds maximum.",),
+    )
+    result = dataclasses.replace(
+        make_completed_result_with_execution_candidate(),
+        broker_submission_result=None,
+        execution_safety_assessment=assessment,
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=path,
+        symbol="NVDA",
+        timeframe="2m",
+    )
+
+    publisher.publish_health(make_health())
+    publisher.publish_result(result)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["execution_safety_state"] == "BLOCKED"
+    assert payload["execution_safety_allowed"] is False
+    assert payload["execution_safety_violations"] == [
+        "Order notional exceeds maximum."
+    ]

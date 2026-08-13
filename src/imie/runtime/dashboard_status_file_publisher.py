@@ -1291,6 +1291,18 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        execution_safety_assessment = (
+            cycle.execution_safety_assessment
+            if cycle is not None
+            else None
+        )
+
+        execution_submission_reservation = (
+            cycle.execution_submission_reservation
+            if cycle is not None
+            else None
+        )
+
         protected_submission_result = (
             cycle.protected_submission_result
             if cycle is not None
@@ -1527,6 +1539,24 @@ class DashboardStatusFilePublisher:
             broker_submission_warnings,
         ) = _broker_submission_dashboard_values(
             broker_submission_result
+        )
+
+        (
+            execution_safety_state,
+            execution_safety_symbol,
+            execution_safety_order_notional,
+            execution_safety_risk_amount,
+            execution_safety_maximum_order_notional,
+            execution_safety_maximum_risk_amount,
+            execution_safety_allowed,
+            execution_safety_violations,
+            execution_safety_warnings,
+            execution_submission_fingerprint,
+            execution_submission_reserved_at,
+        ) = _execution_safety_dashboard_values(
+            execution_safety_assessment,
+            execution_submission_reservation,
+            broker_submission_result,
         )
 
         (
@@ -1807,6 +1837,21 @@ class DashboardStatusFilePublisher:
             broker_submission_warnings=(
                 broker_submission_warnings
             ),
+            execution_safety_state=execution_safety_state,
+            execution_safety_symbol=execution_safety_symbol,
+            execution_safety_order_notional=execution_safety_order_notional,
+            execution_safety_risk_amount=execution_safety_risk_amount,
+            execution_safety_maximum_order_notional=(
+                execution_safety_maximum_order_notional
+            ),
+            execution_safety_maximum_risk_amount=(
+                execution_safety_maximum_risk_amount
+            ),
+            execution_safety_allowed=execution_safety_allowed,
+            execution_safety_violations=execution_safety_violations,
+            execution_safety_warnings=execution_safety_warnings,
+            execution_submission_fingerprint=execution_submission_fingerprint,
+            execution_submission_reserved_at=execution_submission_reserved_at,
             protected_submission_broker=protected_submission_broker,
             protected_submission_quantity=protected_submission_quantity,
             protected_submission_accepted=protected_submission_accepted,
@@ -3042,6 +3087,38 @@ def _broker_submission_dashboard_values(
         tuple(
             broker_submission_result.warnings
         ),
+    )
+
+
+def _execution_safety_dashboard_values(
+    assessment: object | None,
+    reservation: object | None,
+    broker_submission_result: object | None,
+) -> tuple[object | None, ...]:
+    if assessment is None:
+        return (None, None, None, None, None, None, None, (), (), None, None)
+
+    if not assessment.allowed:
+        state = "BLOCKED"
+    elif broker_submission_result is not None:
+        state = "SUBMITTED"
+    elif reservation is not None:
+        state = "RESERVED"
+    else:
+        state = "ALLOWED"
+
+    return (
+        state,
+        assessment.symbol,
+        assessment.order_notional,
+        assessment.risk_amount,
+        assessment.maximum_order_notional,
+        assessment.maximum_risk_amount,
+        assessment.allowed,
+        tuple(assessment.violations),
+        tuple(assessment.warnings),
+        reservation.fingerprint if reservation is not None else None,
+        reservation.reserved_at.isoformat() if reservation is not None else None,
     )
 
 
