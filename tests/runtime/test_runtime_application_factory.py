@@ -231,9 +231,12 @@ def test_factory_injects_protected_alpaca_paper_port(
         application.cycle.protected_execution_port._intent_store,
         JsonFileBrokerOrderIntentStore,
     )
-    assert str(
+    assert (
         application.cycle.protected_execution_port._intent_store.path
-    ) == "runtime/execution/broker_order_intents.json"
+        == Path(
+            "runtime/execution/broker_order_intents.json"
+        )
+    )
 
 
 def test_factory_rejects_unconfirmed_alpaca_paper_mode(
