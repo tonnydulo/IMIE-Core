@@ -55,6 +55,7 @@ from imie.execution.existing_position_protection_guard import (
 __all__ = [
     "AlpacaPaperExecutionAdapter",
     "AlpacaPaperFillActivitySource",
+    "AlpacaExistingPositionProtectionRequestBuilder",
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
@@ -79,6 +80,13 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name == "AlpacaExistingPositionProtectionRequestBuilder":
+        from imie.execution.alpaca_existing_position_protection_request_builder import (
+            AlpacaExistingPositionProtectionRequestBuilder,
+        )
+
+        return AlpacaExistingPositionProtectionRequestBuilder
+
     if name == "AlpacaPaperExecutionAdapter":
         from imie.execution.alpaca_paper_execution_adapter import (
             AlpacaPaperExecutionAdapter,
