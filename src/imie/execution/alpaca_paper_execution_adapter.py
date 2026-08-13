@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Protocol
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from typing import Iterable, Protocol
 
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import (
@@ -15,6 +17,9 @@ from alpaca.trading.requests import (
 
 from imie.models import (
     BrokerSubmissionResult,
+    BrokerFill,
+    BrokerOrderSnapshot,
+    BrokerOrderStatus,
     ExecutionOrderIntent,
     ProtectedExecutionPlan,
     ProtectedOrderSubmission,
@@ -38,6 +43,20 @@ class AlpacaTradingClient(Protocol):
     ) -> None:
         ...
 
+    def get_order_by_id(
+        self,
+        order_id: str,
+    ) -> object:
+        ...
+
+
+class AlpacaFillActivitySource(Protocol):
+    def get_fill_activities(
+        self,
+        broker_order_id: str,
+    ) -> Iterable[object]:
+        ...
+
 
 class AlpacaPaperExecutionAdapter:
     """Submit IMIE entry orders to Alpaca's paper endpoint only."""
@@ -53,6 +72,7 @@ class AlpacaPaperExecutionAdapter:
         protected_request_builder: (
             AlpacaProtectedOrderRequestBuilder | None
         ) = None,
+        fill_activity_source: AlpacaFillActivitySource | None = None,
     ) -> None:
         self._api_key = self._normalize_credential(
             api_key,
@@ -97,6 +117,96 @@ class AlpacaPaperExecutionAdapter:
                 "protected_request_builder must be an "
                 "AlpacaProtectedOrderRequestBuilder."
             )
+
+        if (
+            fill_activity_source is not None
+            and not callable(
+                getattr(fill_activity_source, "get_fill_activities", None)
+            )
+        ):
+            raise TypeError(
+                "fill_activity_source must expose get_fill_activities()."
+            )
+        self._fill_activity_source = fill_activity_source
+
+    def get_order_snapshot(
+        self,
+        broker_order_id: str,
+    ) -> BrokerOrderSnapshot:
+        order_id = self._normalize_order_id(broker_order_id)
+        getter = getattr(self._trading_client, "get_order_by_id", None)
+        if not callable(getter):
+            raise TypeError("trading_client must expose get_order_by_id().")
+
+        order = getter(order_id)
+        requested_quantity = self._whole_quantity(
+            getattr(order, "qty", None),
+            name="qty",
+        )
+        filled_quantity = self._whole_quantity(
+            getattr(order, "filled_qty", 0),
+            name="filled_qty",
+            allow_zero=True,
+        )
+        average_fill_price = self._optional_positive_float(
+            getattr(order, "filled_avg_price", None),
+            name="filled_avg_price",
+        )
+        status = self._translate_order_status(
+            getattr(order, "status", "unknown")
+        )
+        submitted_at = getattr(order, "submitted_at", None)
+        updated_at = (
+            getattr(order, "updated_at", None)
+            or submitted_at
+            or getattr(order, "created_at", None)
+        )
+
+        return BrokerOrderSnapshot(
+            broker=self.broker_name,
+            broker_order_id=str(getattr(order, "id", order_id)),
+            client_order_id=getattr(order, "client_order_id", None),
+            symbol=str(getattr(order, "symbol", "")),
+            side=self._enum_value(getattr(order, "side", "")),
+            order_type=self._enum_value(
+                getattr(order, "order_type", None)
+                or getattr(order, "type", "unknown")
+            ),
+            status=status,
+            requested_quantity=requested_quantity,
+            filled_quantity=filled_quantity,
+            remaining_quantity=requested_quantity - filled_quantity,
+            average_fill_price=average_fill_price,
+            submitted_at=submitted_at,
+            filled_at=getattr(order, "filled_at", None),
+            canceled_at=getattr(order, "canceled_at", None),
+            rejection_reason=(
+                str(getattr(order, "reject_reason", "")).strip()
+                or "Alpaca rejected the order."
+                if status is BrokerOrderStatus.REJECTED
+                else None
+            ),
+            last_updated_at=updated_at,
+        )
+
+    def get_order_fills(
+        self,
+        broker_order_id: str,
+    ) -> tuple[BrokerFill, ...]:
+        order_id = self._normalize_order_id(broker_order_id)
+        if self._fill_activity_source is None:
+            raise RuntimeError(
+                "Alpaca individual fill retrieval requires an "
+                "Alpaca fill activity source."
+            )
+
+        fills = tuple(
+            self._translate_fill_activity(activity, order_id)
+            for activity in self._fill_activity_source.get_fill_activities(
+                order_id
+            )
+        )
+        return tuple(sorted(fills, key=lambda fill: fill.executed_at))
 
     def submit_protected_plan(
         self,
@@ -389,3 +499,101 @@ class AlpacaPaperExecutionAdapter:
         return str(
             normalized
         ).strip().lower() or "unknown"
+
+    @staticmethod
+    def _normalize_order_id(value: object) -> str:
+        if not isinstance(value, str):
+            raise TypeError("broker_order_id must be a string.")
+        order_id = value.strip()
+        if not order_id:
+            raise ValueError("broker_order_id cannot be empty.")
+        return order_id
+
+    @classmethod
+    def _translate_order_status(cls, value: object) -> BrokerOrderStatus:
+        status = cls._enum_value(value)
+        mapping = {
+            "new": BrokerOrderStatus.SUBMITTED,
+            "pending_new": BrokerOrderStatus.SUBMITTED,
+            "pending_review": BrokerOrderStatus.SUBMITTED,
+            "accepted_for_bidding": BrokerOrderStatus.SUBMITTED,
+            "accepted": BrokerOrderStatus.ACCEPTED,
+            "partially_filled": BrokerOrderStatus.PARTIALLY_FILLED,
+            "filled": BrokerOrderStatus.FILLED,
+            "pending_cancel": BrokerOrderStatus.PENDING_CANCEL,
+            "canceled": BrokerOrderStatus.CANCELED,
+            "rejected": BrokerOrderStatus.REJECTED,
+            "expired": BrokerOrderStatus.EXPIRED,
+            "replaced": BrokerOrderStatus.REPLACED,
+        }
+        return mapping.get(status, BrokerOrderStatus.UNKNOWN)
+
+    @staticmethod
+    def _whole_quantity(
+        value: object,
+        *,
+        name: str,
+        allow_zero: bool = False,
+    ) -> int:
+        try:
+            quantity = Decimal(str(value))
+        except (InvalidOperation, ValueError):
+            raise ValueError(f"Alpaca {name} is not numeric.") from None
+        if not quantity.is_finite() or quantity != quantity.to_integral_value():
+            raise ValueError(f"Alpaca {name} must be a whole-share quantity.")
+        result = int(quantity)
+        if result < 0 or (result == 0 and not allow_zero):
+            qualifier = "non-negative" if allow_zero else "greater than zero"
+            raise ValueError(f"Alpaca {name} must be {qualifier}.")
+        return result
+
+    @staticmethod
+    def _optional_positive_float(
+        value: object,
+        *,
+        name: str,
+    ) -> float | None:
+        if value is None or str(value).strip() == "":
+            return None
+        try:
+            result = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"Alpaca {name} is not numeric.") from None
+        if result <= 0.0:
+            raise ValueError(f"Alpaca {name} must be greater than zero.")
+        return result
+
+    def _translate_fill_activity(
+        self,
+        activity: object,
+        expected_order_id: str,
+    ) -> BrokerFill:
+        order_id = str(getattr(activity, "order_id", "")).strip()
+        if order_id != expected_order_id:
+            raise ValueError(
+                "Alpaca fill activity order_id does not match the requested order."
+            )
+        executed_at = getattr(activity, "transaction_time", None)
+        if not isinstance(executed_at, datetime):
+            raise TypeError(
+                "Alpaca fill activity transaction_time must be a datetime."
+            )
+        price = self._optional_positive_float(
+            getattr(activity, "price", None),
+            name="fill price",
+        )
+        if price is None:
+            raise ValueError("Alpaca fill price cannot be empty.")
+        return BrokerFill(
+            broker=self.broker_name,
+            broker_order_id=order_id,
+            fill_id=str(getattr(activity, "id", "")),
+            symbol=str(getattr(activity, "symbol", "")),
+            side=self._enum_value(getattr(activity, "side", "")),
+            quantity=self._whole_quantity(
+                getattr(activity, "qty", None),
+                name="fill qty",
+            ),
+            price=price,
+            executed_at=executed_at,
+        )
