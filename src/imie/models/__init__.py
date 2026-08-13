@@ -117,6 +117,9 @@ from imie.models.position_protection_status import PositionProtectionStatus
 from imie.models.position_protection_reconciliation_result import (
     PositionProtectionReconciliationResult,
 )
+from imie.models.position_protection_reconciliation_record import (
+    PositionProtectionReconciliationRecord,
+)
 from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
@@ -225,6 +228,7 @@ __all__ = [
     "PositionProtectionAttempt",
     "PositionProtectionStatus",
     "PositionProtectionReconciliationResult",
+    "PositionProtectionReconciliationRecord",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "ExecutionReconciliationResult",
