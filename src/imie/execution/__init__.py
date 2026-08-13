@@ -3,6 +3,9 @@ from typing import Any
 from imie.execution.broker_execution_port import (
     BrokerExecutionPort,
 )
+from imie.execution.broker_order_query_port import (
+    BrokerOrderQueryPort,
+)
 from imie.execution.mock_broker_execution_adapter import (
     MockBrokerExecutionAdapter,
 )
@@ -17,6 +20,7 @@ __all__ = [
     "AlpacaPaperExecutionAdapter",
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
+    "BrokerOrderQueryPort",
     "MockBrokerExecutionAdapter",
     "ProtectedExecutionPlanBuilder",
     "ProtectedExecutionPort",
