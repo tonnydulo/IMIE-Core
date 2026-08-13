@@ -99,6 +99,11 @@ from imie.models.execution_order_intent import (
 from imie.models.broker_submission_result import (
     BrokerSubmissionResult,
 )
+from imie.models.broker_fill import BrokerFill
+from imie.models.broker_order_snapshot import (
+    BrokerOrderSnapshot,
+)
+from imie.models.broker_order_status import BrokerOrderStatus
 from imie.models.protected_order_slice import (
     ProtectedOrderSlice,
 )
@@ -178,6 +183,9 @@ __all__ = [
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "BrokerSubmissionResult",
+    "BrokerFill",
+    "BrokerOrderSnapshot",
+    "BrokerOrderStatus",
     "ProtectedExecutionPlan",
     "ProtectedOrderSlice",
     "ProtectedOrderSubmission",
