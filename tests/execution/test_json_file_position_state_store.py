@@ -102,6 +102,19 @@ def test_conflicting_same_timestamp_is_rejected(tmp_path):
         store.save(position(quantity=11))
 
 
+def test_same_timestamp_accepts_monotonic_fill_checkpoint(tmp_path):
+    store = JsonFilePositionStateStore(tmp_path / "positions.json")
+    store.save(position())
+    expected = position(
+        quantity=11,
+        processed_fill_ids=("fill-1", "fill-2"),
+    )
+
+    store.save(expected)
+
+    assert store.get(broker="alpaca-paper", symbol="NVDA") == expected
+
+
 def test_duplicate_persisted_keys_are_rejected(tmp_path):
     path = tmp_path / "positions.json"
     value = JsonFilePositionStateStore._position_to_dict(position())

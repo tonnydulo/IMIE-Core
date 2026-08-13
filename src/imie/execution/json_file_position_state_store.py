@@ -57,9 +57,17 @@ class JsonFilePositionStateStore:
                 if position.last_updated_at == current.last_updated_at:
                     if position == current:
                         return
-                    raise ValueError(
-                        "Conflicting position state has the same update time."
-                    )
+                    if not (
+                        len(position.processed_fill_ids)
+                        > len(current.processed_fill_ids)
+                        and position.processed_fill_ids[
+                            : len(current.processed_fill_ids)
+                        ]
+                        == current.processed_fill_ids
+                    ):
+                        raise ValueError(
+                            "Conflicting position state has the same update time."
+                        )
                 positions[index] = position
                 break
             else:
