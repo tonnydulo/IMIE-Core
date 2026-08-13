@@ -2,14 +2,24 @@ from __future__ import annotations
 
 import math
 
+from datetime import datetime, timezone
+from typing import Callable
+
 from imie.execution.broker_execution_port import BrokerExecutionPort
 from imie.execution.execution_safety_engine import ExecutionSafetyEngine
+from imie.execution.execution_submission_fingerprint import (
+    ExecutionSubmissionFingerprint,
+)
+from imie.execution.execution_submission_reservation_store import (
+    ExecutionSubmissionReservationStore,
+)
 from imie.models import (
     BrokerSubmissionResult,
     ExecutionCandidate,
     ExecutionOrderIntent,
     ExecutionSafetyPolicy,
     ExecutionSafetySubmissionResult,
+    ExecutionSubmissionReservation,
 )
 
 
@@ -21,7 +31,9 @@ class ExecutionSafetySubmissionService:
         *,
         broker_execution_port: BrokerExecutionPort,
         policy: ExecutionSafetyPolicy,
+        reservation_store: ExecutionSubmissionReservationStore,
         engine: ExecutionSafetyEngine | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not isinstance(broker_execution_port, BrokerExecutionPort):
             raise TypeError(
@@ -29,12 +41,24 @@ class ExecutionSafetySubmissionService:
             )
         if not isinstance(policy, ExecutionSafetyPolicy):
             raise TypeError("policy must be an ExecutionSafetyPolicy.")
+        if not isinstance(
+            reservation_store, ExecutionSubmissionReservationStore
+        ):
+            raise TypeError(
+                "reservation_store must satisfy "
+                "ExecutionSubmissionReservationStore."
+            )
         resolved_engine = engine or ExecutionSafetyEngine()
         if not isinstance(resolved_engine, ExecutionSafetyEngine):
             raise TypeError("engine must be an ExecutionSafetyEngine or None.")
         self._broker_execution_port = broker_execution_port
         self._policy = policy
+        self._reservation_store = reservation_store
         self._engine = resolved_engine
+        resolved_clock = clock or (lambda: datetime.now(timezone.utc))
+        if not callable(resolved_clock):
+            raise TypeError("clock must be callable or None.")
+        self._clock = resolved_clock
 
     def submit(
         self,
@@ -55,7 +79,25 @@ class ExecutionSafetySubmissionService:
             return ExecutionSafetySubmissionResult(
                 assessment=assessment,
                 broker_submission=None,
+                reservation=None,
             )
+        fingerprint = ExecutionSubmissionFingerprint.create(
+            candidate=candidate,
+            intent=intent,
+        )
+        reserved_at = self._clock()
+        if not isinstance(reserved_at, datetime):
+            raise TypeError("clock must return a datetime.")
+        if reserved_at.tzinfo is None:
+            raise ValueError("clock must return a timezone-aware datetime.")
+        reservation = ExecutionSubmissionReservation(
+            fingerprint=fingerprint,
+            symbol=intent.symbol,
+            side=intent.side,
+            quantity=intent.quantity,
+            reserved_at=reserved_at,
+        )
+        self._reservation_store.reserve(reservation)
         submission = self._broker_execution_port.submit_order(intent)
         if not isinstance(submission, BrokerSubmissionResult):
             raise TypeError(
@@ -71,6 +113,7 @@ class ExecutionSafetySubmissionService:
         return ExecutionSafetySubmissionResult(
             assessment=assessment,
             broker_submission=submission,
+            reservation=reservation,
         )
 
     @staticmethod

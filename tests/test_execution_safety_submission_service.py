@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 
 from imie.execution import ExecutionSafetySubmissionService
 from imie.models import (
@@ -7,6 +8,9 @@ from imie.models import (
     ExecutionOrderIntent,
     ExecutionSafetyPolicy,
 )
+
+
+NOW = datetime(2026, 8, 14, 6, 0, tzinfo=timezone.utc)
 
 
 def candidate(**overrides):
@@ -65,7 +69,23 @@ class Broker:
         )
 
 
-def service(broker, **policy_overrides):
+class ReservationStore:
+    def __init__(self, error=None):
+        self.values = {}
+        self.error = error
+
+    def reserve(self, value):
+        if self.error:
+            raise self.error
+        if value.fingerprint in self.values:
+            raise ValueError("already reserved")
+        self.values[value.fingerprint] = value
+
+    def get(self, fingerprint):
+        return self.values.get(fingerprint)
+
+
+def service(broker, reservation_store=None, **policy_overrides):
     values = {
         "maximum_order_notional": 5_000.0,
         "maximum_risk_amount": 25.0,
@@ -74,6 +94,8 @@ def service(broker, **policy_overrides):
     return ExecutionSafetySubmissionService(
         broker_execution_port=broker,
         policy=ExecutionSafetyPolicy(**values),
+        reservation_store=reservation_store or ReservationStore(),
+        clock=lambda: NOW,
     )
 
 
@@ -87,6 +109,7 @@ def test_allowed_candidate_is_submitted_exactly_once():
 
     assert result.submitted is True
     assert result.broker_submission.accepted is True
+    assert result.reservation.symbol == "NVDA"
     assert broker.calls == [order_intent]
 
 
@@ -199,3 +222,60 @@ def test_invalid_broker_result_type_fails_visibly():
 
     with pytest.raises(TypeError, match="BrokerSubmissionResult"):
         service(broker).submit(candidate=candidate(), intent=intent())
+
+
+def test_exact_duplicate_is_reserved_before_second_broker_call():
+    broker = Broker()
+    reservations = ReservationStore()
+    guarded = service(broker, reservation_store=reservations)
+
+    guarded.submit(candidate=candidate(), intent=intent())
+    with pytest.raises(ValueError, match="already reserved"):
+        guarded.submit(candidate=candidate(), intent=intent())
+
+    assert len(broker.calls) == 1
+
+
+def test_reservation_failure_prevents_broker_mutation():
+    broker = Broker()
+    reservations = ReservationStore(OSError("disk full"))
+
+    with pytest.raises(OSError, match="disk full"):
+        service(broker, reservation_store=reservations).submit(
+            candidate=candidate(), intent=intent()
+        )
+
+    assert broker.calls == []
+
+
+def test_broker_exception_leaves_reservation_to_block_retry():
+    class FailingBroker(Broker):
+        def submit_order(self, value):
+            self.calls.append(value)
+            raise RuntimeError("broker timeout")
+
+    broker = FailingBroker()
+    reservations = ReservationStore()
+    guarded = service(broker, reservation_store=reservations)
+
+    with pytest.raises(RuntimeError, match="broker timeout"):
+        guarded.submit(candidate=candidate(), intent=intent())
+    with pytest.raises(ValueError, match="already reserved"):
+        guarded.submit(candidate=candidate(), intent=intent())
+
+    assert len(broker.calls) == 1
+
+
+def test_changed_order_terms_receive_distinct_reservation():
+    broker = Broker()
+    reservations = ReservationStore()
+    guarded = service(broker, reservation_store=reservations)
+
+    guarded.submit(candidate=candidate(), intent=intent())
+    guarded.submit(
+        candidate=candidate(quantity=11, position_notional=2_200.0),
+        intent=intent(quantity=11),
+    )
+
+    assert len(broker.calls) == 2
+    assert len(reservations.values) == 2
