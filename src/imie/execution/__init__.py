@@ -7,6 +7,9 @@ from imie.execution.broker_order_query_port import (
     BrokerOrderQueryPort,
 )
 from imie.execution.broker_position_query_port import BrokerPositionQueryPort
+from imie.execution.broker_position_protection_validator import (
+    BrokerPositionProtectionValidator,
+)
 from imie.execution.broker_order_intent_store import (
     BrokerOrderIntentStore,
 )
@@ -62,6 +65,7 @@ __all__ = [
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
     "BrokerPositionQueryPort",
+    "BrokerPositionProtectionValidator",
     "AlpacaPaperPositionQueryAdapter",
     "BrokerOrderIntentStore",
     "ConsoleReconciliationResultPublisher",
