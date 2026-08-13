@@ -407,6 +407,38 @@ def test_dashboard_html_contains_broker_submission_fields() -> None:
     assert "payload.broker_submission_warnings" in html
 
 
+def test_dashboard_html_contains_execution_safety_fields() -> None:
+    html = build_dashboard_html()
+
+    mappings = {
+        "executionSafetyState": "execution_safety_state",
+        "executionSafetySymbol": "execution_safety_symbol",
+        "executionSafetyOrderNotional": "execution_safety_order_notional",
+        "executionSafetyRiskAmount": "execution_safety_risk_amount",
+        "executionSafetyMaximumOrderNotional": (
+            "execution_safety_maximum_order_notional"
+        ),
+        "executionSafetyMaximumRiskAmount": (
+            "execution_safety_maximum_risk_amount"
+        ),
+        "executionSafetyAllowed": "execution_safety_allowed",
+        "executionSafetyViolations": "execution_safety_violations",
+        "executionSafetyWarnings": "execution_safety_warnings",
+        "executionSubmissionFingerprint": (
+            "execution_submission_fingerprint"
+        ),
+        "executionSubmissionReservedAt": (
+            "execution_submission_reserved_at"
+        ),
+    }
+
+    for element_id, payload_field in mappings.items():
+        assert f'id="{element_id}"' in html
+        assert f"payload.{payload_field}" in html
+
+    assert "function formatCurrency" in html
+
+
 def test_dashboard_html_contains_protected_submission_fields() -> None:
     html = build_dashboard_html()
 

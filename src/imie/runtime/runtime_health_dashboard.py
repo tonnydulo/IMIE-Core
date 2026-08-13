@@ -1792,6 +1792,65 @@ def build_dashboard_html(
         </article>
 
         <article class="card">
+            <div class="label">Execution Safety State</div>
+            <div id="executionSafetyState" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Safety Symbol</div>
+            <div id="executionSafetySymbol" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Order Notional</div>
+            <div id="executionSafetyOrderNotional" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Risk Amount</div>
+            <div id="executionSafetyRiskAmount" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Order Notional</div>
+            <div id="executionSafetyMaximumOrderNotional" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Risk Amount</div>
+            <div id="executionSafetyMaximumRiskAmount" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Safety Allowed</div>
+            <div id="executionSafetyAllowed" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Safety Violations</div>
+            <ul id="executionSafetyViolations" class="explanation-list warning-list">
+                <li class="empty-list">No execution safety violations.</li>
+            </ul>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Safety Warnings</div>
+            <ul id="executionSafetyWarnings" class="explanation-list warning-list">
+                <li class="empty-list">No execution safety warnings.</li>
+            </ul>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Submission Fingerprint</div>
+            <div id="executionSubmissionFingerprint" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Reserved At</div>
+            <div id="executionSubmissionReservedAt" class="value">—</div>
+        </article>
+
+        <article class="card">
             <div class="label">
                 Broker
             </div>
@@ -3509,6 +3568,20 @@ def build_dashboard_html(
             return Number(value).toFixed(2);
         }}
 
+        function formatCurrency(
+            value
+        ) {{
+            if (
+                value === null
+                || value === undefined
+                || Number.isNaN(Number(value))
+            ) {{
+                return "—";
+            }}
+
+            return `$${{Number(value).toFixed(2)}}`;
+        }}
+
         function formatRewardRisk(
             value
         ) {{
@@ -4815,6 +4888,57 @@ def build_dashboard_html(
                 "executionOrderIntentWarnings",
                 payload.execution_order_intent_warnings,
                 "No order intent warnings."
+            );
+
+            setText(
+                "executionSafetyState",
+                payload.execution_safety_state ?? "—"
+            );
+            setText(
+                "executionSafetySymbol",
+                payload.execution_safety_symbol ?? "—"
+            );
+            setText(
+                "executionSafetyOrderNotional",
+                formatCurrency(payload.execution_safety_order_notional)
+            );
+            setText(
+                "executionSafetyRiskAmount",
+                formatCurrency(payload.execution_safety_risk_amount)
+            );
+            setText(
+                "executionSafetyMaximumOrderNotional",
+                formatCurrency(
+                    payload.execution_safety_maximum_order_notional
+                )
+            );
+            setText(
+                "executionSafetyMaximumRiskAmount",
+                formatCurrency(
+                    payload.execution_safety_maximum_risk_amount
+                )
+            );
+            setText(
+                "executionSafetyAllowed",
+                formatBoolean(payload.execution_safety_allowed)
+            );
+            updateTextList(
+                "executionSafetyViolations",
+                payload.execution_safety_violations,
+                "No execution safety violations."
+            );
+            updateTextList(
+                "executionSafetyWarnings",
+                payload.execution_safety_warnings,
+                "No execution safety warnings."
+            );
+            setText(
+                "executionSubmissionFingerprint",
+                payload.execution_submission_fingerprint ?? "—"
+            );
+            setText(
+                "executionSubmissionReservedAt",
+                formatDate(payload.execution_submission_reserved_at)
             );
 
             setText(
