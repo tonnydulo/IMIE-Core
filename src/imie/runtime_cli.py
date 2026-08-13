@@ -21,6 +21,7 @@ from imie.runtime import (
     AnalysisCycleStatus,
     MultiSymbolRuntimeApplication,
     PositionSizingConfig,
+    ExecutionSafetyConfig,
     RuntimeApplication,
     RuntimeApplicationFactory,
     RuntimeConfig,
@@ -134,6 +135,36 @@ def build_parser() -> argparse.ArgumentParser:
             "Explicitly arm Alpaca paper-order submission. "
             "Required with --execution-mode alpaca-paper."
         ),
+    )
+
+    parser.add_argument(
+        "--execution-safety",
+        action="store_true",
+        help=(
+            "Enable guarded entry-order submission with financial limits "
+            "and persistent duplicate prevention."
+        ),
+    )
+
+    parser.add_argument(
+        "--maximum-order-notional",
+        type=float,
+        default=None,
+        help="Required order-notional limit when execution safety is enabled.",
+    )
+
+    parser.add_argument(
+        "--maximum-risk-amount",
+        type=float,
+        default=None,
+        help="Required trade-risk limit when execution safety is enabled.",
+    )
+
+    parser.add_argument(
+        "--execution-reservation-store",
+        type=Path,
+        default=Path("runtime/execution/submission_reservations.json"),
+        help="Persistent duplicate-submission reservation ledger.",
     )
 
     parser.add_argument(
@@ -414,6 +445,25 @@ def build_position_sizing_config(
         ),
     )
 
+
+def build_execution_safety_config(
+    arguments: argparse.Namespace,
+) -> ExecutionSafetyConfig:
+    if not isinstance(arguments, argparse.Namespace):
+        raise TypeError("arguments must be an argparse.Namespace.")
+    return ExecutionSafetyConfig(
+        enabled=getattr(arguments, "execution_safety", False),
+        maximum_order_notional=getattr(
+            arguments, "maximum_order_notional", None
+        ),
+        maximum_risk_amount=getattr(arguments, "maximum_risk_amount", None),
+        reservation_store_path=getattr(
+            arguments,
+            "execution_reservation_store",
+            Path("runtime/execution/submission_reservations.json"),
+        ),
+    )
+
 def build_runtime_symbol_universe(
     arguments: argparse.Namespace,
 ) -> RuntimeSymbolUniverse:
@@ -635,6 +685,7 @@ def build_application(
             arguments
         )
     )
+    execution_safety_config = build_execution_safety_config(arguments)
 
     resolved_settings = resolve_settings(
         settings=settings,
@@ -674,6 +725,7 @@ def build_application(
             position_sizing_config=(
                 position_sizing_config
             ),
+            execution_safety_config=execution_safety_config,
         )
 
     return RuntimeApplicationFactory.create(
@@ -688,6 +740,7 @@ def build_application(
         position_sizing_config=(
             position_sizing_config
         ),
+        execution_safety_config=execution_safety_config,
         health_console_output=(
             not arguments.no_health_console
         ),

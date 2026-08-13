@@ -12,6 +12,7 @@ from imie.runtime import (
     AnalysisCycleStatus,
     RuntimeApplicationFactory,
     RuntimeConfig,
+    ExecutionSafetyConfig,
     RuntimeSymbolUniverse,
     SUPPORTED_NYSE_CALENDAR_YEARS,
 )
@@ -19,6 +20,7 @@ from imie.runtime_cli import (
     build_application,
     build_parser,
     build_runtime_config,
+    build_execution_safety_config,
     build_runtime_symbol_universe,
     build_session_policy,
     main,
@@ -243,6 +245,48 @@ def test_parser_accepts_mock_execution_mode() -> None:
     )
 
     assert arguments.execution_mode == "mock"
+
+
+def test_parser_execution_safety_defaults_are_off() -> None:
+    arguments = build_parser().parse_args([])
+
+    assert arguments.execution_safety is False
+    assert arguments.maximum_order_notional is None
+    assert arguments.maximum_risk_amount is None
+    assert arguments.execution_reservation_store == Path(
+        "runtime/execution/submission_reservations.json"
+    )
+
+
+def test_parser_accepts_explicit_execution_safety_options() -> None:
+    arguments = build_parser().parse_args([
+        "--execution-mode", "mock",
+        "--execution-safety",
+        "--maximum-order-notional", "25000",
+        "--maximum-risk-amount", "125",
+        "--execution-reservation-store", "custom/reservations.json",
+    ])
+
+    config = build_execution_safety_config(arguments)
+    assert config == ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000.0,
+        maximum_risk_amount=125.0,
+        reservation_store_path=Path("custom/reservations.json"),
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments, missing",
+    [
+        (["--execution-safety", "--maximum-risk-amount", "125"], "maximum_order_notional"),
+        (["--execution-safety", "--maximum-order-notional", "25000"], "maximum_risk_amount"),
+    ],
+)
+def test_execution_safety_cli_config_requires_both_limits(arguments, missing):
+    parsed = build_parser().parse_args(arguments)
+    with pytest.raises(ValueError, match=missing):
+        build_execution_safety_config(parsed)
 
 
 def test_parser_accepts_alpaca_paper_execution_mode() -> None:
