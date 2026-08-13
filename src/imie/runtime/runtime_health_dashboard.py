@@ -1791,6 +1791,125 @@ def build_dashboard_html(
             </ul>
         </article>
 
+        <article class="card">
+            <div class="label">
+                Broker
+            </div>
+
+            <div
+                id="brokerSubmissionBroker"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Symbol
+            </div>
+
+            <div
+                id="brokerSubmissionSymbol"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Side
+            </div>
+
+            <div
+                id="brokerSubmissionSide"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Quantity
+            </div>
+
+            <div
+                id="brokerSubmissionQuantity"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Accepted
+            </div>
+
+            <div
+                id="brokerSubmissionAccepted"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Order ID
+            </div>
+
+            <div
+                id="brokerSubmissionOrderId"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="label">
+                Broker Status
+            </div>
+
+            <div
+                id="brokerSubmissionStatus"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">
+                Broker Message
+            </div>
+
+            <div
+                id="brokerSubmissionMessage"
+                class="value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">
+                Broker Submission Warnings
+            </div>
+
+            <ul
+                id="brokerSubmissionWarnings"
+                class="explanation-list warning-list"
+            >
+                <li class="empty-list">
+                    No broker submission warnings.
+                </li>
+            </ul>
+        </article>
+
             <article class="card">
                 <div class="label">
                     Institutional Bias
@@ -4642,6 +4761,61 @@ def build_dashboard_html(
                 "executionOrderIntentWarnings",
                 payload.execution_order_intent_warnings,
                 "No order intent warnings."
+            );
+
+            setText(
+                "brokerSubmissionBroker",
+                payload.broker_submission_broker
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionSymbol",
+                payload.broker_submission_symbol
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionSide",
+                payload.broker_submission_side
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionQuantity",
+                payload.broker_submission_quantity
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionAccepted",
+                formatBoolean(
+                    payload.broker_submission_accepted
+                )
+            );
+
+            setText(
+                "brokerSubmissionOrderId",
+                payload.broker_submission_order_id
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionStatus",
+                payload.broker_submission_status
+                    ?? "—"
+            );
+
+            setText(
+                "brokerSubmissionMessage",
+                payload.broker_submission_message
+                    ?? "—"
+            );
+
+            updateTextList(
+                "brokerSubmissionWarnings",
+                payload.broker_submission_warnings,
+                "No broker submission warnings."
             );
 
                 updateInstitutionalDirection(

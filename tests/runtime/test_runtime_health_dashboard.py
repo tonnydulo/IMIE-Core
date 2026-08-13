@@ -383,6 +383,29 @@ def test_dashboard_html_contains_execution_order_intent_fields() -> None:
     assert "payload.execution_order_intent_actionable" in html
     assert "payload.execution_order_intent_warnings" in html
 
+def test_dashboard_html_contains_broker_submission_fields() -> None:
+    html = build_dashboard_html()
+
+    assert 'id="brokerSubmissionBroker"' in html
+    assert 'id="brokerSubmissionSymbol"' in html
+    assert 'id="brokerSubmissionSide"' in html
+    assert 'id="brokerSubmissionQuantity"' in html
+    assert 'id="brokerSubmissionAccepted"' in html
+    assert 'id="brokerSubmissionOrderId"' in html
+    assert 'id="brokerSubmissionStatus"' in html
+    assert 'id="brokerSubmissionMessage"' in html
+    assert 'id="brokerSubmissionWarnings"' in html
+
+    assert "payload.broker_submission_broker" in html
+    assert "payload.broker_submission_symbol" in html
+    assert "payload.broker_submission_side" in html
+    assert "payload.broker_submission_quantity" in html
+    assert "payload.broker_submission_accepted" in html
+    assert "payload.broker_submission_order_id" in html
+    assert "payload.broker_submission_status" in html
+    assert "payload.broker_submission_message" in html
+    assert "payload.broker_submission_warnings" in html
+
 def test_dashboard_html_contains_trade_plan_formatters() -> None:
     html = build_dashboard_html()
 
