@@ -18,6 +18,7 @@ from imie.execution.protected_execution_port import (
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
+    "AlpacaPaperFillActivitySource",
     "AlpacaProtectedOrderRequestBuilder",
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
@@ -34,6 +35,13 @@ def __getattr__(name: str) -> Any:
         )
 
         return AlpacaPaperExecutionAdapter
+
+    if name == "AlpacaPaperFillActivitySource":
+        from imie.execution.alpaca_paper_fill_activity_source import (
+            AlpacaPaperFillActivitySource,
+        )
+
+        return AlpacaPaperFillActivitySource
 
     if name == "AlpacaProtectedOrderRequestBuilder":
         from imie.execution.alpaca_protected_order_request_builder import (
