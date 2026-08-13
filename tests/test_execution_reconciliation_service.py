@@ -5,6 +5,7 @@ import pytest
 from imie.execution import ExecutionReconciliationService
 from imie.models import (
     BrokerFill,
+    BrokerOrderIntentRecord,
     BrokerOrderSnapshot,
     BrokerOrderStatus,
     ExecutionOrderIntent,
@@ -81,6 +82,33 @@ class RecordingQueryPort:
         return self.fills
 
 
+class RecordingIntentStore:
+    def __init__(self, record: object | None = None) -> None:
+        self.record = record
+        self.calls: list[tuple[str, str]] = []
+
+    def save(self, record: BrokerOrderIntentRecord) -> None:
+        self.record = record
+
+    def get(self, *, broker: str, broker_order_id: str):
+        self.calls.append((broker, broker_order_id))
+        return self.record
+
+
+def make_record(
+    *,
+    broker: str = "fake",
+    order_id: str = "order-123",
+) -> BrokerOrderIntentRecord:
+    return BrokerOrderIntentRecord(
+        broker=broker,
+        broker_order_id=order_id,
+        intent=make_intent(),
+        recorded_at=NOW,
+        submission_label="target1",
+    )
+
+
 def test_service_queries_once_and_reconciles() -> None:
     query_port = RecordingQueryPort()
     service = ExecutionReconciliationService(query_port=query_port)
@@ -95,6 +123,82 @@ def test_service_queries_once_and_reconciles() -> None:
         ("snapshot", "order-123"),
         ("fills", "order-123"),
     ]
+
+
+def test_service_loads_recorded_intent_then_reconciles_once() -> None:
+    query_port = RecordingQueryPort()
+    intent_store = RecordingIntentStore(make_record())
+    service = ExecutionReconciliationService(
+        query_port=query_port,
+        intent_store=intent_store,
+    )
+
+    result = service.reconcile_recorded_order(
+        broker=" FAKE ",
+        broker_order_id=" order-123 ",
+    )
+
+    assert result.reconciled is True
+    assert intent_store.calls == [("fake", "order-123")]
+    assert query_port.calls == [
+        ("snapshot", "order-123"),
+        ("fills", "order-123"),
+    ]
+
+
+def test_missing_record_fails_before_broker_query() -> None:
+    query_port = RecordingQueryPort()
+    service = ExecutionReconciliationService(
+        query_port=query_port,
+        intent_store=RecordingIntentStore(),
+    )
+
+    with pytest.raises(LookupError, match="No broker-order intent record"):
+        service.reconcile_recorded_order(
+            broker="fake",
+            broker_order_id="order-123",
+        )
+
+    assert query_port.calls == []
+
+
+def test_wrong_stored_record_key_fails_before_broker_query() -> None:
+    query_port = RecordingQueryPort()
+    service = ExecutionReconciliationService(
+        query_port=query_port,
+        intent_store=RecordingIntentStore(
+            make_record(order_id="different-order")
+        ),
+    )
+
+    with pytest.raises(ValueError, match="does not match"):
+        service.reconcile_recorded_order(
+            broker="fake",
+            broker_order_id="order-123",
+        )
+
+    assert query_port.calls == []
+
+
+def test_recorded_reconciliation_requires_store() -> None:
+    with pytest.raises(RuntimeError, match="requires an intent store"):
+        ExecutionReconciliationService(
+            query_port=RecordingQueryPort()
+        ).reconcile_recorded_order(
+            broker="fake",
+            broker_order_id="order-123",
+        )
+
+
+def test_stored_record_type_is_validated() -> None:
+    with pytest.raises(TypeError, match="BrokerOrderIntentRecord"):
+        ExecutionReconciliationService(
+            query_port=RecordingQueryPort(),
+            intent_store=RecordingIntentStore("not-a-record"),
+        ).reconcile_recorded_order(
+            broker="fake",
+            broker_order_id="order-123",
+        )
 
 
 def test_unreconciled_result_is_returned_without_retry() -> None:
@@ -187,4 +291,3 @@ def test_query_error_propagates_without_retry() -> None:
         )
 
     assert query_port.calls == [("snapshot", "order-123")]
-
