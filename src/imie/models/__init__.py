@@ -92,6 +92,8 @@ from imie.models.value_analysis import (
 from imie.models.position_size_result import (
     PositionSizeResult,
 )
+from imie.models.position_direction import PositionDirection
+from imie.models.execution_position import ExecutionPosition
 from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
@@ -186,6 +188,9 @@ __all__ = [
     "PressureAnalysis",
     "ParticipationAnalysis",
     "ValueAnalysis",
+    "PositionSizeResult",
+    "PositionDirection",
+    "ExecutionPosition",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "ExecutionReconciliationResult",
