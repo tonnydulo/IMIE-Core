@@ -41,6 +41,7 @@ from imie.execution.json_file_position_state_store import (
 from imie.execution.position_reconciliation_service import (
     PositionReconciliationService,
 )
+from imie.execution.protective_coverage_engine import ProtectiveCoverageEngine
 
 __all__ = [
     "AlpacaPaperExecutionAdapter",
@@ -60,6 +61,7 @@ __all__ = [
     "PositionStateEngine",
     "PositionStateStore",
     "PositionReconciliationService",
+    "ProtectiveCoverageEngine",
     "JsonFilePositionStateStore",
 ]
 

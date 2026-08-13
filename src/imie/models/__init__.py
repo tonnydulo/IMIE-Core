@@ -94,6 +94,10 @@ from imie.models.position_size_result import (
 )
 from imie.models.position_direction import PositionDirection
 from imie.models.execution_position import ExecutionPosition
+from imie.models.protective_coverage_status import ProtectiveCoverageStatus
+from imie.models.protective_coverage_assessment import (
+    ProtectiveCoverageAssessment,
+)
 from imie.models.execution_candidate import ExecutionCandidate
 from imie.models.execution_order_intent import (
     ExecutionOrderIntent,
@@ -191,6 +195,8 @@ __all__ = [
     "PositionSizeResult",
     "PositionDirection",
     "ExecutionPosition",
+    "ProtectiveCoverageStatus",
+    "ProtectiveCoverageAssessment",
     "ExecutionCandidate",
     "ExecutionOrderIntent",
     "ExecutionReconciliationResult",
