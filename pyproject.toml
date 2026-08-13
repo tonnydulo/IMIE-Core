@@ -18,6 +18,7 @@ test = [
 
 [project.scripts]
 imie-runtime = "imie.runtime_cli:main"
+imie-reconcile = "imie.reconcile_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
