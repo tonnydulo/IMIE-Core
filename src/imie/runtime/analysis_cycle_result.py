@@ -9,6 +9,8 @@ from imie.models import (
     DecisionResult,
     ExecutionCandidate,
     ExecutionOrderIntent,
+    ExecutionSafetyAssessment,
+    ExecutionSubmissionReservation,
     MarketSnapshot,
     PositionSizeResult,
     ProtectedPlanSubmissionResult,
@@ -57,6 +59,8 @@ class AnalysisCycleResult:
     execution_candidate: ExecutionCandidate | None = None
     execution_order_intent: ExecutionOrderIntent | None = None
     broker_submission_result: BrokerSubmissionResult | None = None
+    execution_safety_assessment: ExecutionSafetyAssessment | None = None
+    execution_submission_reservation: ExecutionSubmissionReservation | None = None
     protected_submission_result: ProtectedPlanSubmissionResult | None = None
 
     error_type: str | None = None
@@ -218,6 +222,38 @@ class AnalysisCycleResult:
             raise TypeError(
                 "broker_submission_result must be a "
                 "BrokerSubmissionResult or None."
+            )
+
+        if (
+            self.execution_safety_assessment is not None
+            and not isinstance(
+                self.execution_safety_assessment,
+                ExecutionSafetyAssessment,
+            )
+        ):
+            raise TypeError(
+                "execution_safety_assessment must be an "
+                "ExecutionSafetyAssessment or None."
+            )
+
+        if (
+            self.execution_submission_reservation is not None
+            and not isinstance(
+                self.execution_submission_reservation,
+                ExecutionSubmissionReservation,
+            )
+        ):
+            raise TypeError(
+                "execution_submission_reservation must be an "
+                "ExecutionSubmissionReservation or None."
+            )
+
+        if (
+            self.execution_submission_reservation is not None
+            and self.execution_safety_assessment is None
+        ):
+            raise ValueError(
+                "execution submission reservation requires safety assessment."
             )
 
         if (

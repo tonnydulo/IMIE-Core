@@ -431,6 +431,8 @@ class SingleAnalysisCycle:
             execution_candidate = None
             execution_order_intent = None
             broker_submission_result = None
+            execution_safety_assessment = None
+            execution_submission_reservation = None
             protected_submission_result = None
 
             if (
@@ -506,6 +508,8 @@ class SingleAnalysisCycle:
                 broker_submission_result = (
                     safety_submission.broker_submission
                 )
+                execution_safety_assessment = safety_submission.assessment
+                execution_submission_reservation = safety_submission.reservation
 
             if (
                 execution_order_intent is not None
@@ -545,6 +549,10 @@ class SingleAnalysisCycle:
                 execution_candidate=execution_candidate,
                 execution_order_intent=execution_order_intent,
                 broker_submission_result=broker_submission_result,
+                execution_safety_assessment=execution_safety_assessment,
+                execution_submission_reservation=(
+                    execution_submission_reservation
+                ),
                 protected_submission_result=protected_submission_result,
             )
 

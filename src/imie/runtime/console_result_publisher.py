@@ -437,6 +437,29 @@ class ConsoleResultPublisher:
                     in broker_submission_result.warnings
                 )
 
+        if result.execution_safety_assessment is not None:
+            safety = result.execution_safety_assessment
+            lines.extend([
+                "Execution Safety Assessment :",
+                f"Allowed      : {safety.allowed}",
+                f"Notional     : ${safety.order_notional:.2f}",
+                f"Notional Max : ${safety.maximum_order_notional:.2f}",
+                f"Risk Amount  : ${safety.risk_amount:.2f}",
+                f"Risk Maximum : ${safety.maximum_risk_amount:.2f}",
+            ])
+            lines.extend(
+                f"Safety Block : {violation}"
+                for violation in safety.violations
+            )
+
+        if result.execution_submission_reservation is not None:
+            reservation = result.execution_submission_reservation
+            lines.extend([
+                "Execution Submission Reservation :",
+                f"Fingerprint  : {reservation.fingerprint}",
+                f"Reserved At  : {reservation.reserved_at.isoformat()}",
+            ])
+
         if result.protected_submission_result is not None:
             protected = result.protected_submission_result
             lines.extend(

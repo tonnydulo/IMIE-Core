@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from dataclasses import replace
 
 from zoneinfo import ZoneInfo
 
@@ -11,6 +12,8 @@ from imie.models import (
     ExecutionOrderIntent,
     PositionSizeResult,
     BrokerSubmissionResult,
+    ExecutionSafetyAssessment,
+    ExecutionSubmissionReservation,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -213,6 +216,49 @@ def test_sized_completed_result_includes_execution_candidate() -> None:
     assert "Actual Risk  : $124.80" in lines
     assert "Actual Risk %: 0.4992%" in lines
     assert "Size Actionable: True" in lines
+
+
+def test_safety_block_and_reservation_are_visible() -> None:
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA", order_notional=15_693.60, risk_amount=124.80,
+        maximum_order_notional=10_000, maximum_risk_amount=125,
+        candidate_valid=True, candidate_actionable=True,
+        notional_within_limit=False, risk_within_limit=True,
+        allowed=False,
+        violations=("Order notional exceeds maximum.",),
+    )
+    blocked_lines = ConsoleResultPublisher(output=lambda line: None).format_lines(
+        replace(
+            make_sized_completed_result(),
+            broker_submission_result=None,
+            execution_safety_assessment=assessment,
+        )
+    )
+    assert "Execution Safety Assessment :" in blocked_lines
+    assert "Allowed      : False" in blocked_lines
+    assert "Safety Block : Order notional exceeds maximum." in blocked_lines
+
+    reservation = ExecutionSubmissionReservation(
+        fingerprint="b" * 64, symbol="NVDA", side="buy", quantity=156,
+        reserved_at=CHECKED_AT,
+    )
+    allowed = replace(
+        assessment,
+        maximum_order_notional=25_000,
+        notional_within_limit=True,
+        allowed=True,
+        violations=(),
+    )
+    reserved_lines = ConsoleResultPublisher(output=lambda line: None).format_lines(
+        replace(
+            make_sized_completed_result(),
+            execution_safety_assessment=allowed,
+            execution_submission_reservation=reservation,
+        )
+    )
+    assert "Execution Submission Reservation :" in reserved_lines
+    assert f"Fingerprint  : {'b' * 64}" in reserved_lines
+    lines = reserved_lines
 
     assert "Execution Candidate :" in lines
     assert "Strategy     : Pullback-to-Core" in lines
@@ -443,4 +489,3 @@ def test_publish_includes_market_session_details(
         "the CLOSED session."
         in rendered
     )
-

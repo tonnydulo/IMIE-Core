@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -11,6 +12,8 @@ from imie.models import (
     ExecutionOrderIntent,
     PositionSizeResult,
     BrokerSubmissionResult,
+    ExecutionSafetyAssessment,
+    ExecutionSubmissionReservation,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -557,4 +560,35 @@ def test_broker_submission_result_converts_to_dict() -> None:
         "status": "accepted",
         "message": "Mock order accepted.",
         "warnings": [],
+    }
+
+
+def test_execution_safety_and_reservation_convert_to_dict() -> None:
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA", order_notional=15_693.60, risk_amount=124.80,
+        maximum_order_notional=25_000, maximum_risk_amount=125,
+        candidate_valid=True, candidate_actionable=True,
+        notional_within_limit=True, risk_within_limit=True,
+        allowed=True,
+    )
+    reservation = ExecutionSubmissionReservation(
+        fingerprint="a" * 64, symbol="NVDA", side="buy", quantity=156,
+        reserved_at=CHECKED_AT,
+    )
+    payload = JsonResultPublisher(output=lambda value: None).to_dict(
+        replace(
+            make_sized_completed_result(),
+            execution_safety_assessment=assessment,
+            execution_submission_reservation=reservation,
+        )
+    )
+
+    assert payload["execution_safety_assessment"]["allowed"] is True
+    assert payload["execution_safety_assessment"]["maximum_risk_amount"] == 125.0
+    assert payload["execution_submission_reservation"] == {
+        "fingerprint": "a" * 64,
+        "symbol": "NVDA",
+        "side": "buy",
+        "quantity": 156,
+        "reserved_at": CHECKED_AT.isoformat(),
     }

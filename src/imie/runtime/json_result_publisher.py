@@ -137,6 +137,8 @@ class JsonResultPublisher:
             "execution_candidate": None,
             "execution_order_intent": None,
             "broker_submission_result": None,
+            "execution_safety_assessment": None,
+            "execution_submission_reservation": None,
             "protected_submission_result": None,
         }
 
@@ -437,6 +439,33 @@ class JsonResultPublisher:
                 "warnings": list(
                     result.broker_submission_result.warnings
                 ),
+            }
+
+        if result.execution_safety_assessment is not None:
+            safety = result.execution_safety_assessment
+            payload["execution_safety_assessment"] = {
+                "symbol": safety.symbol,
+                "order_notional": safety.order_notional,
+                "risk_amount": safety.risk_amount,
+                "maximum_order_notional": safety.maximum_order_notional,
+                "maximum_risk_amount": safety.maximum_risk_amount,
+                "candidate_valid": safety.candidate_valid,
+                "candidate_actionable": safety.candidate_actionable,
+                "notional_within_limit": safety.notional_within_limit,
+                "risk_within_limit": safety.risk_within_limit,
+                "allowed": safety.allowed,
+                "violations": list(safety.violations),
+                "warnings": list(safety.warnings),
+            }
+
+        if result.execution_submission_reservation is not None:
+            reservation = result.execution_submission_reservation
+            payload["execution_submission_reservation"] = {
+                "fingerprint": reservation.fingerprint,
+                "symbol": reservation.symbol,
+                "side": reservation.side,
+                "quantity": reservation.quantity,
+                "reserved_at": reservation.reserved_at.isoformat(),
             }
 
         if result.protected_submission_result is not None:
