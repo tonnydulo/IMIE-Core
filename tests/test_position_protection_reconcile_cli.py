@@ -55,6 +55,9 @@ def test_parser_defaults():
     assert arguments.protection_store == Path(
         "runtime/execution/position_protections.json"
     )
+    assert arguments.reconciliation_store == Path(
+        "runtime/execution/position_protection_reconciliations.json"
+    )
     assert arguments.output_format == "console"
 
 
@@ -64,6 +67,7 @@ def test_build_service_requires_explicit_paper_mode():
             settings=settings(paper=False),
             position_store_path=Path("positions.json"),
             protection_store_path=Path("protections.json"),
+            reconciliation_store_path=Path("reconciliations.json"),
         )
 
 
@@ -74,6 +78,7 @@ def test_build_service_requires_credentials(value):
             settings=value,
             position_store_path=Path("positions.json"),
             protection_store_path=Path("protections.json"),
+            reconciliation_store_path=Path("reconciliations.json"),
         )
 
 

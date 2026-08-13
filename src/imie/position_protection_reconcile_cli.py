@@ -17,6 +17,11 @@ from imie.position_protect_cli import (
 from imie.utils.logging_utils import configure_logging
 
 
+DEFAULT_RECONCILIATION_STORE = Path(
+    "runtime/execution/position_protection_reconciliations.json"
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="imie-position-protection-reconcile",
@@ -31,6 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--protection-store", type=Path, default=DEFAULT_PROTECTION_STORE
     )
     parser.add_argument(
+        "--reconciliation-store",
+        type=Path,
+        default=DEFAULT_RECONCILIATION_STORE,
+    )
+    parser.add_argument(
         "--output-format", choices=("console", "json"), default="console"
     )
     parser.add_argument("--json-indent", type=int, default=2)
@@ -42,6 +52,7 @@ def build_service(
     settings: AppSettings,
     position_store_path: Path,
     protection_store_path: Path,
+    reconciliation_store_path: Path,
 ):
     if not isinstance(settings, AppSettings):
         raise TypeError("settings must be an AppSettings.")
@@ -56,10 +67,13 @@ def build_service(
         raise TypeError("position_store_path must be a Path.")
     if not isinstance(protection_store_path, Path):
         raise TypeError("protection_store_path must be a Path.")
+    if not isinstance(reconciliation_store_path, Path):
+        raise TypeError("reconciliation_store_path must be a Path.")
 
     from imie.execution import (
         AlpacaPaperExecutionAdapter,
         JsonFilePositionProtectionStore,
+        JsonFilePositionProtectionReconciliationStore,
         JsonFilePositionStateStore,
         PositionProtectionReconciliationService,
     )
@@ -72,6 +86,9 @@ def build_service(
         position_store=JsonFilePositionStateStore(position_store_path),
         protection_store=JsonFilePositionProtectionStore(protection_store_path),
         query_port=adapter,
+        reconciliation_store=JsonFilePositionProtectionReconciliationStore(
+            reconciliation_store_path
+        ),
     )
 
 
@@ -147,6 +164,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             settings=settings,
             position_store_path=arguments.position_store,
             protection_store_path=arguments.protection_store,
+            reconciliation_store_path=arguments.reconciliation_store,
         )
         result = service.reconcile(broker=BROKER_NAME, symbol=arguments.symbol)
         publish_result(

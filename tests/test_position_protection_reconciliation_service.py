@@ -11,6 +11,7 @@ from imie.models import (
     ExistingPositionProtectionSubmission,
     PositionDirection,
     PositionProtectionRecord,
+    PositionProtectionReconciliationRecord,
 )
 
 
@@ -118,11 +119,33 @@ class QueryPort:
         return ()
 
 
-def service(position_value=None, record_value=None, query=None):
+class ReconciliationStore:
+    def __init__(self, error=None):
+        self.records = []
+        self.error = error
+
+    def save(self, value):
+        if self.error:
+            raise self.error
+        self.records.append(value)
+
+    def list_for_position(self, **kwargs):
+        return tuple(self.records)
+
+    def get_latest_for_position(self, **kwargs):
+        return self.records[-1] if self.records else None
+
+
+def service(
+    position_value=None, record_value=None, query=None,
+    reconciliation_store=None, clock=None,
+):
     return PositionProtectionReconciliationService(
         position_store=PositionStore(position_value),
         protection_store=ProtectionStore(record_value),
         query_port=query or QueryPort(),
+        reconciliation_store=reconciliation_store,
+        clock=clock,
     )
 
 
@@ -175,3 +198,32 @@ def test_snapshot_id_mismatch_fails_without_querying_remaining_orders():
         )
 
     assert query.calls == [("snapshot", "target-1")]
+
+
+def test_successful_reconciliation_appends_exact_position_observation():
+    audit = ReconciliationStore()
+    observed_at = NOW.replace(minute=1)
+
+    result = service(
+        position(), record(), QueryPort(), audit, lambda: observed_at
+    ).reconcile(broker="alpaca-paper", symbol="NVDA")
+
+    assert len(audit.records) == 1
+    saved = audit.records[0]
+    assert isinstance(saved, PositionProtectionReconciliationRecord)
+    assert saved.result is result
+    assert saved.position_updated_at == NOW
+    assert saved.position_fill_ids == ("fill-1",)
+    assert saved.observed_at == observed_at
+
+
+def test_audit_failure_is_visible_after_broker_query():
+    query = QueryPort()
+    audit = ReconciliationStore(OSError("disk full"))
+
+    with pytest.raises(OSError, match="disk full"):
+        service(position(), record(), query, audit).reconcile(
+            broker="alpaca-paper", symbol="NVDA"
+        )
+
+    assert len(query.calls) == 4
