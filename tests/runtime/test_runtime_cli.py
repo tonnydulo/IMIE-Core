@@ -54,6 +54,7 @@ def make_arguments(
         "closed_poll_seconds": 300.0,
         "heartbeat_seconds": 60.0,
         "completion_delay": 3.0,
+        "execution_mode": "disabled",
         "continuous": False,
         "max_cycles": None,
         "history_file": Path(
@@ -118,6 +119,8 @@ def test_parser_defaults() -> None:
     arguments = parser.parse_args(
         []
     )
+
+    assert arguments.execution_mode == "disabled"
 
     assert arguments.symbol == "NVDA"
     assert arguments.symbols is None
@@ -213,6 +216,7 @@ def test_build_runtime_config() -> None:
             closed_poll_seconds=180.0,
             completion_delay=2.0,
             heartbeat_seconds=30.0,
+            execution_mode="mock",
         )
     )
 
@@ -224,7 +228,19 @@ def test_build_runtime_config() -> None:
         closed_session_polling_interval_seconds=180.0,
         completion_delay_seconds=2.0,
         heartbeat_interval_seconds=30.0,
+        execution_mode="mock",
     )
+
+
+def test_parser_accepts_mock_execution_mode() -> None:
+    arguments = build_parser().parse_args(
+        [
+            "--execution-mode",
+            "mock",
+        ]
+    )
+
+    assert arguments.execution_mode == "mock"
 
 def test_parser_accepts_session_overrides() -> None:
     arguments = build_parser().parse_args(

@@ -18,6 +18,7 @@ def test_defaults() -> None:
         == 300.0
     )
     assert config.heartbeat_interval_seconds == 60.0
+    assert config.execution_mode == "disabled"
 
 
 def test_symbol_and_timeframe_are_normalized() -> None:
@@ -29,6 +30,44 @@ def test_symbol_and_timeframe_are_normalized() -> None:
     assert config.symbol == "SPY"
     assert config.timeframe == "5m"
     assert config.timeframe_minutes == 5
+
+
+def test_execution_mode_is_normalized() -> None:
+    config = RuntimeConfig(
+        execution_mode=" MOCK ",
+    )
+
+    assert config.execution_mode == "mock"
+
+
+@pytest.mark.parametrize(
+    "execution_mode",
+    [
+        "",
+        "alpaca",
+        "live",
+    ],
+)
+def test_invalid_execution_mode_raises(
+    execution_mode: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="execution_mode",
+    ):
+        RuntimeConfig(
+            execution_mode=execution_mode,
+        )
+
+
+def test_execution_mode_must_be_a_string() -> None:
+    with pytest.raises(
+        TypeError,
+        match="execution_mode",
+    ):
+        RuntimeConfig(
+            execution_mode=None,  # type: ignore[arg-type]
+        )
 
 
 @pytest.mark.parametrize(
@@ -212,5 +251,4 @@ def test_heartbeat_interval_must_be_positive(
         RuntimeConfig(
             heartbeat_interval_seconds=value,
         )
-
 

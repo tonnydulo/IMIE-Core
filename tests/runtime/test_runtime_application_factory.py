@@ -29,6 +29,9 @@ from imie.runtime import (
 from imie.services import (
     MarketDataService,
 )
+from imie.execution import (
+    MockBrokerExecutionAdapter,
+)
 from imie.runtime.runtime_application_factory import (
     _build_symbol_cycles,
 )
@@ -166,6 +169,27 @@ def test_factory_uses_default_runtime_config(
     )
 
     assert application.config == RuntimeConfig()
+    assert application.cycle.broker_execution_port is None
+
+
+def test_factory_injects_mock_broker_only_when_enabled(
+    tmp_path: Path,
+) -> None:
+    application = RuntimeApplicationFactory.create(
+        settings=make_settings(),
+        config=RuntimeConfig(
+            execution_mode="mock",
+        ),
+        history_file=(
+            tmp_path
+            / "cycles.jsonl"
+        ),
+    )
+
+    assert isinstance(
+        application.cycle.broker_execution_port,
+        MockBrokerExecutionAdapter,
+    )
 
 
 def test_factory_builds_console_and_history_publishers(
@@ -695,6 +719,42 @@ def test_factory_creates_multi_symbol_application() -> None:
     assert (
         application.one_shot_runner.market_data
         is application.market_data
+    )
+
+    assert all(
+        cycle.broker_execution_port is None
+        for cycle in application.cycles
+    )
+
+
+def test_multi_symbol_factory_injects_shared_mock_broker() -> None:
+    application = (
+        RuntimeApplicationFactory.create_multi_symbol(
+            settings=make_settings(),
+            universe=RuntimeSymbolUniverse(
+                symbols=(
+                    "NVDA",
+                    "AMD",
+                )
+            ),
+            config=RuntimeConfig(
+                execution_mode="mock",
+            ),
+        )
+    )
+
+    broker_execution_ports = tuple(
+        cycle.broker_execution_port
+        for cycle in application.cycles
+    )
+
+    assert isinstance(
+        broker_execution_ports[0],
+        MockBrokerExecutionAdapter,
+    )
+    assert all(
+        port is broker_execution_ports[0]
+        for port in broker_execution_ports
     )
 
 

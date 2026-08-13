@@ -113,6 +113,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--execution-mode",
+        choices=(
+            "disabled",
+            "mock",
+        ),
+        default="disabled",
+        help=(
+            "Broker execution mode. Default: disabled. "
+            "Use mock for deterministic simulated submissions."
+        ),
+    )
+
+    parser.add_argument(
         "--account-equity",
         type=float,
         default=None,
@@ -338,6 +351,11 @@ def build_runtime_config(
         ),
         heartbeat_interval_seconds=(
             arguments.heartbeat_seconds
+        ),
+        execution_mode=getattr(
+            arguments,
+            "execution_mode",
+            "disabled",
         ),
     )
 

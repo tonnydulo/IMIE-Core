@@ -83,6 +83,25 @@ from imie.runtime.multi_symbol_continuous_runtime_runner import (
 from imie.runtime.position_sizing_config import (
     PositionSizingConfig,
 )
+from imie.execution import (
+    BrokerExecutionPort,
+    MockBrokerExecutionAdapter,
+)
+
+
+def _build_broker_execution_port(
+    execution_mode: str,
+) -> BrokerExecutionPort | None:
+    if execution_mode == "disabled":
+        return None
+
+    if execution_mode == "mock":
+        return MockBrokerExecutionAdapter()
+
+    raise ValueError(
+        "Unsupported execution mode: "
+        f"{execution_mode}."
+    )
 
 def _build_symbol_cycles(
     *,
@@ -92,6 +111,7 @@ def _build_symbol_cycles(
     market_session_clock: MarketSessionClock,
     session_policy: SessionPolicy,
     position_sizing_config: PositionSizingConfig | None = None,
+    broker_execution_port: BrokerExecutionPort | None = None,
 ) -> tuple[
     SingleAnalysisCycle,
     ...,
@@ -113,6 +133,7 @@ def _build_symbol_cycles(
             position_sizing_config=(
                 resolved_position_sizing_config
             ),
+            broker_execution_port=broker_execution_port,
         )
         for symbol in universe.symbols
     )
@@ -198,6 +219,12 @@ class RuntimeApplicationFactory:
             )
         )
 
+        broker_execution_port = (
+            _build_broker_execution_port(
+                runtime_config.execution_mode
+            )
+        )
+
         resolved_calendar_years = (
             calendar_years
             if calendar_years is not None
@@ -260,6 +287,7 @@ class RuntimeApplicationFactory:
             position_sizing_config=(
                 resolved_position_sizing_config
             ),
+            broker_execution_port=broker_execution_port,
         )
 
         cycle_runner = MultiSymbolCycleRunner(
@@ -547,6 +575,11 @@ class RuntimeApplicationFactory:
             session_policy=resolved_session_policy,
             position_sizing_config=(
                 resolved_position_sizing_config
+            ),
+            broker_execution_port=(
+                _build_broker_execution_port(
+                    runtime_config.execution_mode
+                )
             ),
         )
 

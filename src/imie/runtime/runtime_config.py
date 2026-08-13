@@ -22,6 +22,7 @@ class RuntimeConfig:
     completion_delay_seconds: float = 3.0
     require_new_completed_bar: bool = True
     heartbeat_interval_seconds: float = 60.0
+    execution_mode: str = "disabled"
 
     def __post_init__(self) -> None:
         symbol = self._normalize_symbol(
@@ -30,6 +31,10 @@ class RuntimeConfig:
 
         timeframe = self._normalize_timeframe(
             self.timeframe
+        )
+
+        execution_mode = self._normalize_execution_mode(
+            self.execution_mode
         )
 
         bar_limit = self._normalize_positive_int(
@@ -141,6 +146,12 @@ class RuntimeConfig:
                 self.heartbeat_interval_seconds
             ),
         )
+
+        object.__setattr__(
+            self,
+            "execution_mode",
+            execution_mode,
+        )
        
 
     @staticmethod
@@ -192,6 +203,30 @@ class RuntimeConfig:
             )
 
         return timeframe
+
+    @staticmethod
+    def _normalize_execution_mode(
+        value: object,
+    ) -> str:
+        if not isinstance(
+            value,
+            str,
+        ):
+            raise TypeError(
+                "execution_mode must be a string."
+            )
+
+        execution_mode = value.strip().lower()
+
+        if execution_mode not in {
+            "disabled",
+            "mock",
+        }:
+            raise ValueError(
+                "execution_mode must be disabled or mock."
+            )
+
+        return execution_mode
 
     @staticmethod
     def _normalize_positive_int(
