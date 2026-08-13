@@ -149,11 +149,16 @@ def _build_protected_execution_port(
 
     from imie.execution import (
         AlpacaPaperExecutionAdapter,
+        AlpacaPaperFillActivitySource,
     )
 
     return AlpacaPaperExecutionAdapter(
         api_key=settings.alpaca_api_key,
         secret_key=settings.alpaca_secret_key,
+        fill_activity_source=AlpacaPaperFillActivitySource(
+            api_key=settings.alpaca_api_key,
+            secret_key=settings.alpaca_secret_key,
+        ),
     )
 
 

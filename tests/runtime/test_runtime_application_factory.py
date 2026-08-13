@@ -31,6 +31,8 @@ from imie.services import (
 )
 from imie.execution import (
     AlpacaPaperExecutionAdapter,
+    AlpacaPaperFillActivitySource,
+    BrokerOrderQueryPort,
     MockBrokerExecutionAdapter,
 )
 from imie.runtime.runtime_application_factory import (
@@ -215,6 +217,14 @@ def test_factory_injects_protected_alpaca_paper_port(
     assert isinstance(
         application.cycle.protected_execution_port,
         AlpacaPaperExecutionAdapter,
+    )
+    assert isinstance(
+        application.cycle.protected_execution_port,
+        BrokerOrderQueryPort,
+    )
+    assert isinstance(
+        application.cycle.protected_execution_port._fill_activity_source,
+        AlpacaPaperFillActivitySource,
     )
 
 
@@ -897,6 +907,14 @@ def test_multi_symbol_factory_injects_shared_alpaca_paper_port() -> None:
     assert isinstance(
         protected_execution_ports[0],
         AlpacaPaperExecutionAdapter,
+    )
+    assert isinstance(
+        protected_execution_ports[0],
+        BrokerOrderQueryPort,
+    )
+    assert isinstance(
+        protected_execution_ports[0]._fill_activity_source,
+        AlpacaPaperFillActivitySource,
     )
     assert all(
         port is protected_execution_ports[0]
