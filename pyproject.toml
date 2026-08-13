@@ -24,6 +24,7 @@ imie-position-protect = "imie.position_protect_cli:main"
 imie-position-protection-status = "imie.position_protection_status_cli:main"
 imie-position-protection-reconcile = "imie.position_protection_reconcile_cli:main"
 imie-position-protection-history = "imie.position_protection_history_cli:main"
+imie-position-protection-monitor = "imie.position_protection_monitor_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
