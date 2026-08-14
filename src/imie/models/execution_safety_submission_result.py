@@ -7,6 +7,9 @@ from imie.models.execution_safety_assessment import ExecutionSafetyAssessment
 from imie.models.execution_submission_reservation import (
     ExecutionSubmissionReservation,
 )
+from imie.models.concurrent_position_assessment import (
+    ConcurrentPositionAssessment,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +17,7 @@ class ExecutionSafetySubmissionResult:
     assessment: ExecutionSafetyAssessment
     broker_submission: BrokerSubmissionResult | None
     reservation: ExecutionSubmissionReservation | None = None
+    concurrent_position_assessment: ConcurrentPositionAssessment | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.assessment, ExecutionSafetyAssessment):
@@ -30,13 +34,28 @@ class ExecutionSafetySubmissionResult:
             raise TypeError(
                 "reservation must be an ExecutionSubmissionReservation or None."
             )
-        if not self.assessment.allowed and self.broker_submission is not None:
+        if (
+            self.concurrent_position_assessment is not None
+            and not isinstance(
+                self.concurrent_position_assessment,
+                ConcurrentPositionAssessment,
+            )
+        ):
+            raise TypeError(
+                "concurrent_position_assessment must be a "
+                "ConcurrentPositionAssessment or None."
+            )
+        effectively_allowed = self.assessment.allowed and (
+            self.concurrent_position_assessment is None
+            or self.concurrent_position_assessment.allowed
+        )
+        if not effectively_allowed and self.broker_submission is not None:
             raise ValueError("blocked safety assessment cannot have broker submission.")
-        if self.assessment.allowed and self.broker_submission is None:
+        if effectively_allowed and self.broker_submission is None:
             raise ValueError("allowed safety assessment requires broker submission.")
-        if not self.assessment.allowed and self.reservation is not None:
+        if not effectively_allowed and self.reservation is not None:
             raise ValueError("blocked safety assessment cannot have reservation.")
-        if self.assessment.allowed and self.reservation is None:
+        if effectively_allowed and self.reservation is None:
             raise ValueError("allowed safety assessment requires reservation.")
         if self.broker_submission is not None and (
             self.broker_submission.symbol != self.assessment.symbol
@@ -46,6 +65,12 @@ class ExecutionSafetySubmissionResult:
             self.reservation.symbol != self.assessment.symbol
         ):
             raise ValueError("reservation symbol must match safety assessment.")
+        if self.concurrent_position_assessment is not None and (
+            self.concurrent_position_assessment.symbol != self.assessment.symbol
+        ):
+            raise ValueError(
+                "concurrent position symbol must match safety assessment."
+            )
 
     @property
     def submitted(self) -> bool:

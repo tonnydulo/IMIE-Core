@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from imie.execution import ExecutionSafetySubmissionService
 from imie.models import (
+    BrokerPositionExposure,
     BrokerSubmissionResult,
     ExecutionCandidate,
     ExecutionOrderIntent,
@@ -85,6 +86,23 @@ class ReservationStore:
         return self.values.get(fingerprint)
 
 
+class ExposurePort:
+    def __init__(self, symbols=(), error=None):
+        self.symbols = symbols
+        self.error = error
+        self.calls = 0
+
+    def get_open_position_exposure(self):
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return BrokerPositionExposure(
+            broker="alpaca-paper",
+            open_symbols=tuple(self.symbols),
+            observed_at=NOW,
+        )
+
+
 def service(broker, reservation_store=None, **policy_overrides):
     values = {
         "maximum_order_notional": 5_000.0,
@@ -147,6 +165,94 @@ def test_active_kill_switch_never_reserves_or_reaches_broker():
     assert result.reservation is None
     assert reservation_store.values == {}
     assert broker.calls == []
+
+
+def test_concurrent_position_limit_blocks_before_reservation_and_broker():
+    broker = Broker()
+    reservations = ReservationStore()
+    exposure = ExposurePort(("AAPL", "TSLA"))
+    guarded = ExecutionSafetySubmissionService(
+        broker_execution_port=broker,
+        policy=ExecutionSafetyPolicy(
+            maximum_order_notional=5_000,
+            maximum_risk_amount=25,
+        ),
+        reservation_store=reservations,
+        position_exposure_port=exposure,
+        maximum_concurrent_positions=2,
+        clock=lambda: NOW,
+    )
+
+    result = guarded.submit(candidate=candidate(), intent=intent())
+
+    assert result.submitted is False
+    assert result.assessment.allowed is True
+    assert result.concurrent_position_assessment.allowed is False
+    assert reservations.values == {}
+    assert broker.calls == []
+    assert exposure.calls == 1
+
+
+def test_verified_exposure_below_limit_allows_submission():
+    broker = Broker()
+    exposure = ExposurePort(("AAPL",))
+    guarded = ExecutionSafetySubmissionService(
+        broker_execution_port=broker,
+        policy=ExecutionSafetyPolicy(
+            maximum_order_notional=5_000,
+            maximum_risk_amount=25,
+        ),
+        reservation_store=ReservationStore(),
+        position_exposure_port=exposure,
+        maximum_concurrent_positions=2,
+        clock=lambda: NOW,
+    )
+
+    result = guarded.submit(candidate=candidate(), intent=intent())
+
+    assert result.submitted is True
+    assert result.concurrent_position_assessment.allowed is True
+    assert broker.calls == [intent()]
+
+
+def test_broker_exposure_failure_is_not_interpreted_as_flat():
+    broker = Broker()
+    guarded = ExecutionSafetySubmissionService(
+        broker_execution_port=broker,
+        policy=ExecutionSafetyPolicy(
+            maximum_order_notional=5_000,
+            maximum_risk_amount=25,
+        ),
+        reservation_store=ReservationStore(),
+        position_exposure_port=ExposurePort(error=RuntimeError("unavailable")),
+        maximum_concurrent_positions=2,
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(RuntimeError, match="unavailable"):
+        guarded.submit(candidate=candidate(), intent=intent())
+
+    assert broker.calls == []
+
+
+@pytest.mark.parametrize(
+    "position_exposure_port, maximum_concurrent_positions",
+    [(ExposurePort(), None), (None, 2)],
+)
+def test_concurrent_position_configuration_must_be_complete(
+    position_exposure_port, maximum_concurrent_positions
+):
+    with pytest.raises(ValueError, match="configured together"):
+        ExecutionSafetySubmissionService(
+            broker_execution_port=Broker(),
+            policy=ExecutionSafetyPolicy(
+                maximum_order_notional=5_000,
+                maximum_risk_amount=25,
+            ),
+            reservation_store=ReservationStore(),
+            position_exposure_port=position_exposure_port,
+            maximum_concurrent_positions=maximum_concurrent_positions,
+        )
 
 
 def test_non_actionable_pair_never_reaches_broker():

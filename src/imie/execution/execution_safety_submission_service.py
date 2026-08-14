@@ -13,6 +13,12 @@ from imie.execution.execution_submission_fingerprint import (
 from imie.execution.execution_submission_reservation_store import (
     ExecutionSubmissionReservationStore,
 )
+from imie.execution.broker_position_exposure_port import (
+    BrokerPositionExposurePort,
+)
+from imie.execution.concurrent_position_safety_engine import (
+    ConcurrentPositionSafetyEngine,
+)
 from imie.models import (
     BrokerSubmissionResult,
     ExecutionCandidate,
@@ -34,6 +40,9 @@ class ExecutionSafetySubmissionService:
         reservation_store: ExecutionSubmissionReservationStore,
         engine: ExecutionSafetyEngine | None = None,
         clock: Callable[[], datetime] | None = None,
+        position_exposure_port: BrokerPositionExposurePort | None = None,
+        maximum_concurrent_positions: int | None = None,
+        concurrent_position_engine: ConcurrentPositionSafetyEngine | None = None,
     ) -> None:
         if not isinstance(broker_execution_port, BrokerExecutionPort):
             raise TypeError(
@@ -59,6 +68,43 @@ class ExecutionSafetySubmissionService:
         if not callable(resolved_clock):
             raise TypeError("clock must be callable or None.")
         self._clock = resolved_clock
+        if (position_exposure_port is None) != (
+            maximum_concurrent_positions is None
+        ):
+            raise ValueError(
+                "position_exposure_port and maximum_concurrent_positions "
+                "must be configured together."
+            )
+        if position_exposure_port is not None and not isinstance(
+            position_exposure_port, BrokerPositionExposurePort
+        ):
+            raise TypeError(
+                "position_exposure_port must satisfy "
+                "BrokerPositionExposurePort."
+            )
+        if maximum_concurrent_positions is not None and (
+            isinstance(maximum_concurrent_positions, bool)
+            or not isinstance(maximum_concurrent_positions, int)
+        ):
+            raise TypeError("maximum_concurrent_positions must be an int or None.")
+        if (
+            maximum_concurrent_positions is not None
+            and maximum_concurrent_positions <= 0
+        ):
+            raise ValueError("maximum_concurrent_positions must be positive.")
+        resolved_concurrent_engine = (
+            concurrent_position_engine or ConcurrentPositionSafetyEngine()
+        )
+        if not isinstance(
+            resolved_concurrent_engine, ConcurrentPositionSafetyEngine
+        ):
+            raise TypeError(
+                "concurrent_position_engine must be a "
+                "ConcurrentPositionSafetyEngine or None."
+            )
+        self._position_exposure_port = position_exposure_port
+        self._maximum_concurrent_positions = maximum_concurrent_positions
+        self._concurrent_position_engine = resolved_concurrent_engine
 
     def submit(
         self,
@@ -81,6 +127,23 @@ class ExecutionSafetySubmissionService:
                 broker_submission=None,
                 reservation=None,
             )
+        concurrent_assessment = None
+        if self._position_exposure_port is not None:
+            exposure = self._position_exposure_port.get_open_position_exposure()
+            concurrent_assessment = self._concurrent_position_engine.assess(
+                symbol=intent.symbol,
+                exposure=exposure,
+                maximum_concurrent_positions=(
+                    self._maximum_concurrent_positions
+                ),
+            )
+            if not concurrent_assessment.allowed:
+                return ExecutionSafetySubmissionResult(
+                    assessment=assessment,
+                    concurrent_position_assessment=concurrent_assessment,
+                    broker_submission=None,
+                    reservation=None,
+                )
         fingerprint = ExecutionSubmissionFingerprint.create(
             candidate=candidate,
             intent=intent,
@@ -114,6 +177,7 @@ class ExecutionSafetySubmissionService:
             assessment=assessment,
             broker_submission=submission,
             reservation=reservation,
+            concurrent_position_assessment=concurrent_assessment,
         )
 
     @staticmethod
