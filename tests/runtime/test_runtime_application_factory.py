@@ -38,6 +38,8 @@ from imie.execution import (
     MockBrokerExecutionAdapter,
     ExecutionSafetySubmissionService,
     JsonFileExecutionSubmissionReservationStore,
+    ProtectedExecutionSafetyService,
+    AlpacaPaperPositionExposureAdapter,
 )
 from imie.runtime.runtime_application_factory import (
     _build_symbol_cycles,
@@ -277,7 +279,7 @@ def test_factory_rejects_concurrent_limit_without_mock_exposure_source(
         )
 
 
-def test_factory_rejects_unsafe_alpaca_concurrent_limit_wiring(
+def test_factory_wires_guarded_alpaca_concurrent_limit(
     tmp_path: Path,
 ) -> None:
     settings = AppSettings(
@@ -287,22 +289,37 @@ def test_factory_rejects_unsafe_alpaca_concurrent_limit_wiring(
         alpaca_paper=True,
     )
 
-    with pytest.raises(ValueError, match="protected Alpaca preflight"):
-        RuntimeApplicationFactory.create(
-            settings=settings,
-            config=RuntimeConfig(
-                execution_mode="alpaca-paper",
-                paper_execution_confirmed=True,
-            ),
-            execution_safety_config=ExecutionSafetyConfig(
-                enabled=True,
-                maximum_order_notional=25_000,
-                maximum_risk_amount=125,
-                maximum_concurrent_positions=2,
-                reservation_store_path=tmp_path / "reservations.json",
-            ),
-            history_file=tmp_path / "cycles.jsonl",
-        )
+    application = RuntimeApplicationFactory.create(
+        settings=settings,
+        config=RuntimeConfig(
+            execution_mode="alpaca-paper",
+            paper_execution_confirmed=True,
+        ),
+        execution_safety_config=ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_concurrent_positions=2,
+            reservation_store_path=tmp_path / "reservations.json",
+        ),
+        history_file=tmp_path / "cycles.jsonl",
+    )
+
+    cycle = application.cycle
+    assert cycle.broker_execution_port is None
+    assert cycle.execution_safety_submission_service is None
+    assert cycle.protected_execution_port is None
+    service = cycle.protected_execution_safety_service
+    assert isinstance(service, ProtectedExecutionSafetyService)
+    assert isinstance(
+        service._protected_execution_port,
+        AlpacaPaperExecutionAdapter,
+    )
+    assert isinstance(
+        service._position_exposure_port,
+        AlpacaPaperPositionExposureAdapter,
+    )
+    assert service._maximum_concurrent_positions == 2
 
 
 def test_factory_rejects_safety_without_compatible_broker_port(

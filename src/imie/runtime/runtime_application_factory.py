@@ -87,6 +87,7 @@ from imie.runtime.execution_safety_config import ExecutionSafetyConfig
 from imie.execution import (
     BrokerExecutionPort,
     ExecutionSafetySubmissionService,
+    ProtectedExecutionSafetyService,
     JsonFileExecutionSubmissionReservationStore,
     MockBrokerExecutionAdapter,
     ProtectedExecutionPort,
@@ -101,13 +102,9 @@ def _build_execution_safety_submission_service(
 ) -> ExecutionSafetySubmissionService | None:
     if safety_config is None or not safety_config.enabled:
         return None
+    if execution_mode == "alpaca-paper":
+        return None
     if safety_config.maximum_concurrent_positions is not None:
-        if execution_mode == "alpaca-paper":
-            raise ValueError(
-                "maximum_concurrent_positions requires protected Alpaca "
-                "preflight wiring; refusing an unsafe or duplicate "
-                "submission path."
-            )
         raise ValueError(
             "maximum_concurrent_positions requires a supported broker "
             "position exposure source."
@@ -121,6 +118,49 @@ def _build_execution_safety_submission_service(
         policy=safety_config.build_policy(),
         reservation_store=JsonFileExecutionSubmissionReservationStore(
             safety_config.reservation_store_path
+        ),
+    )
+
+
+def _build_protected_execution_safety_service(
+    *,
+    execution_mode: str,
+    protected_execution_port: ProtectedExecutionPort | None,
+    safety_config: ExecutionSafetyConfig | None,
+    settings: AppSettings,
+) -> ProtectedExecutionSafetyService | None:
+    if safety_config is None or not safety_config.enabled:
+        return None
+    if execution_mode != "alpaca-paper":
+        return None
+    if protected_execution_port is None:
+        raise ValueError(
+            "protected execution safety requires a protected execution port."
+        )
+
+    position_exposure_port = None
+    if safety_config.maximum_concurrent_positions is not None:
+        from alpaca.trading.client import TradingClient
+        from imie.execution import AlpacaPaperPositionExposureAdapter
+
+        position_exposure_port = AlpacaPaperPositionExposureAdapter(
+            trading_client=TradingClient(
+                api_key=settings.alpaca_api_key,
+                secret_key=settings.alpaca_secret_key,
+                paper=True,
+            ),
+            paper=True,
+        )
+
+    return ProtectedExecutionSafetyService(
+        protected_execution_port=protected_execution_port,
+        policy=safety_config.build_policy(),
+        reservation_store=JsonFileExecutionSubmissionReservationStore(
+            safety_config.reservation_store_path
+        ),
+        position_exposure_port=position_exposure_port,
+        maximum_concurrent_positions=(
+            safety_config.maximum_concurrent_positions
         ),
     )
 
@@ -214,6 +254,9 @@ def _build_symbol_cycles(
         ExecutionSafetySubmissionService | None
     ) = None,
     protected_execution_port: ProtectedExecutionPort | None = None,
+    protected_execution_safety_service: (
+        ProtectedExecutionSafetyService | None
+    ) = None,
 ) -> tuple[
     SingleAnalysisCycle,
     ...,
@@ -240,6 +283,9 @@ def _build_symbol_cycles(
                 execution_safety_submission_service
             ),
             protected_execution_port=protected_execution_port,
+            protected_execution_safety_service=(
+                protected_execution_safety_service
+            ),
         )
         for symbol in universe.symbols
     )
@@ -358,6 +404,16 @@ class RuntimeApplicationFactory:
                 settings=settings,
             )
         )
+        protected_execution_safety_service = (
+            _build_protected_execution_safety_service(
+                execution_mode=runtime_config.execution_mode,
+                protected_execution_port=protected_execution_port,
+                safety_config=execution_safety_config,
+                settings=settings,
+            )
+        )
+        if protected_execution_safety_service is not None:
+            protected_execution_port = None
 
         resolved_calendar_years = (
             calendar_years
@@ -426,6 +482,9 @@ class RuntimeApplicationFactory:
                 execution_safety_submission_service
             ),
             protected_execution_port=protected_execution_port,
+            protected_execution_safety_service=(
+                protected_execution_safety_service
+            ),
         )
 
         cycle_runner = MultiSymbolCycleRunner(
@@ -729,6 +788,24 @@ class RuntimeApplicationFactory:
         if execution_safety_submission_service is not None:
             broker_execution_port = None
 
+        protected_execution_port = _build_protected_execution_port(
+            execution_mode=runtime_config.execution_mode,
+            paper_execution_confirmed=(
+                runtime_config.paper_execution_confirmed
+            ),
+            settings=settings,
+        )
+        protected_execution_safety_service = (
+            _build_protected_execution_safety_service(
+                execution_mode=runtime_config.execution_mode,
+                protected_execution_port=protected_execution_port,
+                safety_config=execution_safety_config,
+                settings=settings,
+            )
+        )
+        if protected_execution_safety_service is not None:
+            protected_execution_port = None
+
         cycle = SingleAnalysisCycle(
             config=runtime_config,
             market_data=market_data,
@@ -741,14 +818,9 @@ class RuntimeApplicationFactory:
             execution_safety_submission_service=(
                 execution_safety_submission_service
             ),
-            protected_execution_port=(
-                _build_protected_execution_port(
-                    execution_mode=runtime_config.execution_mode,
-                    paper_execution_confirmed=(
-                        runtime_config.paper_execution_confirmed
-                    ),
-                    settings=settings,
-                )
+            protected_execution_port=protected_execution_port,
+            protected_execution_safety_service=(
+                protected_execution_safety_service
             ),
         )
 
