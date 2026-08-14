@@ -108,6 +108,8 @@ from imie.models.existing_position_protection_result import (
     ExistingPositionProtectionResult,
 )
 from imie.models.broker_position_snapshot import BrokerPositionSnapshot
+from imie.models.broker_position_exposure import BrokerPositionExposure
+from imie.models.concurrent_position_assessment import ConcurrentPositionAssessment
 from imie.models.position_protection_record import PositionProtectionRecord
 from imie.models.position_protection_attempt_status import (
     PositionProtectionAttemptStatus,
@@ -234,6 +236,8 @@ __all__ = [
     "ExistingPositionProtectionSubmission",
     "ExistingPositionProtectionResult",
     "BrokerPositionSnapshot",
+    "BrokerPositionExposure",
+    "ConcurrentPositionAssessment",
     "PositionProtectionRecord",
     "PositionProtectionAttemptStatus",
     "PositionProtectionAttempt",

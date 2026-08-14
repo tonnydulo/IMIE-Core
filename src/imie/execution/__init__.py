@@ -7,6 +7,9 @@ from imie.execution.broker_order_query_port import (
     BrokerOrderQueryPort,
 )
 from imie.execution.broker_position_query_port import BrokerPositionQueryPort
+from imie.execution.broker_position_exposure_port import (
+    BrokerPositionExposurePort,
+)
 from imie.execution.broker_position_protection_validator import (
     BrokerPositionProtectionValidator,
 )
@@ -93,6 +96,9 @@ from imie.execution.position_protection_monitoring_service import (
     PositionProtectionMonitoringService,
 )
 from imie.execution.execution_safety_engine import ExecutionSafetyEngine
+from imie.execution.concurrent_position_safety_engine import (
+    ConcurrentPositionSafetyEngine,
+)
 from imie.execution.execution_safety_submission_service import (
     ExecutionSafetySubmissionService,
 )
@@ -118,6 +124,7 @@ __all__ = [
     "BrokerExecutionPort",
     "BrokerOrderQueryPort",
     "BrokerPositionQueryPort",
+    "BrokerPositionExposurePort",
     "BrokerPositionProtectionValidator",
     "AlpacaPaperPositionQueryAdapter",
     "AlpacaPaperPositionProtectionServiceFactory",
@@ -151,6 +158,7 @@ __all__ = [
     "PositionProtectionMonitoringEngine",
     "PositionProtectionMonitoringService",
     "ExecutionSafetyEngine",
+    "ConcurrentPositionSafetyEngine",
     "ExecutionSafetySubmissionService",
     "ExecutionSubmissionFingerprint",
     "ExecutionSubmissionReservationStore",
