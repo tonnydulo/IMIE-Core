@@ -14,6 +14,7 @@ from imie.models import (
     BrokerSubmissionResult,
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
+    ConcurrentPositionAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -581,6 +582,11 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
             make_sized_completed_result(),
             execution_safety_assessment=assessment,
             execution_submission_reservation=reservation,
+            concurrent_position_assessment=ConcurrentPositionAssessment(
+                symbol="NVDA", broker="alpaca-paper",
+                open_position_count=1, maximum_concurrent_positions=3,
+                symbol_already_open=False, allowed=True,
+            ),
         )
     )
 
@@ -593,4 +599,13 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         "side": "buy",
         "quantity": 156,
         "reserved_at": CHECKED_AT.isoformat(),
+    }
+    assert payload["concurrent_position_assessment"] == {
+        "symbol": "NVDA",
+        "broker": "alpaca-paper",
+        "open_position_count": 1,
+        "maximum_concurrent_positions": 3,
+        "symbol_already_open": False,
+        "allowed": True,
+        "violations": [],
     }

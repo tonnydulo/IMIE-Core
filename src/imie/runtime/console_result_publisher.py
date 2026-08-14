@@ -461,6 +461,21 @@ class ConsoleResultPublisher:
                 f"Reserved At  : {reservation.reserved_at.isoformat()}",
             ])
 
+        if result.concurrent_position_assessment is not None:
+            concurrent = result.concurrent_position_assessment
+            lines.extend([
+                "Concurrent Position Assessment :",
+                f"Broker       : {concurrent.broker}",
+                f"Open Count   : {concurrent.open_position_count}",
+                f"Maximum      : {concurrent.maximum_concurrent_positions}",
+                f"Already Open : {concurrent.symbol_already_open}",
+                f"Allowed      : {concurrent.allowed}",
+            ])
+            lines.extend(
+                f"Position Block: {violation}"
+                for violation in concurrent.violations
+            )
+
         if result.protected_submission_result is not None:
             protected = result.protected_submission_result
             lines.extend(

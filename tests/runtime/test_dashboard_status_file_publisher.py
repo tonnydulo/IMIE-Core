@@ -38,6 +38,7 @@ from imie.models import (
     ExecutionOrderIntent,
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
+    ConcurrentPositionAssessment,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
@@ -12088,6 +12089,11 @@ def test_publish_result_populates_execution_safety_details(
         make_completed_result_with_execution_candidate(),
         execution_safety_assessment=assessment,
         execution_submission_reservation=reservation,
+        concurrent_position_assessment=ConcurrentPositionAssessment(
+            symbol="NVDA", broker="alpaca-paper",
+            open_position_count=1, maximum_concurrent_positions=3,
+            symbol_already_open=False, allowed=True,
+        ),
     )
     publisher = DashboardStatusFilePublisher(
         path=path,
@@ -12111,6 +12117,12 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["execution_safety_warnings"] == []
     assert payload["execution_submission_fingerprint"] == "a" * 64
     assert payload["execution_submission_reserved_at"] == NOW.isoformat()
+    assert payload["concurrent_position_broker"] == "alpaca-paper"
+    assert payload["concurrent_position_open_count"] == 1
+    assert payload["concurrent_position_maximum"] == 3
+    assert payload["concurrent_position_symbol_already_open"] is False
+    assert payload["concurrent_position_allowed"] is True
+    assert payload["concurrent_position_violations"] == []
 
 
 def test_publish_result_identifies_safety_block(
@@ -12155,4 +12167,42 @@ def test_publish_result_identifies_safety_block(
     assert payload["execution_safety_violations"] == [
         "Order notional exceeds maximum.",
         "Execution kill switch is active.",
+    ]
+
+
+def test_publish_result_identifies_concurrent_position_block(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "dashboard.json"
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA", order_notional=12500, risk_amount=125,
+        maximum_order_notional=25000, maximum_risk_amount=250,
+        candidate_valid=True, candidate_actionable=True,
+        notional_within_limit=True, risk_within_limit=True, allowed=True,
+    )
+    concurrent = ConcurrentPositionAssessment(
+        symbol="NVDA", broker="alpaca-paper",
+        open_position_count=2, maximum_concurrent_positions=2,
+        symbol_already_open=False, allowed=False,
+        violations=("Maximum concurrent positions reached: 2 >= 2.",),
+    )
+    result = dataclasses.replace(
+        make_completed_result_with_execution_candidate(),
+        broker_submission_result=None,
+        execution_safety_assessment=assessment,
+        concurrent_position_assessment=concurrent,
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=path, symbol="NVDA", timeframe="2m"
+    )
+
+    publisher.publish_health(make_health())
+    publisher.publish_result(result)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["execution_safety_state"] == "BLOCKED"
+    assert payload["execution_safety_allowed"] is True
+    assert payload["concurrent_position_allowed"] is False
+    assert payload["concurrent_position_violations"] == [
+        "Maximum concurrent positions reached: 2 >= 2."
     ]

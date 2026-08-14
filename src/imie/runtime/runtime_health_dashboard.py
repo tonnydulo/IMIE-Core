@@ -1831,6 +1831,38 @@ def build_dashboard_html(
             <div id="executionSafetyKillSwitchActive" class="value">—</div>
         </article>
 
+        <article class="card">
+            <div class="label">Position Broker</div>
+            <div id="concurrentPositionBroker" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Open Positions</div>
+            <div id="concurrentPositionOpenCount" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Positions</div>
+            <div id="concurrentPositionMaximum" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Symbol Already Open</div>
+            <div id="concurrentPositionSymbolAlreadyOpen" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Position Limit Allowed</div>
+            <div id="concurrentPositionAllowed" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Position Limit Violations</div>
+            <ul id="concurrentPositionViolations" class="explanation-list warning-list">
+                <li class="empty-list">No concurrent-position violations.</li>
+            </ul>
+        </article>
+
         <article class="card wide">
             <div class="label">Safety Violations</div>
             <ul id="executionSafetyViolations" class="explanation-list warning-list">
@@ -4930,6 +4962,33 @@ def build_dashboard_html(
             setText(
                 "executionSafetyKillSwitchActive",
                 formatBoolean(payload.execution_safety_kill_switch_active)
+            );
+            setText(
+                "concurrentPositionBroker",
+                payload.concurrent_position_broker ?? "—"
+            );
+            setText(
+                "concurrentPositionOpenCount",
+                payload.concurrent_position_open_count ?? "—"
+            );
+            setText(
+                "concurrentPositionMaximum",
+                payload.concurrent_position_maximum ?? "—"
+            );
+            setText(
+                "concurrentPositionSymbolAlreadyOpen",
+                formatBoolean(
+                    payload.concurrent_position_symbol_already_open
+                )
+            );
+            setText(
+                "concurrentPositionAllowed",
+                formatBoolean(payload.concurrent_position_allowed)
+            );
+            updateTextList(
+                "concurrentPositionViolations",
+                payload.concurrent_position_violations,
+                "No concurrent-position violations."
             );
             updateTextList(
                 "executionSafetyViolations",

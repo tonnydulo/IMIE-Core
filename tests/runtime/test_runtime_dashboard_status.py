@@ -1089,6 +1089,12 @@ def test_execution_safety_fields_are_serialized() -> None:
         execution_safety_warnings=("Paper execution only.",),
         execution_submission_fingerprint="a" * 64,
         execution_submission_reserved_at=NOW.isoformat(),
+        concurrent_position_broker="alpaca-paper",
+        concurrent_position_open_count=1,
+        concurrent_position_maximum=3,
+        concurrent_position_symbol_already_open=False,
+        concurrent_position_allowed=True,
+        concurrent_position_violations=(),
     )
 
     payload = status.to_dict()
@@ -1105,6 +1111,12 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["execution_safety_warnings"] == ["Paper execution only."]
     assert payload["execution_submission_fingerprint"] == "a" * 64
     assert payload["execution_submission_reserved_at"] == NOW.isoformat()
+    assert payload["concurrent_position_broker"] == "alpaca-paper"
+    assert payload["concurrent_position_open_count"] == 1
+    assert payload["concurrent_position_maximum"] == 3
+    assert payload["concurrent_position_symbol_already_open"] is False
+    assert payload["concurrent_position_allowed"] is True
+    assert payload["concurrent_position_violations"] == []
 
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(

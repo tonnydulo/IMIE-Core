@@ -425,6 +425,14 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
         "executionSafetyKillSwitchActive": (
             "execution_safety_kill_switch_active"
         ),
+        "concurrentPositionBroker": "concurrent_position_broker",
+        "concurrentPositionOpenCount": "concurrent_position_open_count",
+        "concurrentPositionMaximum": "concurrent_position_maximum",
+        "concurrentPositionSymbolAlreadyOpen": (
+            "concurrent_position_symbol_already_open"
+        ),
+        "concurrentPositionAllowed": "concurrent_position_allowed",
+        "concurrentPositionViolations": "concurrent_position_violations",
         "executionSafetyViolations": "execution_safety_violations",
         "executionSafetyWarnings": "execution_safety_warnings",
         "executionSubmissionFingerprint": (

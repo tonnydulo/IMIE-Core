@@ -1303,6 +1303,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        concurrent_position_assessment = (
+            cycle.concurrent_position_assessment
+            if cycle is not None
+            else None
+        )
+
         protected_submission_result = (
             cycle.protected_submission_result
             if cycle is not None
@@ -1554,10 +1560,18 @@ class DashboardStatusFilePublisher:
             execution_safety_warnings,
             execution_submission_fingerprint,
             execution_submission_reserved_at,
+            concurrent_position_broker,
+            concurrent_position_open_count,
+            concurrent_position_maximum,
+            concurrent_position_symbol_already_open,
+            concurrent_position_allowed,
+            concurrent_position_violations,
         ) = _execution_safety_dashboard_values(
             execution_safety_assessment,
             execution_submission_reservation,
             broker_submission_result,
+            protected_submission_result,
+            concurrent_position_assessment,
         )
 
         (
@@ -1856,6 +1870,14 @@ class DashboardStatusFilePublisher:
             execution_safety_warnings=execution_safety_warnings,
             execution_submission_fingerprint=execution_submission_fingerprint,
             execution_submission_reserved_at=execution_submission_reserved_at,
+            concurrent_position_broker=concurrent_position_broker,
+            concurrent_position_open_count=concurrent_position_open_count,
+            concurrent_position_maximum=concurrent_position_maximum,
+            concurrent_position_symbol_already_open=(
+                concurrent_position_symbol_already_open
+            ),
+            concurrent_position_allowed=concurrent_position_allowed,
+            concurrent_position_violations=concurrent_position_violations,
             protected_submission_broker=protected_submission_broker,
             protected_submission_quantity=protected_submission_quantity,
             protected_submission_accepted=protected_submission_accepted,
@@ -3098,15 +3120,24 @@ def _execution_safety_dashboard_values(
     assessment: object | None,
     reservation: object | None,
     broker_submission_result: object | None,
+    protected_submission_result: object | None,
+    concurrent_assessment: object | None,
 ) -> tuple[object | None, ...]:
     if assessment is None:
         return (
-            None, None, None, None, None, None, None, None, (), (), None, None
+            None, None, None, None, None, None, None, None, (), (), None, None,
+            None, None, None, None, None, (),
         )
 
-    if not assessment.allowed:
+    if not assessment.allowed or (
+        concurrent_assessment is not None
+        and not concurrent_assessment.allowed
+    ):
         state = "BLOCKED"
-    elif broker_submission_result is not None:
+    elif (
+        broker_submission_result is not None
+        or protected_submission_result is not None
+    ):
         state = "SUBMITTED"
     elif reservation is not None:
         state = "RESERVED"
@@ -3126,6 +3157,24 @@ def _execution_safety_dashboard_values(
         tuple(assessment.warnings),
         reservation.fingerprint if reservation is not None else None,
         reservation.reserved_at.isoformat() if reservation is not None else None,
+        concurrent_assessment.broker if concurrent_assessment is not None else None,
+        (
+            concurrent_assessment.open_position_count
+            if concurrent_assessment is not None else None
+        ),
+        (
+            concurrent_assessment.maximum_concurrent_positions
+            if concurrent_assessment is not None else None
+        ),
+        (
+            concurrent_assessment.symbol_already_open
+            if concurrent_assessment is not None else None
+        ),
+        concurrent_assessment.allowed if concurrent_assessment is not None else None,
+        (
+            tuple(concurrent_assessment.violations)
+            if concurrent_assessment is not None else ()
+        ),
     )
 
 

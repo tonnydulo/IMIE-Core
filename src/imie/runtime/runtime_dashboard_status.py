@@ -242,6 +242,12 @@ class RuntimeDashboardStatus:
     execution_safety_warnings: tuple[str, ...] = ()
     execution_submission_fingerprint: str | None = None
     execution_submission_reserved_at: str | None = None
+    concurrent_position_broker: str | None = None
+    concurrent_position_open_count: int | None = None
+    concurrent_position_maximum: int | None = None
+    concurrent_position_symbol_already_open: bool | None = None
+    concurrent_position_allowed: bool | None = None
+    concurrent_position_violations: tuple[str, ...] = ()
 
     protected_submission_broker: str | None = None
     protected_submission_quantity: int | None = None
@@ -496,6 +502,8 @@ class RuntimeDashboardStatus:
             "broker_submission_accepted",
             "execution_safety_allowed",
             "execution_safety_kill_switch_active",
+            "concurrent_position_symbol_already_open",
+            "concurrent_position_allowed",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3362,6 +3370,18 @@ class RuntimeDashboardStatus:
                 ),
                 "execution_submission_reserved_at": (
                     self.execution_submission_reserved_at
+                ),
+                "concurrent_position_broker": self.concurrent_position_broker,
+                "concurrent_position_open_count": (
+                    self.concurrent_position_open_count
+                ),
+                "concurrent_position_maximum": self.concurrent_position_maximum,
+                "concurrent_position_symbol_already_open": (
+                    self.concurrent_position_symbol_already_open
+                ),
+                "concurrent_position_allowed": self.concurrent_position_allowed,
+                "concurrent_position_violations": list(
+                    self.concurrent_position_violations
                 ),
                 "protected_submission_broker": self.protected_submission_broker,
                 "protected_submission_quantity": self.protected_submission_quantity,

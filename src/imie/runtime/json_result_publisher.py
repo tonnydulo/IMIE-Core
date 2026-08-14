@@ -138,6 +138,7 @@ class JsonResultPublisher:
             "execution_order_intent": None,
             "broker_submission_result": None,
             "execution_safety_assessment": None,
+            "concurrent_position_assessment": None,
             "execution_submission_reservation": None,
             "protected_submission_result": None,
         }
@@ -467,6 +468,20 @@ class JsonResultPublisher:
                 "side": reservation.side,
                 "quantity": reservation.quantity,
                 "reserved_at": reservation.reserved_at.isoformat(),
+            }
+
+        if result.concurrent_position_assessment is not None:
+            concurrent = result.concurrent_position_assessment
+            payload["concurrent_position_assessment"] = {
+                "symbol": concurrent.symbol,
+                "broker": concurrent.broker,
+                "open_position_count": concurrent.open_position_count,
+                "maximum_concurrent_positions": (
+                    concurrent.maximum_concurrent_positions
+                ),
+                "symbol_already_open": concurrent.symbol_already_open,
+                "allowed": concurrent.allowed,
+                "violations": list(concurrent.violations),
             }
 
         if result.protected_submission_result is not None:

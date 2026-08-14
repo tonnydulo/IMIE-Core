@@ -14,6 +14,7 @@ from imie.models import (
     BrokerSubmissionResult,
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
+    ConcurrentPositionAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -260,10 +261,18 @@ def test_safety_block_and_reservation_are_visible() -> None:
             make_sized_completed_result(),
             execution_safety_assessment=allowed,
             execution_submission_reservation=reservation,
+            concurrent_position_assessment=ConcurrentPositionAssessment(
+                symbol="NVDA", broker="alpaca-paper",
+                open_position_count=1, maximum_concurrent_positions=3,
+                symbol_already_open=False, allowed=True,
+            ),
         )
     )
     assert "Execution Submission Reservation :" in reserved_lines
     assert f"Fingerprint  : {'b' * 64}" in reserved_lines
+    assert "Concurrent Position Assessment :" in reserved_lines
+    assert "Open Count   : 1" in reserved_lines
+    assert "Maximum      : 3" in reserved_lines
     lines = reserved_lines
 
     assert "Execution Candidate :" in lines
