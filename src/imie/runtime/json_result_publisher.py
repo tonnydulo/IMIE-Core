@@ -481,6 +481,11 @@ class JsonResultPublisher:
                 ),
                 "symbol_already_open": concurrent.symbol_already_open,
                 "allowed": concurrent.allowed,
+                "exposure_age_seconds": concurrent.exposure_age_seconds,
+                "maximum_exposure_age_seconds": (
+                    concurrent.maximum_exposure_age_seconds
+                ),
+                "exposure_fresh": concurrent.exposure_fresh,
                 "violations": list(concurrent.violations),
             }
 

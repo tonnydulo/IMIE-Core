@@ -12093,6 +12093,8 @@ def test_publish_result_populates_execution_safety_details(
             symbol="NVDA", broker="alpaca-paper",
             open_position_count=1, maximum_concurrent_positions=3,
             symbol_already_open=False, allowed=True,
+            exposure_age_seconds=2, maximum_exposure_age_seconds=5,
+            exposure_fresh=True,
         ),
     )
     publisher = DashboardStatusFilePublisher(
@@ -12122,6 +12124,9 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["concurrent_position_maximum"] == 3
     assert payload["concurrent_position_symbol_already_open"] is False
     assert payload["concurrent_position_allowed"] is True
+    assert payload["concurrent_position_exposure_age_seconds"] == 2.0
+    assert payload["concurrent_position_maximum_exposure_age_seconds"] == 5.0
+    assert payload["concurrent_position_exposure_fresh"] is True
     assert payload["concurrent_position_violations"] == []
 
 

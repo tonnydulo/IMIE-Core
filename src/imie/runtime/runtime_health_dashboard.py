@@ -1856,6 +1856,21 @@ def build_dashboard_html(
             <div id="concurrentPositionAllowed" class="value">—</div>
         </article>
 
+        <article class="card">
+            <div class="label">Exposure Age</div>
+            <div id="concurrentPositionExposureAgeSeconds" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Exposure Age</div>
+            <div id="concurrentPositionMaximumExposureAgeSeconds" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Exposure Fresh</div>
+            <div id="concurrentPositionExposureFresh" class="value">—</div>
+        </article>
+
         <article class="card wide">
             <div class="label">Position Limit Violations</div>
             <ul id="concurrentPositionViolations" class="explanation-list warning-list">
@@ -4984,6 +4999,18 @@ def build_dashboard_html(
             setText(
                 "concurrentPositionAllowed",
                 formatBoolean(payload.concurrent_position_allowed)
+            );
+            setText(
+                "concurrentPositionExposureAgeSeconds",
+                payload.concurrent_position_exposure_age_seconds ?? "—"
+            );
+            setText(
+                "concurrentPositionMaximumExposureAgeSeconds",
+                payload.concurrent_position_maximum_exposure_age_seconds ?? "—"
+            );
+            setText(
+                "concurrentPositionExposureFresh",
+                formatBoolean(payload.concurrent_position_exposure_fresh)
             );
             updateTextList(
                 "concurrentPositionViolations",

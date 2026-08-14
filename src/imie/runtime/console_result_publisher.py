@@ -470,6 +470,19 @@ class ConsoleResultPublisher:
                 f"Maximum      : {concurrent.maximum_concurrent_positions}",
                 f"Already Open : {concurrent.symbol_already_open}",
                 f"Allowed      : {concurrent.allowed}",
+                "Exposure Age : "
+                + (
+                    f"{concurrent.exposure_age_seconds:.3f}s"
+                    if concurrent.exposure_age_seconds is not None
+                    else "—"
+                ),
+                "Maximum Age  : "
+                + (
+                    f"{concurrent.maximum_exposure_age_seconds:.3f}s"
+                    if concurrent.maximum_exposure_age_seconds is not None
+                    else "—"
+                ),
+                f"Exposure Fresh: {concurrent.exposure_fresh}",
             ])
             lines.extend(
                 f"Position Block: {violation}"

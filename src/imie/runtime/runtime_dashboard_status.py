@@ -247,6 +247,9 @@ class RuntimeDashboardStatus:
     concurrent_position_maximum: int | None = None
     concurrent_position_symbol_already_open: bool | None = None
     concurrent_position_allowed: bool | None = None
+    concurrent_position_exposure_age_seconds: float | None = None
+    concurrent_position_maximum_exposure_age_seconds: float | None = None
+    concurrent_position_exposure_fresh: bool | None = None
     concurrent_position_violations: tuple[str, ...] = ()
 
     protected_submission_broker: str | None = None
@@ -504,6 +507,7 @@ class RuntimeDashboardStatus:
             "execution_safety_kill_switch_active",
             "concurrent_position_symbol_already_open",
             "concurrent_position_allowed",
+            "concurrent_position_exposure_fresh",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3380,6 +3384,15 @@ class RuntimeDashboardStatus:
                     self.concurrent_position_symbol_already_open
                 ),
                 "concurrent_position_allowed": self.concurrent_position_allowed,
+                "concurrent_position_exposure_age_seconds": (
+                    self.concurrent_position_exposure_age_seconds
+                ),
+                "concurrent_position_maximum_exposure_age_seconds": (
+                    self.concurrent_position_maximum_exposure_age_seconds
+                ),
+                "concurrent_position_exposure_fresh": (
+                    self.concurrent_position_exposure_fresh
+                ),
                 "concurrent_position_violations": list(
                     self.concurrent_position_violations
                 ),

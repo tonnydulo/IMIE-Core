@@ -432,6 +432,15 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
             "concurrent_position_symbol_already_open"
         ),
         "concurrentPositionAllowed": "concurrent_position_allowed",
+        "concurrentPositionExposureAgeSeconds": (
+            "concurrent_position_exposure_age_seconds"
+        ),
+        "concurrentPositionMaximumExposureAgeSeconds": (
+            "concurrent_position_maximum_exposure_age_seconds"
+        ),
+        "concurrentPositionExposureFresh": (
+            "concurrent_position_exposure_fresh"
+        ),
         "concurrentPositionViolations": "concurrent_position_violations",
         "executionSafetyViolations": "execution_safety_violations",
         "executionSafetyWarnings": "execution_safety_warnings",

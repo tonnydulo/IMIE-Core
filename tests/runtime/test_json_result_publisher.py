@@ -586,6 +586,8 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
                 symbol="NVDA", broker="alpaca-paper",
                 open_position_count=1, maximum_concurrent_positions=3,
                 symbol_already_open=False, allowed=True,
+                exposure_age_seconds=2, maximum_exposure_age_seconds=5,
+                exposure_fresh=True,
             ),
         )
     )
@@ -607,5 +609,8 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         "maximum_concurrent_positions": 3,
         "symbol_already_open": False,
         "allowed": True,
+        "exposure_age_seconds": 2.0,
+        "maximum_exposure_age_seconds": 5.0,
+        "exposure_fresh": True,
         "violations": [],
     }

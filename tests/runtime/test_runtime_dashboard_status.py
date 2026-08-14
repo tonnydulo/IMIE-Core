@@ -1094,6 +1094,9 @@ def test_execution_safety_fields_are_serialized() -> None:
         concurrent_position_maximum=3,
         concurrent_position_symbol_already_open=False,
         concurrent_position_allowed=True,
+        concurrent_position_exposure_age_seconds=2.0,
+        concurrent_position_maximum_exposure_age_seconds=5.0,
+        concurrent_position_exposure_fresh=True,
         concurrent_position_violations=(),
     )
 
@@ -1116,6 +1119,9 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["concurrent_position_maximum"] == 3
     assert payload["concurrent_position_symbol_already_open"] is False
     assert payload["concurrent_position_allowed"] is True
+    assert payload["concurrent_position_exposure_age_seconds"] == 2.0
+    assert payload["concurrent_position_maximum_exposure_age_seconds"] == 5.0
+    assert payload["concurrent_position_exposure_fresh"] is True
     assert payload["concurrent_position_violations"] == []
 
 def test_institutional_bias_detail_fields_are_serialized() -> None:

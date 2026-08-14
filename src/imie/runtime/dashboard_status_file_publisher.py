@@ -1565,6 +1565,9 @@ class DashboardStatusFilePublisher:
             concurrent_position_maximum,
             concurrent_position_symbol_already_open,
             concurrent_position_allowed,
+            concurrent_position_exposure_age_seconds,
+            concurrent_position_maximum_exposure_age_seconds,
+            concurrent_position_exposure_fresh,
             concurrent_position_violations,
         ) = _execution_safety_dashboard_values(
             execution_safety_assessment,
@@ -1877,6 +1880,15 @@ class DashboardStatusFilePublisher:
                 concurrent_position_symbol_already_open
             ),
             concurrent_position_allowed=concurrent_position_allowed,
+            concurrent_position_exposure_age_seconds=(
+                concurrent_position_exposure_age_seconds
+            ),
+            concurrent_position_maximum_exposure_age_seconds=(
+                concurrent_position_maximum_exposure_age_seconds
+            ),
+            concurrent_position_exposure_fresh=(
+                concurrent_position_exposure_fresh
+            ),
             concurrent_position_violations=concurrent_position_violations,
             protected_submission_broker=protected_submission_broker,
             protected_submission_quantity=protected_submission_quantity,
@@ -3126,7 +3138,7 @@ def _execution_safety_dashboard_values(
     if assessment is None:
         return (
             None, None, None, None, None, None, None, None, (), (), None, None,
-            None, None, None, None, None, (),
+            None, None, None, None, None, None, None, None, (),
         )
 
     if not assessment.allowed or (
@@ -3171,6 +3183,18 @@ def _execution_safety_dashboard_values(
             if concurrent_assessment is not None else None
         ),
         concurrent_assessment.allowed if concurrent_assessment is not None else None,
+        (
+            concurrent_assessment.exposure_age_seconds
+            if concurrent_assessment is not None else None
+        ),
+        (
+            concurrent_assessment.maximum_exposure_age_seconds
+            if concurrent_assessment is not None else None
+        ),
+        (
+            concurrent_assessment.exposure_fresh
+            if concurrent_assessment is not None else None
+        ),
         (
             tuple(concurrent_assessment.violations)
             if concurrent_assessment is not None else ()

@@ -265,6 +265,8 @@ def test_safety_block_and_reservation_are_visible() -> None:
                 symbol="NVDA", broker="alpaca-paper",
                 open_position_count=1, maximum_concurrent_positions=3,
                 symbol_already_open=False, allowed=True,
+                exposure_age_seconds=2, maximum_exposure_age_seconds=5,
+                exposure_fresh=True,
             ),
         )
     )
@@ -273,6 +275,9 @@ def test_safety_block_and_reservation_are_visible() -> None:
     assert "Concurrent Position Assessment :" in reserved_lines
     assert "Open Count   : 1" in reserved_lines
     assert "Maximum      : 3" in reserved_lines
+    assert "Exposure Age : 2.000s" in reserved_lines
+    assert "Maximum Age  : 5.000s" in reserved_lines
+    assert "Exposure Fresh: True" in reserved_lines
     lines = reserved_lines
 
     assert "Execution Candidate :" in lines
