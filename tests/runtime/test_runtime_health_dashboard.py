@@ -425,6 +425,13 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
         "executionSafetyKillSwitchActive": (
             "execution_safety_kill_switch_active"
         ),
+        "marketSessionBroker": "market_session_broker",
+        "marketSessionOpen": "market_session_open",
+        "marketSessionObservedAt": "market_session_observed_at",
+        "marketSessionNextOpen": "market_session_next_open",
+        "marketSessionNextClose": "market_session_next_close",
+        "marketSessionAllowed": "market_session_allowed",
+        "marketSessionViolations": "market_session_violations",
         "dailyLossBroker": "daily_loss_broker",
         "dailyLossRealizedPnl": "daily_loss_realized_pnl",
         "dailyLossUnrealizedPnl": "daily_loss_unrealized_pnl",

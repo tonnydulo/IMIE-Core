@@ -4,6 +4,7 @@ import pytest
 
 from imie.models import (
     BrokerDailyPnlSnapshot,
+    BrokerMarketSessionSnapshot,
     DataFreshness,
     DecisionResult,
     DirectorDecision,
@@ -238,6 +239,15 @@ class DailyPnlSource:
         )
 
 
+class MarketSessionSource:
+    def get_market_session(self):
+        return BrokerMarketSessionSnapshot(
+            broker="alpaca-paper",
+            is_open=True,
+            observed_at=BASE_TIME,
+        )
+
+
 def test_cycle_can_be_created() -> None:
     config = RuntimeConfig()
 
@@ -439,6 +449,7 @@ def test_ready_cycle_uses_only_guarded_protected_submission_path() -> None:
         reservation_store=reservations,
         daily_pnl_port=DailyPnlSource(),
         maximum_daily_loss=500,
+        market_session_port=MarketSessionSource(),
         clock=lambda: checked_at,
     )
     cycle = SingleAnalysisCycle(
@@ -466,6 +477,7 @@ def test_ready_cycle_uses_only_guarded_protected_submission_path() -> None:
     assert result.execution_submission_reservation is not None
     assert result.daily_loss_assessment.allowed is True
     assert result.daily_loss_assessment.loss_amount == 125
+    assert result.market_session_assessment.allowed is True
     assert result.protected_submission_result.accepted is True
     assert result.broker_submission_result is None
     assert len(protected_port.plans) == 1

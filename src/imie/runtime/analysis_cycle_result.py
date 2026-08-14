@@ -13,6 +13,7 @@ from imie.models import (
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
     DailyLossAssessment,
+    MarketSessionSafetyAssessment,
     MarketSnapshot,
     PositionSizeResult,
     ProtectedPlanSubmissionResult,
@@ -65,6 +66,7 @@ class AnalysisCycleResult:
     execution_submission_reservation: ExecutionSubmissionReservation | None = None
     concurrent_position_assessment: ConcurrentPositionAssessment | None = None
     daily_loss_assessment: DailyLossAssessment | None = None
+    market_session_assessment: MarketSessionSafetyAssessment | None = None
     protected_submission_result: ProtectedPlanSubmissionResult | None = None
 
     error_type: str | None = None
@@ -276,6 +278,18 @@ class AnalysisCycleResult:
             )
 
         if (
+            self.market_session_assessment is not None
+            and not isinstance(
+                self.market_session_assessment,
+                MarketSessionSafetyAssessment,
+            )
+        ):
+            raise TypeError(
+                "market_session_assessment must be a "
+                "MarketSessionSafetyAssessment or None."
+            )
+
+        if (
             self.execution_submission_reservation is not None
             and self.execution_safety_assessment is None
         ):
@@ -297,6 +311,14 @@ class AnalysisCycleResult:
         ):
             raise ValueError(
                 "daily loss assessment requires safety assessment."
+            )
+
+        if (
+            self.market_session_assessment is not None
+            and self.execution_safety_assessment is None
+        ):
+            raise ValueError(
+                "market session assessment requires safety assessment."
             )
 
         if (

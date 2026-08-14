@@ -140,6 +140,7 @@ class JsonResultPublisher:
             "execution_safety_assessment": None,
             "concurrent_position_assessment": None,
             "daily_loss_assessment": None,
+            "market_session_assessment": None,
             "execution_submission_reservation": None,
             "protected_submission_result": None,
         }
@@ -502,6 +503,24 @@ class JsonResultPublisher:
                 "within_limit": daily_loss.within_limit,
                 "allowed": daily_loss.allowed,
                 "violations": list(daily_loss.violations),
+            }
+
+        if result.market_session_assessment is not None:
+            market_session = result.market_session_assessment
+            payload["market_session_assessment"] = {
+                "broker": market_session.broker,
+                "session_open": market_session.session_open,
+                "observed_at": market_session.observed_at.isoformat(),
+                "next_open": (
+                    market_session.next_open.isoformat()
+                    if market_session.next_open is not None else None
+                ),
+                "next_close": (
+                    market_session.next_close.isoformat()
+                    if market_session.next_close is not None else None
+                ),
+                "allowed": market_session.allowed,
+                "violations": list(market_session.violations),
             }
 
         if result.protected_submission_result is not None:

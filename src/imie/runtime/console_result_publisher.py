@@ -507,6 +507,28 @@ class ConsoleResultPublisher:
                 for violation in daily_loss.violations
             )
 
+        if result.market_session_assessment is not None:
+            market_session = result.market_session_assessment
+            lines.extend([
+                "Market Session Safety Assessment :",
+                f"Broker       : {market_session.broker}",
+                f"Session Open : {market_session.session_open}",
+                f"Observed At  : {market_session.observed_at.isoformat()}",
+                "Next Open    : " + (
+                    market_session.next_open.isoformat()
+                    if market_session.next_open is not None else "—"
+                ),
+                "Next Close   : " + (
+                    market_session.next_close.isoformat()
+                    if market_session.next_close is not None else "—"
+                ),
+                f"Allowed      : {market_session.allowed}",
+            ])
+            lines.extend(
+                f"Session Block: {violation}"
+                for violation in market_session.violations
+            )
+
         if result.protected_submission_result is not None:
             protected = result.protected_submission_result
             lines.extend(

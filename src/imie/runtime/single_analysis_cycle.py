@@ -456,6 +456,7 @@ class SingleAnalysisCycle:
             protected_submission_result = None
             concurrent_position_assessment = None
             daily_loss_assessment = None
+            market_session_assessment = None
 
             if (
                 self.position_sizing_config.enabled
@@ -570,6 +571,9 @@ class SingleAnalysisCycle:
                     protected_safety.concurrent_position_assessment
                 )
                 daily_loss_assessment = protected_safety.daily_loss_assessment
+                market_session_assessment = (
+                    protected_safety.market_session_assessment
+                )
                 execution_submission_reservation = protected_safety.reservation
                 protected_submission_result = (
                     protected_safety.protected_submission
@@ -604,6 +608,7 @@ class SingleAnalysisCycle:
                     concurrent_position_assessment
                 ),
                 daily_loss_assessment=daily_loss_assessment,
+                market_session_assessment=market_session_assessment,
                 protected_submission_result=protected_submission_result,
             )
 

@@ -260,6 +260,13 @@ class RuntimeDashboardStatus:
     daily_loss_within_limit: bool | None = None
     daily_loss_allowed: bool | None = None
     daily_loss_violations: tuple[str, ...] = ()
+    market_session_broker: str | None = None
+    market_session_open: bool | None = None
+    market_session_observed_at: str | None = None
+    market_session_next_open: str | None = None
+    market_session_next_close: str | None = None
+    market_session_allowed: bool | None = None
+    market_session_violations: tuple[str, ...] = ()
 
     protected_submission_broker: str | None = None
     protected_submission_quantity: int | None = None
@@ -519,6 +526,8 @@ class RuntimeDashboardStatus:
             "concurrent_position_exposure_fresh",
             "daily_loss_within_limit",
             "daily_loss_allowed",
+            "market_session_open",
+            "market_session_allowed",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3416,6 +3425,15 @@ class RuntimeDashboardStatus:
                 "daily_loss_within_limit": self.daily_loss_within_limit,
                 "daily_loss_allowed": self.daily_loss_allowed,
                 "daily_loss_violations": list(self.daily_loss_violations),
+                "market_session_broker": self.market_session_broker,
+                "market_session_open": self.market_session_open,
+                "market_session_observed_at": self.market_session_observed_at,
+                "market_session_next_open": self.market_session_next_open,
+                "market_session_next_close": self.market_session_next_close,
+                "market_session_allowed": self.market_session_allowed,
+                "market_session_violations": list(
+                    self.market_session_violations
+                ),
                 "protected_submission_broker": self.protected_submission_broker,
                 "protected_submission_quantity": self.protected_submission_quantity,
                 "protected_submission_accepted": self.protected_submission_accepted,

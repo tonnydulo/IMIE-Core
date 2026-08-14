@@ -1107,6 +1107,13 @@ def test_execution_safety_fields_are_serialized() -> None:
         daily_loss_within_limit=True,
         daily_loss_allowed=True,
         daily_loss_violations=(),
+        market_session_broker="alpaca-paper",
+        market_session_open=True,
+        market_session_observed_at=NOW.isoformat(),
+        market_session_next_open=None,
+        market_session_next_close=NOW.isoformat(),
+        market_session_allowed=True,
+        market_session_violations=(),
     )
 
     payload = status.to_dict()
@@ -1141,6 +1148,13 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["daily_loss_within_limit"] is True
     assert payload["daily_loss_allowed"] is True
     assert payload["daily_loss_violations"] == []
+    assert payload["market_session_broker"] == "alpaca-paper"
+    assert payload["market_session_open"] is True
+    assert payload["market_session_observed_at"] == NOW.isoformat()
+    assert payload["market_session_next_open"] is None
+    assert payload["market_session_next_close"] == NOW.isoformat()
+    assert payload["market_session_allowed"] is True
+    assert payload["market_session_violations"] == []
 
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(

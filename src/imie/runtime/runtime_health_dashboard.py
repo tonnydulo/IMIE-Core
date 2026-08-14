@@ -1832,6 +1832,43 @@ def build_dashboard_html(
         </article>
 
         <article class="card">
+            <div class="label">Session Broker</div>
+            <div id="marketSessionBroker" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Broker Session Open</div>
+            <div id="marketSessionOpen" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Session Observed At</div>
+            <div id="marketSessionObservedAt" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Next Session Open</div>
+            <div id="marketSessionNextOpen" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Next Session Close</div>
+            <div id="marketSessionNextClose" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Session Safety Allowed</div>
+            <div id="marketSessionAllowed" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Session Safety Violations</div>
+            <ul id="marketSessionViolations" class="explanation-list warning-list">
+                <li class="empty-list">No market-session violations.</li>
+            </ul>
+        </article>
+
+        <article class="card">
             <div class="label">Daily P&amp;L Broker</div>
             <div id="dailyLossBroker" class="value">—</div>
         </article>
@@ -5024,6 +5061,35 @@ def build_dashboard_html(
             setText(
                 "executionSafetyKillSwitchActive",
                 formatBoolean(payload.execution_safety_kill_switch_active)
+            );
+            setText(
+                "marketSessionBroker",
+                payload.market_session_broker ?? "—"
+            );
+            setText(
+                "marketSessionOpen",
+                formatBoolean(payload.market_session_open)
+            );
+            setText(
+                "marketSessionObservedAt",
+                payload.market_session_observed_at ?? "—"
+            );
+            setText(
+                "marketSessionNextOpen",
+                payload.market_session_next_open ?? "—"
+            );
+            setText(
+                "marketSessionNextClose",
+                payload.market_session_next_close ?? "—"
+            );
+            setText(
+                "marketSessionAllowed",
+                formatBoolean(payload.market_session_allowed)
+            );
+            updateTextList(
+                "marketSessionViolations",
+                payload.market_session_violations,
+                "No market-session violations."
             );
             setText(
                 "dailyLossBroker",

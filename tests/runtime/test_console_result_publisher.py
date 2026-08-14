@@ -16,6 +16,7 @@ from imie.models import (
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
     DailyLossAssessment,
+    MarketSessionSafetyAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -279,6 +280,14 @@ def test_safety_block_and_reservation_are_visible() -> None:
                 within_limit=True,
                 allowed=True,
             ),
+            market_session_assessment=MarketSessionSafetyAssessment(
+                broker="alpaca-paper",
+                session_open=True,
+                observed_at=CHECKED_AT,
+                next_open=None,
+                next_close=CHECKED_AT,
+                allowed=True,
+            ),
         )
     )
     assert "Execution Submission Reservation :" in reserved_lines
@@ -295,6 +304,10 @@ def test_safety_block_and_reservation_are_visible() -> None:
     assert "Loss Amount  : $125.00" in reserved_lines
     assert "Loss Maximum : $500.00" in reserved_lines
     assert "Within Limit : True" in reserved_lines
+    assert "Market Session Safety Assessment :" in reserved_lines
+    assert "Session Open : True" in reserved_lines
+    assert f"Observed At  : {CHECKED_AT.isoformat()}" in reserved_lines
+    assert f"Next Close   : {CHECKED_AT.isoformat()}" in reserved_lines
     lines = reserved_lines
 
     assert "Execution Candidate :" in lines

@@ -16,6 +16,7 @@ from imie.models import (
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
     DailyLossAssessment,
+    MarketSessionSafetyAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -600,6 +601,14 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
                 within_limit=True,
                 allowed=True,
             ),
+            market_session_assessment=MarketSessionSafetyAssessment(
+                broker="alpaca-paper",
+                session_open=True,
+                observed_at=CHECKED_AT,
+                next_open=None,
+                next_close=CHECKED_AT,
+                allowed=True,
+            ),
         )
     )
 
@@ -633,6 +642,15 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         "loss_amount": 125.0,
         "maximum_daily_loss": 500.0,
         "within_limit": True,
+        "allowed": True,
+        "violations": [],
+    }
+    assert payload["market_session_assessment"] == {
+        "broker": "alpaca-paper",
+        "session_open": True,
+        "observed_at": CHECKED_AT.isoformat(),
+        "next_open": None,
+        "next_close": CHECKED_AT.isoformat(),
         "allowed": True,
         "violations": [],
     }

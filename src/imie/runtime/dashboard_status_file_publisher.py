@@ -1315,6 +1315,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        market_session_assessment = (
+            cycle.market_session_assessment
+            if cycle is not None
+            else None
+        )
+
         protected_submission_result = (
             cycle.protected_submission_result
             if cycle is not None
@@ -1582,6 +1588,7 @@ class DashboardStatusFilePublisher:
             protected_submission_result,
             concurrent_position_assessment,
             daily_loss_assessment,
+            market_session_assessment,
         )
 
         (
@@ -1595,6 +1602,16 @@ class DashboardStatusFilePublisher:
             daily_loss_allowed,
             daily_loss_violations,
         ) = _daily_loss_dashboard_values(daily_loss_assessment)
+
+        (
+            market_session_broker,
+            market_session_open,
+            market_session_observed_at,
+            market_session_next_open,
+            market_session_next_close,
+            market_session_allowed,
+            market_session_violations,
+        ) = _market_session_dashboard_values(market_session_assessment)
 
         (
             protected_submission_broker,
@@ -1918,6 +1935,13 @@ class DashboardStatusFilePublisher:
             daily_loss_within_limit=daily_loss_within_limit,
             daily_loss_allowed=daily_loss_allowed,
             daily_loss_violations=daily_loss_violations,
+            market_session_broker=market_session_broker,
+            market_session_open=market_session_open,
+            market_session_observed_at=market_session_observed_at,
+            market_session_next_open=market_session_next_open,
+            market_session_next_close=market_session_next_close,
+            market_session_allowed=market_session_allowed,
+            market_session_violations=market_session_violations,
             protected_submission_broker=protected_submission_broker,
             protected_submission_quantity=protected_submission_quantity,
             protected_submission_accepted=protected_submission_accepted,
@@ -3163,6 +3187,7 @@ def _execution_safety_dashboard_values(
     protected_submission_result: object | None,
     concurrent_assessment: object | None,
     daily_loss_assessment: object | None,
+    market_session_assessment: object | None,
 ) -> tuple[object | None, ...]:
     if assessment is None:
         return (
@@ -3176,6 +3201,9 @@ def _execution_safety_dashboard_values(
     ) or (
         daily_loss_assessment is not None
         and not daily_loss_assessment.allowed
+    ) or (
+        market_session_assessment is not None
+        and not market_session_assessment.allowed
     ):
         state = "BLOCKED"
     elif (
@@ -3247,6 +3275,28 @@ def _daily_loss_dashboard_values(
         assessment.loss_amount,
         assessment.maximum_daily_loss,
         assessment.within_limit,
+        assessment.allowed,
+        tuple(assessment.violations),
+    )
+
+
+def _market_session_dashboard_values(
+    assessment: object | None,
+) -> tuple[object | None, ...]:
+    if assessment is None:
+        return (None, None, None, None, None, None, ())
+    return (
+        assessment.broker,
+        assessment.session_open,
+        assessment.observed_at.isoformat(),
+        (
+            assessment.next_open.isoformat()
+            if assessment.next_open is not None else None
+        ),
+        (
+            assessment.next_close.isoformat()
+            if assessment.next_close is not None else None
+        ),
         assessment.allowed,
         tuple(assessment.violations),
     )

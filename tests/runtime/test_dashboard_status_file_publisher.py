@@ -40,6 +40,7 @@ from imie.models import (
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
     DailyLossAssessment,
+    MarketSessionSafetyAssessment,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
@@ -12107,6 +12108,14 @@ def test_publish_result_populates_execution_safety_details(
             within_limit=True,
             allowed=True,
         ),
+        market_session_assessment=MarketSessionSafetyAssessment(
+            broker="alpaca-paper",
+            session_open=True,
+            observed_at=NOW,
+            next_open=None,
+            next_close=NOW,
+            allowed=True,
+        ),
     )
     publisher = DashboardStatusFilePublisher(
         path=path,
@@ -12148,6 +12157,13 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["daily_loss_within_limit"] is True
     assert payload["daily_loss_allowed"] is True
     assert payload["daily_loss_violations"] == []
+    assert payload["market_session_broker"] == "alpaca-paper"
+    assert payload["market_session_open"] is True
+    assert payload["market_session_observed_at"] == NOW.isoformat()
+    assert payload["market_session_next_open"] is None
+    assert payload["market_session_next_close"] == NOW.isoformat()
+    assert payload["market_session_allowed"] is True
+    assert payload["market_session_violations"] == []
 
 
 def test_publish_result_identifies_safety_block(
@@ -12226,6 +12242,41 @@ def test_publish_result_identifies_daily_loss_block(tmp_path: Path) -> None:
     assert payload["execution_safety_state"] == "BLOCKED"
     assert payload["daily_loss_allowed"] is False
     assert payload["daily_loss_violations"] == list(daily_loss.violations)
+
+
+def test_publish_result_identifies_market_session_block(tmp_path: Path) -> None:
+    path = tmp_path / "dashboard.json"
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA", order_notional=12500, risk_amount=125,
+        maximum_order_notional=25000, maximum_risk_amount=250,
+        candidate_valid=True, candidate_actionable=True,
+        notional_within_limit=True, risk_within_limit=True,
+        allowed=True, kill_switch_active=False,
+    )
+    market_session = MarketSessionSafetyAssessment(
+        broker="alpaca-paper", session_open=False, observed_at=NOW,
+        next_open=NOW, next_close=None, allowed=False,
+        violations=("Broker market session is closed.",),
+    )
+    result = dataclasses.replace(
+        make_completed_result_with_execution_candidate(),
+        execution_safety_assessment=assessment,
+        market_session_assessment=market_session,
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=path, symbol="NVDA", timeframe="2m"
+    )
+
+    publisher.publish_health(make_health())
+    publisher.publish_result(result)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["execution_safety_state"] == "BLOCKED"
+    assert payload["market_session_open"] is False
+    assert payload["market_session_allowed"] is False
+    assert payload["market_session_violations"] == list(
+        market_session.violations
+    )
 
 
 def test_publish_result_identifies_concurrent_position_block(

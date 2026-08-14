@@ -10,6 +10,7 @@ from imie.runtime import (
 from imie.models import (
     BrokerSubmissionResult,
     DailyLossAssessment,
+    MarketSessionSafetyAssessment,
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
@@ -492,4 +493,39 @@ def test_rejects_invalid_daily_loss_assessment_type() -> None:
             completed_at=make_time(),
             message="Cycle completed.",
             daily_loss_assessment="invalid",  # type: ignore[arg-type]
+        )
+
+
+def test_market_session_assessment_requires_execution_safety() -> None:
+    market_session = MarketSessionSafetyAssessment(
+        broker="alpaca-paper",
+        session_open=True,
+        observed_at=make_time(),
+        next_open=None,
+        next_close=make_time(),
+        allowed=True,
+    )
+
+    with pytest.raises(ValueError, match="requires safety assessment"):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            market_session_assessment=market_session,
+        )
+
+
+def test_rejects_invalid_market_session_assessment_type() -> None:
+    with pytest.raises(TypeError, match="market_session_assessment"):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            market_session_assessment="invalid",  # type: ignore[arg-type]
         )
