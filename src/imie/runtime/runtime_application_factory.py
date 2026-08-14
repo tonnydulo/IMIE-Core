@@ -114,6 +114,11 @@ def _build_execution_safety_submission_service(
         raise ValueError(
             "maximum_daily_loss requires a supported broker daily P&L source."
         )
+    if safety_config.require_open_market_session:
+        raise ValueError(
+            "require_open_market_session requires a supported broker "
+            "market-session source."
+        )
     if broker_execution_port is None:
         raise ValueError(
             "execution safety requires a broker execution port."
@@ -145,14 +150,17 @@ def _build_protected_execution_safety_service(
 
     position_exposure_port = None
     daily_pnl_port = None
+    market_session_port = None
     clock = lambda: datetime.now(timezone.utc)
     if (
         safety_config.maximum_concurrent_positions is not None
         or safety_config.maximum_daily_loss is not None
+        or safety_config.require_open_market_session
     ):
         from alpaca.trading.client import TradingClient
         from imie.execution import (
             AlpacaPaperDailyPnlAdapter,
+            AlpacaPaperMarketSessionAdapter,
             AlpacaPaperPositionExposureAdapter,
         )
 
@@ -173,6 +181,11 @@ def _build_protected_execution_safety_service(
                 paper=True,
                 clock=clock,
             )
+        if safety_config.require_open_market_session:
+            market_session_port = AlpacaPaperMarketSessionAdapter(
+                trading_client=trading_client,
+                paper=True,
+            )
 
     return ProtectedExecutionSafetyService(
         protected_execution_port=protected_execution_port,
@@ -189,6 +202,7 @@ def _build_protected_execution_safety_service(
         ),
         daily_pnl_port=daily_pnl_port,
         maximum_daily_loss=safety_config.maximum_daily_loss,
+        market_session_port=market_session_port,
         clock=clock,
     )
 

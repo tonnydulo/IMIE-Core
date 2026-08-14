@@ -171,6 +171,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--require-open-market-session",
+        action="store_true",
+        help=(
+            "Require verified broker open-session truth before submission. "
+            "Requires --execution-safety."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-kill-switch",
         action="store_true",
         help=(
@@ -497,6 +506,9 @@ def build_execution_safety_config(
         ),
         maximum_risk_amount=getattr(arguments, "maximum_risk_amount", None),
         maximum_daily_loss=getattr(arguments, "maximum_daily_loss", None),
+        require_open_market_session=getattr(
+            arguments, "require_open_market_session", False
+        ),
         kill_switch_active=getattr(
             arguments, "execution_kill_switch", False
         ),

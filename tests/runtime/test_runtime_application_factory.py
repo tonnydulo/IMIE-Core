@@ -33,6 +33,7 @@ from imie.services import (
 from imie.execution import (
     AlpacaPaperExecutionAdapter,
     AlpacaPaperDailyPnlAdapter,
+    AlpacaPaperMarketSessionAdapter,
     AlpacaPaperFillActivitySource,
     BrokerOrderQueryPort,
     JsonFileBrokerOrderIntentStore,
@@ -301,6 +302,7 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
             maximum_order_notional=25_000,
             maximum_risk_amount=125,
             maximum_daily_loss=500,
+            require_open_market_session=True,
             maximum_concurrent_positions=2,
             maximum_position_exposure_age_seconds=5,
             reservation_store_path=tmp_path / "reservations.json",
@@ -325,9 +327,17 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
     assert service._maximum_concurrent_positions == 2
     assert service._maximum_position_exposure_age_seconds == 5.0
     assert isinstance(service._daily_pnl_port, AlpacaPaperDailyPnlAdapter)
+    assert isinstance(
+        service._market_session_port,
+        AlpacaPaperMarketSessionAdapter,
+    )
     assert service._maximum_daily_loss == 500.0
     assert (
         service._daily_pnl_port._trading_client
+        is service._position_exposure_port._trading_client
+    )
+    assert (
+        service._market_session_port._trading_client
         is service._position_exposure_port._trading_client
     )
     assert service._position_exposure_port._clock is service._clock
@@ -345,6 +355,24 @@ def test_factory_rejects_daily_loss_without_mock_pnl_source(
                 maximum_order_notional=25_000,
                 maximum_risk_amount=125,
                 maximum_daily_loss=500,
+                reservation_store_path=tmp_path / "reservations.json",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
+
+
+def test_factory_rejects_market_session_without_mock_session_source(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="market-session source"):
+        RuntimeApplicationFactory.create(
+            settings=make_settings(),
+            config=RuntimeConfig(execution_mode="mock"),
+            execution_safety_config=ExecutionSafetyConfig(
+                enabled=True,
+                maximum_order_notional=25_000,
+                maximum_risk_amount=125,
+                require_open_market_session=True,
                 reservation_store_path=tmp_path / "reservations.json",
             ),
             history_file=tmp_path / "cycles.jsonl",

@@ -23,6 +23,7 @@ class ExecutionSafetyConfig:
     maximum_daily_loss: float | None = None
     maximum_concurrent_positions: int | None = None
     maximum_position_exposure_age_seconds: float | None = None
+    require_open_market_session: bool = False
     kill_switch_active: bool = False
     reservation_store_path: Path = DEFAULT_EXECUTION_RESERVATION_STORE
 
@@ -31,9 +32,16 @@ class ExecutionSafetyConfig:
             raise TypeError("enabled must be a bool.")
         if not isinstance(self.kill_switch_active, bool):
             raise TypeError("kill_switch_active must be a bool.")
+        if not isinstance(self.require_open_market_session, bool):
+            raise TypeError("require_open_market_session must be a bool.")
         if self.kill_switch_active and not self.enabled:
             raise ValueError(
                 "kill_switch_active requires execution safety to be enabled."
+            )
+        if self.require_open_market_session and not self.enabled:
+            raise ValueError(
+                "require_open_market_session requires execution safety "
+                "to be enabled."
             )
         maximum_order_notional = self._optional_positive_float(
             self.maximum_order_notional,

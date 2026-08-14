@@ -254,6 +254,7 @@ def test_parser_execution_safety_defaults_are_off() -> None:
     assert arguments.maximum_order_notional is None
     assert arguments.maximum_risk_amount is None
     assert arguments.maximum_daily_loss is None
+    assert arguments.require_open_market_session is False
     assert arguments.execution_kill_switch is False
     assert arguments.maximum_concurrent_positions is None
     assert arguments.maximum_position_exposure_age_seconds is None
@@ -269,6 +270,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         "--maximum-order-notional", "25000",
         "--maximum-risk-amount", "125",
         "--maximum-daily-loss", "500",
+        "--require-open-market-session",
         "--execution-kill-switch",
         "--maximum-concurrent-positions", "3",
         "--maximum-position-exposure-age-seconds", "5",
@@ -281,6 +283,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         maximum_order_notional=25_000.0,
         maximum_risk_amount=125.0,
         maximum_daily_loss=500.0,
+        require_open_market_session=True,
         kill_switch_active=True,
         maximum_concurrent_positions=3,
         maximum_position_exposure_age_seconds=5.0,
@@ -319,6 +322,13 @@ def test_concurrent_position_cli_requires_execution_safety() -> None:
 
 def test_daily_loss_cli_requires_execution_safety() -> None:
     parsed = build_parser().parse_args(["--maximum-daily-loss", "500"])
+
+    with pytest.raises(ValueError, match="requires execution safety"):
+        build_execution_safety_config(parsed)
+
+
+def test_open_market_session_cli_requires_execution_safety() -> None:
+    parsed = build_parser().parse_args(["--require-open-market-session"])
 
     with pytest.raises(ValueError, match="requires execution safety"):
         build_execution_safety_config(parsed)

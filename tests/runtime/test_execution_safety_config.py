@@ -18,6 +18,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.maximum_daily_loss is None
     assert config.maximum_concurrent_positions is None
     assert config.maximum_position_exposure_age_seconds is None
+    assert config.require_open_market_session is False
     assert config.kill_switch_active is False
     assert config.reservation_store_path == Path(
         "runtime/execution/submission_reservations.json"
@@ -149,6 +150,27 @@ def test_maximum_daily_loss_must_be_positive(value):
 def test_maximum_daily_loss_requires_execution_safety():
     with pytest.raises(ValueError, match="requires execution safety"):
         ExecutionSafetyConfig(maximum_daily_loss=500)
+
+
+def test_enabled_config_accepts_open_market_session_requirement():
+    config = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        require_open_market_session=True,
+    )
+
+    assert config.require_open_market_session is True
+
+
+def test_open_market_session_requirement_requires_execution_safety():
+    with pytest.raises(ValueError, match="requires execution safety"):
+        ExecutionSafetyConfig(require_open_market_session=True)
+
+
+def test_open_market_session_requirement_must_be_bool():
+    with pytest.raises(TypeError, match="require_open_market_session"):
+        ExecutionSafetyConfig(require_open_market_session=1)
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5, "3"])
