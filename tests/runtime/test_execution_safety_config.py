@@ -15,6 +15,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.enabled is False
     assert config.maximum_order_notional is None
     assert config.maximum_risk_amount is None
+    assert config.maximum_concurrent_positions is None
     assert config.kill_switch_active is False
     assert config.reservation_store_path == Path(
         "runtime/execution/submission_reservations.json"
@@ -108,3 +109,30 @@ def test_kill_switch_requires_execution_safety():
 def test_kill_switch_must_be_bool():
     with pytest.raises(TypeError, match="kill_switch_active"):
         ExecutionSafetyConfig(kill_switch_active=1)
+
+
+def test_enabled_config_accepts_maximum_concurrent_positions():
+    config = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        maximum_concurrent_positions=3,
+    )
+
+    assert config.maximum_concurrent_positions == 3
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 1.5, "3"])
+def test_maximum_concurrent_positions_requires_positive_int(value):
+    with pytest.raises((TypeError, ValueError)):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_concurrent_positions=value,
+        )
+
+
+def test_maximum_concurrent_positions_requires_execution_safety():
+    with pytest.raises(ValueError, match="requires execution safety"):
+        ExecutionSafetyConfig(maximum_concurrent_positions=3)

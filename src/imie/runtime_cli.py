@@ -170,6 +170,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--maximum-concurrent-positions",
+        type=int,
+        default=None,
+        help=(
+            "Optional maximum verified broker positions. Requires "
+            "--execution-safety and a supported exposure source."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-reservation-store",
         type=Path,
         default=Path("runtime/execution/submission_reservations.json"),
@@ -468,6 +478,9 @@ def build_execution_safety_config(
         maximum_risk_amount=getattr(arguments, "maximum_risk_amount", None),
         kill_switch_active=getattr(
             arguments, "execution_kill_switch", False
+        ),
+        maximum_concurrent_positions=getattr(
+            arguments, "maximum_concurrent_positions", None
         ),
         reservation_store_path=getattr(
             arguments,

@@ -20,6 +20,7 @@ class ExecutionSafetyConfig:
     enabled: bool = False
     maximum_order_notional: float | None = None
     maximum_risk_amount: float | None = None
+    maximum_concurrent_positions: int | None = None
     kill_switch_active: bool = False
     reservation_store_path: Path = DEFAULT_EXECUTION_RESERVATION_STORE
 
@@ -40,6 +41,15 @@ class ExecutionSafetyConfig:
             self.maximum_risk_amount,
             "maximum_risk_amount",
         )
+        maximum_concurrent_positions = self._optional_positive_int(
+            self.maximum_concurrent_positions,
+            "maximum_concurrent_positions",
+        )
+        if maximum_concurrent_positions is not None and not self.enabled:
+            raise ValueError(
+                "maximum_concurrent_positions requires execution safety "
+                "to be enabled."
+            )
         if not isinstance(self.reservation_store_path, Path):
             raise TypeError("reservation_store_path must be a Path.")
         if not str(self.reservation_store_path).strip():
@@ -57,6 +67,11 @@ class ExecutionSafetyConfig:
             self, "maximum_order_notional", maximum_order_notional
         )
         object.__setattr__(self, "maximum_risk_amount", maximum_risk_amount)
+        object.__setattr__(
+            self,
+            "maximum_concurrent_positions",
+            maximum_concurrent_positions,
+        )
 
     def build_policy(self) -> ExecutionSafetyPolicy:
         if not self.enabled:
@@ -81,3 +96,13 @@ class ExecutionSafetyConfig:
         if not math.isfinite(normalized) or normalized <= 0:
             raise ValueError(f"{name} must be finite and greater than zero.")
         return normalized
+
+    @staticmethod
+    def _optional_positive_int(value: object, name: str) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError(f"{name} must be an int or None.")
+        if value <= 0:
+            raise ValueError(f"{name} must be greater than zero.")
+        return value

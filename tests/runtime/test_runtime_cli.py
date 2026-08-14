@@ -254,6 +254,7 @@ def test_parser_execution_safety_defaults_are_off() -> None:
     assert arguments.maximum_order_notional is None
     assert arguments.maximum_risk_amount is None
     assert arguments.execution_kill_switch is False
+    assert arguments.maximum_concurrent_positions is None
     assert arguments.execution_reservation_store == Path(
         "runtime/execution/submission_reservations.json"
     )
@@ -266,6 +267,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         "--maximum-order-notional", "25000",
         "--maximum-risk-amount", "125",
         "--execution-kill-switch",
+        "--maximum-concurrent-positions", "3",
         "--execution-reservation-store", "custom/reservations.json",
     ])
 
@@ -275,6 +277,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         maximum_order_notional=25_000.0,
         maximum_risk_amount=125.0,
         kill_switch_active=True,
+        maximum_concurrent_positions=3,
         reservation_store_path=Path("custom/reservations.json"),
     )
 
@@ -294,6 +297,15 @@ def test_execution_safety_cli_config_requires_both_limits(arguments, missing):
 
 def test_kill_switch_cli_requires_execution_safety() -> None:
     parsed = build_parser().parse_args(["--execution-kill-switch"])
+
+    with pytest.raises(ValueError, match="requires execution safety"):
+        build_execution_safety_config(parsed)
+
+
+def test_concurrent_position_cli_requires_execution_safety() -> None:
+    parsed = build_parser().parse_args([
+        "--maximum-concurrent-positions", "3"
+    ])
 
     with pytest.raises(ValueError, match="requires execution safety"):
         build_execution_safety_config(parsed)
