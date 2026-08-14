@@ -489,6 +489,24 @@ class ConsoleResultPublisher:
                 for violation in concurrent.violations
             )
 
+        if result.daily_loss_assessment is not None:
+            daily_loss = result.daily_loss_assessment
+            lines.extend([
+                "Daily Loss Assessment :",
+                f"Broker       : {daily_loss.broker}",
+                f"Realized P&L : ${daily_loss.realized_pnl:.2f}",
+                f"Unrealized P&L: ${daily_loss.unrealized_pnl:.2f}",
+                f"Total P&L    : ${daily_loss.total_pnl:.2f}",
+                f"Loss Amount  : ${daily_loss.loss_amount:.2f}",
+                f"Loss Maximum : ${daily_loss.maximum_daily_loss:.2f}",
+                f"Within Limit : {daily_loss.within_limit}",
+                f"Allowed      : {daily_loss.allowed}",
+            ])
+            lines.extend(
+                f"Daily Loss Block: {violation}"
+                for violation in daily_loss.violations
+            )
+
         if result.protected_submission_result is not None:
             protected = result.protected_submission_result
             lines.extend(

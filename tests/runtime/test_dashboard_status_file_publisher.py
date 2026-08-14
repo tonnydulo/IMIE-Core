@@ -39,6 +39,7 @@ from imie.models import (
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
+    DailyLossAssessment,
     InstitutionalBias,
     InstitutionalConfluence,
     InstitutionalDecisionContext,
@@ -12096,6 +12097,16 @@ def test_publish_result_populates_execution_safety_details(
             exposure_age_seconds=2, maximum_exposure_age_seconds=5,
             exposure_fresh=True,
         ),
+        daily_loss_assessment=DailyLossAssessment(
+            broker="alpaca-paper",
+            realized_pnl=-100,
+            unrealized_pnl=-25,
+            total_pnl=-125,
+            loss_amount=125,
+            maximum_daily_loss=500,
+            within_limit=True,
+            allowed=True,
+        ),
     )
     publisher = DashboardStatusFilePublisher(
         path=path,
@@ -12128,6 +12139,15 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["concurrent_position_maximum_exposure_age_seconds"] == 5.0
     assert payload["concurrent_position_exposure_fresh"] is True
     assert payload["concurrent_position_violations"] == []
+    assert payload["daily_loss_broker"] == "alpaca-paper"
+    assert payload["daily_loss_realized_pnl"] == -100.0
+    assert payload["daily_loss_unrealized_pnl"] == -25.0
+    assert payload["daily_loss_total_pnl"] == -125.0
+    assert payload["daily_loss_amount"] == 125.0
+    assert payload["daily_loss_maximum"] == 500.0
+    assert payload["daily_loss_within_limit"] is True
+    assert payload["daily_loss_allowed"] is True
+    assert payload["daily_loss_violations"] == []
 
 
 def test_publish_result_identifies_safety_block(
@@ -12173,6 +12193,39 @@ def test_publish_result_identifies_safety_block(
         "Order notional exceeds maximum.",
         "Execution kill switch is active.",
     ]
+
+
+def test_publish_result_identifies_daily_loss_block(tmp_path: Path) -> None:
+    path = tmp_path / "dashboard.json"
+    assessment = ExecutionSafetyAssessment(
+        symbol="NVDA", order_notional=12500, risk_amount=125,
+        maximum_order_notional=25000, maximum_risk_amount=250,
+        candidate_valid=True, candidate_actionable=True,
+        notional_within_limit=True, risk_within_limit=True,
+        allowed=True, kill_switch_active=False,
+    )
+    daily_loss = DailyLossAssessment(
+        broker="alpaca-paper", realized_pnl=-400, unrealized_pnl=-100,
+        total_pnl=-500, loss_amount=500, maximum_daily_loss=500,
+        within_limit=False, allowed=False,
+        violations=("Daily loss limit reached: 500.00 >= 500.00.",),
+    )
+    result = dataclasses.replace(
+        make_completed_result_with_execution_candidate(),
+        execution_safety_assessment=assessment,
+        daily_loss_assessment=daily_loss,
+    )
+    publisher = DashboardStatusFilePublisher(
+        path=path, symbol="NVDA", timeframe="2m"
+    )
+
+    publisher.publish_health(make_health())
+    publisher.publish_result(result)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["execution_safety_state"] == "BLOCKED"
+    assert payload["daily_loss_allowed"] is False
+    assert payload["daily_loss_violations"] == list(daily_loss.violations)
 
 
 def test_publish_result_identifies_concurrent_position_block(

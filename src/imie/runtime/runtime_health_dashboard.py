@@ -1832,6 +1832,53 @@ def build_dashboard_html(
         </article>
 
         <article class="card">
+            <div class="label">Daily P&amp;L Broker</div>
+            <div id="dailyLossBroker" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Realized Daily P&amp;L</div>
+            <div id="dailyLossRealizedPnl" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Unrealized Daily P&amp;L</div>
+            <div id="dailyLossUnrealizedPnl" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Total Daily P&amp;L</div>
+            <div id="dailyLossTotalPnl" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Daily Loss Amount</div>
+            <div id="dailyLossAmount" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Daily Loss</div>
+            <div id="dailyLossMaximum" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Daily Loss Within Limit</div>
+            <div id="dailyLossWithinLimit" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Daily Loss Allowed</div>
+            <div id="dailyLossAllowed" class="value">—</div>
+        </article>
+
+        <article class="card wide">
+            <div class="label">Daily Loss Violations</div>
+            <ul id="dailyLossViolations" class="explanation-list warning-list">
+                <li class="empty-list">No daily-loss violations.</li>
+            </ul>
+        </article>
+
+        <article class="card">
             <div class="label">Position Broker</div>
             <div id="concurrentPositionBroker" class="value">—</div>
         </article>
@@ -4977,6 +5024,43 @@ def build_dashboard_html(
             setText(
                 "executionSafetyKillSwitchActive",
                 formatBoolean(payload.execution_safety_kill_switch_active)
+            );
+            setText(
+                "dailyLossBroker",
+                payload.daily_loss_broker ?? "—"
+            );
+            setText(
+                "dailyLossRealizedPnl",
+                formatCurrency(payload.daily_loss_realized_pnl)
+            );
+            setText(
+                "dailyLossUnrealizedPnl",
+                formatCurrency(payload.daily_loss_unrealized_pnl)
+            );
+            setText(
+                "dailyLossTotalPnl",
+                formatCurrency(payload.daily_loss_total_pnl)
+            );
+            setText(
+                "dailyLossAmount",
+                formatCurrency(payload.daily_loss_amount)
+            );
+            setText(
+                "dailyLossMaximum",
+                formatCurrency(payload.daily_loss_maximum)
+            );
+            setText(
+                "dailyLossWithinLimit",
+                formatBoolean(payload.daily_loss_within_limit)
+            );
+            setText(
+                "dailyLossAllowed",
+                formatBoolean(payload.daily_loss_allowed)
+            );
+            updateTextList(
+                "dailyLossViolations",
+                payload.daily_loss_violations,
+                "No daily-loss violations."
             );
             setText(
                 "concurrentPositionBroker",

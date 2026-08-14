@@ -9,6 +9,7 @@ from imie.runtime import (
 
 from imie.models import (
     BrokerSubmissionResult,
+    DailyLossAssessment,
     DecisionResult,
     DirectorDecision,
     ExecutionCandidate,
@@ -459,4 +460,36 @@ def test_rejects_invalid_broker_submission_result_type() -> None:
             broker_submission_result=(
                 "invalid"  # type: ignore[arg-type]
             ),
+        )
+
+
+def test_daily_loss_assessment_requires_execution_safety_assessment() -> None:
+    daily_loss = DailyLossAssessment(
+        broker="alpaca-paper", realized_pnl=-100, unrealized_pnl=-25,
+        total_pnl=-125, loss_amount=125, maximum_daily_loss=500,
+        within_limit=True, allowed=True,
+    )
+
+    with pytest.raises(ValueError, match="requires safety assessment"):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            daily_loss_assessment=daily_loss,
+        )
+
+
+def test_rejects_invalid_daily_loss_assessment_type() -> None:
+    with pytest.raises(TypeError, match="daily_loss_assessment"):
+        AnalysisCycleResult(
+            status=AnalysisCycleStatus.COMPLETED,
+            symbol="NVDA",
+            timeframe="2m",
+            started_at=make_time(),
+            completed_at=make_time(),
+            message="Cycle completed.",
+            daily_loss_assessment="invalid",  # type: ignore[arg-type]
         )

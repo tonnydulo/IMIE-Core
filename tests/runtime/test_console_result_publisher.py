@@ -15,6 +15,7 @@ from imie.models import (
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
+    DailyLossAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -268,6 +269,16 @@ def test_safety_block_and_reservation_are_visible() -> None:
                 exposure_age_seconds=2, maximum_exposure_age_seconds=5,
                 exposure_fresh=True,
             ),
+            daily_loss_assessment=DailyLossAssessment(
+                broker="alpaca-paper",
+                realized_pnl=-100,
+                unrealized_pnl=-25,
+                total_pnl=-125,
+                loss_amount=125,
+                maximum_daily_loss=500,
+                within_limit=True,
+                allowed=True,
+            ),
         )
     )
     assert "Execution Submission Reservation :" in reserved_lines
@@ -278,6 +289,12 @@ def test_safety_block_and_reservation_are_visible() -> None:
     assert "Exposure Age : 2.000s" in reserved_lines
     assert "Maximum Age  : 5.000s" in reserved_lines
     assert "Exposure Fresh: True" in reserved_lines
+    assert "Daily Loss Assessment :" in reserved_lines
+    assert "Realized P&L : $-100.00" in reserved_lines
+    assert "Unrealized P&L: $-25.00" in reserved_lines
+    assert "Loss Amount  : $125.00" in reserved_lines
+    assert "Loss Maximum : $500.00" in reserved_lines
+    assert "Within Limit : True" in reserved_lines
     lines = reserved_lines
 
     assert "Execution Candidate :" in lines

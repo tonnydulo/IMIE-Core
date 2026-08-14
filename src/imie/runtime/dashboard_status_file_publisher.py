@@ -1309,6 +1309,12 @@ class DashboardStatusFilePublisher:
             else None
         )
 
+        daily_loss_assessment = (
+            cycle.daily_loss_assessment
+            if cycle is not None
+            else None
+        )
+
         protected_submission_result = (
             cycle.protected_submission_result
             if cycle is not None
@@ -1575,7 +1581,20 @@ class DashboardStatusFilePublisher:
             broker_submission_result,
             protected_submission_result,
             concurrent_position_assessment,
+            daily_loss_assessment,
         )
+
+        (
+            daily_loss_broker,
+            daily_loss_realized_pnl,
+            daily_loss_unrealized_pnl,
+            daily_loss_total_pnl,
+            daily_loss_amount,
+            daily_loss_maximum,
+            daily_loss_within_limit,
+            daily_loss_allowed,
+            daily_loss_violations,
+        ) = _daily_loss_dashboard_values(daily_loss_assessment)
 
         (
             protected_submission_broker,
@@ -1890,6 +1909,15 @@ class DashboardStatusFilePublisher:
                 concurrent_position_exposure_fresh
             ),
             concurrent_position_violations=concurrent_position_violations,
+            daily_loss_broker=daily_loss_broker,
+            daily_loss_realized_pnl=daily_loss_realized_pnl,
+            daily_loss_unrealized_pnl=daily_loss_unrealized_pnl,
+            daily_loss_total_pnl=daily_loss_total_pnl,
+            daily_loss_amount=daily_loss_amount,
+            daily_loss_maximum=daily_loss_maximum,
+            daily_loss_within_limit=daily_loss_within_limit,
+            daily_loss_allowed=daily_loss_allowed,
+            daily_loss_violations=daily_loss_violations,
             protected_submission_broker=protected_submission_broker,
             protected_submission_quantity=protected_submission_quantity,
             protected_submission_accepted=protected_submission_accepted,
@@ -3134,6 +3162,7 @@ def _execution_safety_dashboard_values(
     broker_submission_result: object | None,
     protected_submission_result: object | None,
     concurrent_assessment: object | None,
+    daily_loss_assessment: object | None,
 ) -> tuple[object | None, ...]:
     if assessment is None:
         return (
@@ -3144,6 +3173,9 @@ def _execution_safety_dashboard_values(
     if not assessment.allowed or (
         concurrent_assessment is not None
         and not concurrent_assessment.allowed
+    ) or (
+        daily_loss_assessment is not None
+        and not daily_loss_assessment.allowed
     ):
         state = "BLOCKED"
     elif (
@@ -3199,6 +3231,24 @@ def _execution_safety_dashboard_values(
             tuple(concurrent_assessment.violations)
             if concurrent_assessment is not None else ()
         ),
+    )
+
+
+def _daily_loss_dashboard_values(
+    assessment: object | None,
+) -> tuple[object | None, ...]:
+    if assessment is None:
+        return (None, None, None, None, None, None, None, None, ())
+    return (
+        assessment.broker,
+        assessment.realized_pnl,
+        assessment.unrealized_pnl,
+        assessment.total_pnl,
+        assessment.loss_amount,
+        assessment.maximum_daily_loss,
+        assessment.within_limit,
+        assessment.allowed,
+        tuple(assessment.violations),
     )
 
 

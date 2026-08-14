@@ -1098,6 +1098,15 @@ def test_execution_safety_fields_are_serialized() -> None:
         concurrent_position_maximum_exposure_age_seconds=5.0,
         concurrent_position_exposure_fresh=True,
         concurrent_position_violations=(),
+        daily_loss_broker="alpaca-paper",
+        daily_loss_realized_pnl=-100.0,
+        daily_loss_unrealized_pnl=-25.0,
+        daily_loss_total_pnl=-125.0,
+        daily_loss_amount=125.0,
+        daily_loss_maximum=500.0,
+        daily_loss_within_limit=True,
+        daily_loss_allowed=True,
+        daily_loss_violations=(),
     )
 
     payload = status.to_dict()
@@ -1123,6 +1132,15 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["concurrent_position_maximum_exposure_age_seconds"] == 5.0
     assert payload["concurrent_position_exposure_fresh"] is True
     assert payload["concurrent_position_violations"] == []
+    assert payload["daily_loss_broker"] == "alpaca-paper"
+    assert payload["daily_loss_realized_pnl"] == -100.0
+    assert payload["daily_loss_unrealized_pnl"] == -25.0
+    assert payload["daily_loss_total_pnl"] == -125.0
+    assert payload["daily_loss_amount"] == 125.0
+    assert payload["daily_loss_maximum"] == 500.0
+    assert payload["daily_loss_within_limit"] is True
+    assert payload["daily_loss_allowed"] is True
+    assert payload["daily_loss_violations"] == []
 
 def test_institutional_bias_detail_fields_are_serialized() -> None:
     status = make_status(

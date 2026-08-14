@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from imie.models import (
+    BrokerDailyPnlSnapshot,
     DataFreshness,
     DecisionResult,
     DirectorDecision,
@@ -227,6 +228,16 @@ class InMemoryReservationStore:
         return self.values.get(fingerprint)
 
 
+class DailyPnlSource:
+    def get_daily_pnl(self):
+        return BrokerDailyPnlSnapshot(
+            broker="alpaca-paper",
+            realized_pnl=-100,
+            unrealized_pnl=-25,
+            observed_at=BASE_TIME,
+        )
+
+
 def test_cycle_can_be_created() -> None:
     config = RuntimeConfig()
 
@@ -426,6 +437,8 @@ def test_ready_cycle_uses_only_guarded_protected_submission_path() -> None:
             maximum_risk_amount=125,
         ),
         reservation_store=reservations,
+        daily_pnl_port=DailyPnlSource(),
+        maximum_daily_loss=500,
         clock=lambda: checked_at,
     )
     cycle = SingleAnalysisCycle(
@@ -451,6 +464,8 @@ def test_ready_cycle_uses_only_guarded_protected_submission_path() -> None:
 
     assert result.execution_safety_assessment.allowed is True
     assert result.execution_submission_reservation is not None
+    assert result.daily_loss_assessment.allowed is True
+    assert result.daily_loss_assessment.loss_amount == 125
     assert result.protected_submission_result.accepted is True
     assert result.broker_submission_result is None
     assert len(protected_port.plans) == 1

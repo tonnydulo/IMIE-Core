@@ -251,6 +251,15 @@ class RuntimeDashboardStatus:
     concurrent_position_maximum_exposure_age_seconds: float | None = None
     concurrent_position_exposure_fresh: bool | None = None
     concurrent_position_violations: tuple[str, ...] = ()
+    daily_loss_broker: str | None = None
+    daily_loss_realized_pnl: float | None = None
+    daily_loss_unrealized_pnl: float | None = None
+    daily_loss_total_pnl: float | None = None
+    daily_loss_amount: float | None = None
+    daily_loss_maximum: float | None = None
+    daily_loss_within_limit: bool | None = None
+    daily_loss_allowed: bool | None = None
+    daily_loss_violations: tuple[str, ...] = ()
 
     protected_submission_broker: str | None = None
     protected_submission_quantity: int | None = None
@@ -508,6 +517,8 @@ class RuntimeDashboardStatus:
             "concurrent_position_symbol_already_open",
             "concurrent_position_allowed",
             "concurrent_position_exposure_fresh",
+            "daily_loss_within_limit",
+            "daily_loss_allowed",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
             "protected_submission_rollback_succeeded",
@@ -3396,6 +3407,15 @@ class RuntimeDashboardStatus:
                 "concurrent_position_violations": list(
                     self.concurrent_position_violations
                 ),
+                "daily_loss_broker": self.daily_loss_broker,
+                "daily_loss_realized_pnl": self.daily_loss_realized_pnl,
+                "daily_loss_unrealized_pnl": self.daily_loss_unrealized_pnl,
+                "daily_loss_total_pnl": self.daily_loss_total_pnl,
+                "daily_loss_amount": self.daily_loss_amount,
+                "daily_loss_maximum": self.daily_loss_maximum,
+                "daily_loss_within_limit": self.daily_loss_within_limit,
+                "daily_loss_allowed": self.daily_loss_allowed,
+                "daily_loss_violations": list(self.daily_loss_violations),
                 "protected_submission_broker": self.protected_submission_broker,
                 "protected_submission_quantity": self.protected_submission_quantity,
                 "protected_submission_accepted": self.protected_submission_accepted,

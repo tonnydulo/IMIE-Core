@@ -425,6 +425,15 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
         "executionSafetyKillSwitchActive": (
             "execution_safety_kill_switch_active"
         ),
+        "dailyLossBroker": "daily_loss_broker",
+        "dailyLossRealizedPnl": "daily_loss_realized_pnl",
+        "dailyLossUnrealizedPnl": "daily_loss_unrealized_pnl",
+        "dailyLossTotalPnl": "daily_loss_total_pnl",
+        "dailyLossAmount": "daily_loss_amount",
+        "dailyLossMaximum": "daily_loss_maximum",
+        "dailyLossWithinLimit": "daily_loss_within_limit",
+        "dailyLossAllowed": "daily_loss_allowed",
+        "dailyLossViolations": "daily_loss_violations",
         "concurrentPositionBroker": "concurrent_position_broker",
         "concurrentPositionOpenCount": "concurrent_position_open_count",
         "concurrentPositionMaximum": "concurrent_position_maximum",

@@ -15,6 +15,7 @@ from imie.models import (
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
     ConcurrentPositionAssessment,
+    DailyLossAssessment,
 )
 from imie.runtime import (
     AnalysisCycleResult,
@@ -589,6 +590,16 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
                 exposure_age_seconds=2, maximum_exposure_age_seconds=5,
                 exposure_fresh=True,
             ),
+            daily_loss_assessment=DailyLossAssessment(
+                broker="alpaca-paper",
+                realized_pnl=-100,
+                unrealized_pnl=-25,
+                total_pnl=-125,
+                loss_amount=125,
+                maximum_daily_loss=500,
+                within_limit=True,
+                allowed=True,
+            ),
         )
     )
 
@@ -612,5 +623,16 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         "exposure_age_seconds": 2.0,
         "maximum_exposure_age_seconds": 5.0,
         "exposure_fresh": True,
+        "violations": [],
+    }
+    assert payload["daily_loss_assessment"] == {
+        "broker": "alpaca-paper",
+        "realized_pnl": -100.0,
+        "unrealized_pnl": -25.0,
+        "total_pnl": -125.0,
+        "loss_amount": 125.0,
+        "maximum_daily_loss": 500.0,
+        "within_limit": True,
+        "allowed": True,
         "violations": [],
     }

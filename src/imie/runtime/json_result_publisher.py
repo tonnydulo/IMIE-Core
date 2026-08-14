@@ -139,6 +139,7 @@ class JsonResultPublisher:
             "broker_submission_result": None,
             "execution_safety_assessment": None,
             "concurrent_position_assessment": None,
+            "daily_loss_assessment": None,
             "execution_submission_reservation": None,
             "protected_submission_result": None,
         }
@@ -487,6 +488,20 @@ class JsonResultPublisher:
                 ),
                 "exposure_fresh": concurrent.exposure_fresh,
                 "violations": list(concurrent.violations),
+            }
+
+        if result.daily_loss_assessment is not None:
+            daily_loss = result.daily_loss_assessment
+            payload["daily_loss_assessment"] = {
+                "broker": daily_loss.broker,
+                "realized_pnl": daily_loss.realized_pnl,
+                "unrealized_pnl": daily_loss.unrealized_pnl,
+                "total_pnl": daily_loss.total_pnl,
+                "loss_amount": daily_loss.loss_amount,
+                "maximum_daily_loss": daily_loss.maximum_daily_loss,
+                "within_limit": daily_loss.within_limit,
+                "allowed": daily_loss.allowed,
+                "violations": list(daily_loss.violations),
             }
 
         if result.protected_submission_result is not None:
