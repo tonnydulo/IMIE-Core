@@ -259,6 +259,52 @@ def test_factory_wires_active_execution_kill_switch(
     assert service._policy.kill_switch_active is True
 
 
+def test_factory_rejects_concurrent_limit_without_mock_exposure_source(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="position exposure source"):
+        RuntimeApplicationFactory.create(
+            settings=make_settings(),
+            config=RuntimeConfig(execution_mode="mock"),
+            execution_safety_config=ExecutionSafetyConfig(
+                enabled=True,
+                maximum_order_notional=25_000,
+                maximum_risk_amount=125,
+                maximum_concurrent_positions=2,
+                reservation_store_path=tmp_path / "reservations.json",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
+
+
+def test_factory_rejects_unsafe_alpaca_concurrent_limit_wiring(
+    tmp_path: Path,
+) -> None:
+    settings = AppSettings(
+        default_provider="mock",
+        alpaca_api_key="key",
+        alpaca_secret_key="secret",
+        alpaca_paper=True,
+    )
+
+    with pytest.raises(ValueError, match="protected Alpaca preflight"):
+        RuntimeApplicationFactory.create(
+            settings=settings,
+            config=RuntimeConfig(
+                execution_mode="alpaca-paper",
+                paper_execution_confirmed=True,
+            ),
+            execution_safety_config=ExecutionSafetyConfig(
+                enabled=True,
+                maximum_order_notional=25_000,
+                maximum_risk_amount=125,
+                maximum_concurrent_positions=2,
+                reservation_store_path=tmp_path / "reservations.json",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
+
+
 def test_factory_rejects_safety_without_compatible_broker_port(
     tmp_path: Path,
 ) -> None:

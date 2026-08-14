@@ -95,11 +95,23 @@ from imie.execution import (
 
 def _build_execution_safety_submission_service(
     *,
+    execution_mode: str,
     broker_execution_port: BrokerExecutionPort | None,
     safety_config: ExecutionSafetyConfig | None,
 ) -> ExecutionSafetySubmissionService | None:
     if safety_config is None or not safety_config.enabled:
         return None
+    if safety_config.maximum_concurrent_positions is not None:
+        if execution_mode == "alpaca-paper":
+            raise ValueError(
+                "maximum_concurrent_positions requires protected Alpaca "
+                "preflight wiring; refusing an unsafe or duplicate "
+                "submission path."
+            )
+        raise ValueError(
+            "maximum_concurrent_positions requires a supported broker "
+            "position exposure source."
+        )
     if broker_execution_port is None:
         raise ValueError(
             "execution safety requires a broker execution port."
@@ -330,6 +342,7 @@ class RuntimeApplicationFactory:
         )
         execution_safety_submission_service = (
             _build_execution_safety_submission_service(
+                execution_mode=runtime_config.execution_mode,
                 broker_execution_port=broker_execution_port,
                 safety_config=execution_safety_config,
             )
@@ -708,6 +721,7 @@ class RuntimeApplicationFactory:
         )
         execution_safety_submission_service = (
             _build_execution_safety_submission_service(
+                execution_mode=runtime_config.execution_mode,
                 broker_execution_port=broker_execution_port,
                 safety_config=execution_safety_config,
             )
