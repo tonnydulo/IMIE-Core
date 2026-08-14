@@ -15,6 +15,9 @@ from imie.execution.concurrent_position_safety_engine import (
     ConcurrentPositionSafetyEngine,
 )
 from imie.execution.execution_safety_engine import ExecutionSafetyEngine
+from imie.execution.execution_data_freshness_engine import (
+    ExecutionDataFreshnessEngine,
+)
 from imie.execution.execution_submission_fingerprint import (
     ExecutionSubmissionFingerprint,
 )
@@ -27,6 +30,7 @@ from imie.execution.protected_execution_plan_builder import (
 )
 from imie.models import (
     ExecutionCandidate,
+    DataFreshness,
     ExecutionOrderIntent,
     ExecutionSafetyPolicy,
     ExecutionSubmissionReservation,
@@ -52,7 +56,9 @@ class ProtectedExecutionSafetyService:
         maximum_daily_loss: float | None = None,
         market_session_port: BrokerMarketSessionPort | None = None,
         maximum_market_session_age_seconds: float | None = None,
+        require_data_freshness: bool = False,
         safety_engine: ExecutionSafetyEngine | None = None,
+        data_freshness_engine: ExecutionDataFreshnessEngine | None = None,
         concurrent_engine: ConcurrentPositionSafetyEngine | None = None,
         daily_loss_engine: DailyLossSafetyEngine | None = None,
         market_session_engine: MarketSessionSafetyEngine | None = None,
@@ -143,6 +149,8 @@ class ProtectedExecutionSafetyService:
             raise ValueError(
                 "maximum_market_session_age_seconds must be finite and positive."
             )
+        if not isinstance(require_data_freshness, bool):
+            raise TypeError("require_data_freshness must be a bool.")
         self._protected_execution_port = protected_execution_port
         self._policy = policy
         self._reservation_store = reservation_store
@@ -164,6 +172,10 @@ class ProtectedExecutionSafetyService:
             else None
         )
         self._safety_engine = safety_engine or ExecutionSafetyEngine()
+        self._require_data_freshness = require_data_freshness
+        self._data_freshness_engine = (
+            data_freshness_engine or ExecutionDataFreshnessEngine()
+        )
         self._concurrent_engine = concurrent_engine or ConcurrentPositionSafetyEngine()
         self._daily_loss_engine = daily_loss_engine or DailyLossSafetyEngine()
         self._market_session_engine = (
@@ -177,6 +189,7 @@ class ProtectedExecutionSafetyService:
         candidate: ExecutionCandidate,
         intent: ExecutionOrderIntent,
         plan: ProtectedExecutionPlan,
+        freshness: DataFreshness | None = None,
     ) -> ProtectedExecutionSafetyResult:
         self._validate_inputs(candidate=candidate, intent=intent, plan=plan)
         assessment = self._safety_engine.assess(
@@ -188,6 +201,22 @@ class ProtectedExecutionSafetyService:
                 assessment=assessment,
                 protected_submission=None,
             )
+
+        data_freshness_assessment = None
+        if self._require_data_freshness:
+            if freshness is None:
+                raise ValueError(
+                    "freshness is required when execution data freshness is enabled."
+                )
+            data_freshness_assessment = self._data_freshness_engine.assess(
+                freshness
+            )
+            if not data_freshness_assessment.allowed:
+                return ProtectedExecutionSafetyResult(
+                    assessment=assessment,
+                    data_freshness_assessment=data_freshness_assessment,
+                    protected_submission=None,
+                )
 
         checked_at = self._clock()
         if not isinstance(checked_at, datetime):
@@ -214,6 +243,7 @@ class ProtectedExecutionSafetyService:
             if not market_session_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
+                    data_freshness_assessment=data_freshness_assessment,
                     market_session_assessment=market_session_assessment,
                     protected_submission=None,
                 )
@@ -228,6 +258,7 @@ class ProtectedExecutionSafetyService:
             if not daily_loss_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
+                    data_freshness_assessment=data_freshness_assessment,
                     market_session_assessment=market_session_assessment,
                     daily_loss_assessment=daily_loss_assessment,
                     protected_submission=None,
@@ -252,6 +283,7 @@ class ProtectedExecutionSafetyService:
             if not concurrent_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
+                    data_freshness_assessment=data_freshness_assessment,
                     market_session_assessment=market_session_assessment,
                     concurrent_position_assessment=concurrent_assessment,
                     daily_loss_assessment=daily_loss_assessment,
@@ -283,6 +315,7 @@ class ProtectedExecutionSafetyService:
             raise ValueError("Protected submission identity does not match plan.")
         return ProtectedExecutionSafetyResult(
             assessment=assessment,
+            data_freshness_assessment=data_freshness_assessment,
             market_session_assessment=market_session_assessment,
             concurrent_position_assessment=concurrent_assessment,
             daily_loss_assessment=daily_loss_assessment,

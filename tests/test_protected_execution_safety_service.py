@@ -8,6 +8,7 @@ from imie.models import (
     BrokerDailyPnlSnapshot,
     BrokerMarketSessionSnapshot,
     BrokerPositionExposure,
+    DataFreshness,
     ExecutionCandidate,
     ExecutionOrderIntent,
     ExecutionSafetyPolicy,
@@ -33,6 +34,25 @@ def intent():
         entry_price=200, stop_price=199, target1_price=201,
         target2_price=202, time_in_force="day", valid=True, actionable=True,
     )
+
+
+def data_freshness(**overrides):
+    values = {
+        "checked_at": NOW,
+        "quote_timestamp": NOW - timedelta(seconds=1),
+        "latest_bar_timestamp": NOW - timedelta(seconds=2),
+        "quote_age_seconds": 1,
+        "bar_age_seconds": 2,
+        "quote_bar_gap_seconds": 1,
+        "quote_is_fresh": True,
+        "bar_is_fresh": True,
+        "timestamps_aligned": True,
+        "actionable": True,
+        "status": "FRESH",
+        "reason": "Market data is fresh and aligned.",
+    }
+    values.update(overrides)
+    return DataFreshness(**values)
 
 
 class Port:
@@ -170,6 +190,7 @@ def test_kill_switch_blocks_before_reservation_and_submission():
         daily_pnl_port=daily_pnl,
         maximum_daily_loss=250,
         market_session_port=market_session,
+        require_data_freshness=True,
     )
 
     result = guarded.submit(
@@ -184,6 +205,94 @@ def test_kill_switch_blocks_before_reservation_and_submission():
     assert market_session.calls == 0
     assert reservations.values == {}
     assert port.calls == []
+
+
+def test_required_fresh_data_allows_protected_submission():
+    port = Port()
+    reservations = Reservations()
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        require_data_freshness=True,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+        freshness=data_freshness(),
+    )
+
+    assert result.submitted is True
+    assert result.data_freshness_assessment.allowed is True
+    assert len(port.calls) == 1
+
+
+def test_stale_data_blocks_before_broker_queries_and_mutation():
+    port = Port()
+    reservations = Reservations()
+    market_session = MarketSession()
+    daily_pnl = DailyPnl()
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        require_data_freshness=True,
+        market_session_port=market_session,
+        daily_pnl_port=daily_pnl,
+        maximum_daily_loss=250,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+        freshness=data_freshness(
+            quote_is_fresh=False,
+            actionable=False,
+            status="STALE",
+            reason="Market quote is stale.",
+        ),
+    )
+
+    assert result.submitted is False
+    assert result.data_freshness_assessment.allowed is False
+    assert market_session.calls == 0
+    assert daily_pnl.calls == 0
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_required_freshness_must_be_supplied():
+    port = Port()
+    reservations = Reservations()
+    order_intent = intent()
+
+    try:
+        service(
+            port,
+            reservations,
+            require_data_freshness=True,
+        ).submit(
+            candidate=candidate(),
+            intent=order_intent,
+            plan=ProtectedExecutionPlanBuilder().build(order_intent),
+        )
+    except ValueError as exc:
+        assert "freshness is required" in str(exc)
+    else:
+        raise AssertionError("required freshness must be supplied")
+
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_require_data_freshness_must_be_bool():
+    try:
+        service(Port(), Reservations(), require_data_freshness=1)
+    except TypeError as exc:
+        assert "require_data_freshness" in str(exc)
+    else:
+        raise AssertionError("require_data_freshness must reject non-bools")
 
 
 def test_daily_loss_below_limit_allows_protected_submission():
