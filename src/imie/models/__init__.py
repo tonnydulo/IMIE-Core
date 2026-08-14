@@ -163,6 +163,9 @@ from imie.models.protected_order_submission import (
 from imie.models.protected_plan_submission_result import (
     ProtectedPlanSubmissionResult,
 )
+from imie.models.protected_execution_safety_result import (
+    ProtectedExecutionSafetyResult,
+)
 
 __all__ = [
     "AcceptanceResult",
@@ -261,4 +264,5 @@ __all__ = [
     "ProtectedOrderSlice",
     "ProtectedOrderSubmission",
     "ProtectedPlanSubmissionResult",
+    "ProtectedExecutionSafetyResult",
 ]

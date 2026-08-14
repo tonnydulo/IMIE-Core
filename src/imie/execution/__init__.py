@@ -102,6 +102,9 @@ from imie.execution.concurrent_position_safety_engine import (
 from imie.execution.execution_safety_submission_service import (
     ExecutionSafetySubmissionService,
 )
+from imie.execution.protected_execution_safety_service import (
+    ProtectedExecutionSafetyService,
+)
 from imie.execution.execution_submission_fingerprint import (
     ExecutionSubmissionFingerprint,
 )
@@ -161,6 +164,7 @@ __all__ = [
     "ExecutionSafetyEngine",
     "ConcurrentPositionSafetyEngine",
     "ExecutionSafetySubmissionService",
+    "ProtectedExecutionSafetyService",
     "ExecutionSubmissionFingerprint",
     "ExecutionSubmissionReservationStore",
     "JsonFileExecutionSubmissionReservationStore",
