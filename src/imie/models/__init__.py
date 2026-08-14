@@ -111,6 +111,12 @@ from imie.models.broker_position_snapshot import BrokerPositionSnapshot
 from imie.models.broker_position_exposure import BrokerPositionExposure
 from imie.models.broker_daily_pnl_snapshot import BrokerDailyPnlSnapshot
 from imie.models.daily_loss_assessment import DailyLossAssessment
+from imie.models.broker_market_session_snapshot import (
+    BrokerMarketSessionSnapshot,
+)
+from imie.models.market_session_safety_assessment import (
+    MarketSessionSafetyAssessment,
+)
 from imie.models.concurrent_position_assessment import ConcurrentPositionAssessment
 from imie.models.position_protection_record import PositionProtectionRecord
 from imie.models.position_protection_attempt_status import (
@@ -244,6 +250,8 @@ __all__ = [
     "BrokerPositionExposure",
     "BrokerDailyPnlSnapshot",
     "DailyLossAssessment",
+    "BrokerMarketSessionSnapshot",
+    "MarketSessionSafetyAssessment",
     "ConcurrentPositionAssessment",
     "PositionProtectionRecord",
     "PositionProtectionAttemptStatus",

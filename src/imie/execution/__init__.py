@@ -12,6 +12,8 @@ from imie.execution.broker_position_exposure_port import (
 )
 from imie.execution.broker_daily_pnl_port import BrokerDailyPnlPort
 from imie.execution.daily_loss_safety_engine import DailyLossSafetyEngine
+from imie.execution.broker_market_session_port import BrokerMarketSessionPort
+from imie.execution.market_session_safety_engine import MarketSessionSafetyEngine
 from imie.execution.broker_position_protection_validator import (
     BrokerPositionProtectionValidator,
 )
@@ -132,6 +134,8 @@ __all__ = [
     "BrokerPositionExposurePort",
     "BrokerDailyPnlPort",
     "DailyLossSafetyEngine",
+    "BrokerMarketSessionPort",
+    "MarketSessionSafetyEngine",
     "BrokerPositionProtectionValidator",
     "AlpacaPaperPositionQueryAdapter",
     "AlpacaPaperPositionExposureAdapter",
