@@ -15,6 +15,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.enabled is False
     assert config.maximum_order_notional is None
     assert config.maximum_risk_amount is None
+    assert config.maximum_daily_loss is None
     assert config.maximum_concurrent_positions is None
     assert config.maximum_position_exposure_age_seconds is None
     assert config.kill_switch_active is False
@@ -121,6 +122,33 @@ def test_enabled_config_accepts_maximum_concurrent_positions():
     )
 
     assert config.maximum_concurrent_positions == 3
+
+
+def test_enabled_config_accepts_maximum_daily_loss():
+    config = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        maximum_daily_loss=500,
+    )
+
+    assert config.maximum_daily_loss == 500.0
+
+
+@pytest.mark.parametrize("value", [0, -1, True, float("inf")])
+def test_maximum_daily_loss_must_be_positive(value):
+    with pytest.raises((TypeError, ValueError)):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_daily_loss=value,
+        )
+
+
+def test_maximum_daily_loss_requires_execution_safety():
+    with pytest.raises(ValueError, match="requires execution safety"):
+        ExecutionSafetyConfig(maximum_daily_loss=500)
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5, "3"])

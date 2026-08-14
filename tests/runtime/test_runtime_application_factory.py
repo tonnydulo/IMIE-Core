@@ -32,6 +32,7 @@ from imie.services import (
 )
 from imie.execution import (
     AlpacaPaperExecutionAdapter,
+    AlpacaPaperDailyPnlAdapter,
     AlpacaPaperFillActivitySource,
     BrokerOrderQueryPort,
     JsonFileBrokerOrderIntentStore,
@@ -299,6 +300,7 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
             enabled=True,
             maximum_order_notional=25_000,
             maximum_risk_amount=125,
+            maximum_daily_loss=500,
             maximum_concurrent_positions=2,
             maximum_position_exposure_age_seconds=5,
             reservation_store_path=tmp_path / "reservations.json",
@@ -322,7 +324,31 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
     )
     assert service._maximum_concurrent_positions == 2
     assert service._maximum_position_exposure_age_seconds == 5.0
+    assert isinstance(service._daily_pnl_port, AlpacaPaperDailyPnlAdapter)
+    assert service._maximum_daily_loss == 500.0
+    assert (
+        service._daily_pnl_port._trading_client
+        is service._position_exposure_port._trading_client
+    )
     assert service._position_exposure_port._clock is service._clock
+
+
+def test_factory_rejects_daily_loss_without_mock_pnl_source(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="daily P&L source"):
+        RuntimeApplicationFactory.create(
+            settings=make_settings(),
+            config=RuntimeConfig(execution_mode="mock"),
+            execution_safety_config=ExecutionSafetyConfig(
+                enabled=True,
+                maximum_order_notional=25_000,
+                maximum_risk_amount=125,
+                maximum_daily_loss=500,
+                reservation_store_path=tmp_path / "reservations.json",
+            ),
+            history_file=tmp_path / "cycles.jsonl",
+        )
 
 
 def test_factory_rejects_safety_without_compatible_broker_port(

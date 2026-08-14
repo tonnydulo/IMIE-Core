@@ -110,6 +110,10 @@ def _build_execution_safety_submission_service(
             "maximum_concurrent_positions requires a supported broker "
             "position exposure source."
         )
+    if safety_config.maximum_daily_loss is not None:
+        raise ValueError(
+            "maximum_daily_loss requires a supported broker daily P&L source."
+        )
     if broker_execution_port is None:
         raise ValueError(
             "execution safety requires a broker execution port."
@@ -140,20 +144,35 @@ def _build_protected_execution_safety_service(
         )
 
     position_exposure_port = None
+    daily_pnl_port = None
     clock = lambda: datetime.now(timezone.utc)
-    if safety_config.maximum_concurrent_positions is not None:
+    if (
+        safety_config.maximum_concurrent_positions is not None
+        or safety_config.maximum_daily_loss is not None
+    ):
         from alpaca.trading.client import TradingClient
-        from imie.execution import AlpacaPaperPositionExposureAdapter
-
-        position_exposure_port = AlpacaPaperPositionExposureAdapter(
-            trading_client=TradingClient(
-                api_key=settings.alpaca_api_key,
-                secret_key=settings.alpaca_secret_key,
-                paper=True,
-            ),
-            paper=True,
-            clock=clock,
+        from imie.execution import (
+            AlpacaPaperDailyPnlAdapter,
+            AlpacaPaperPositionExposureAdapter,
         )
+
+        trading_client = TradingClient(
+            api_key=settings.alpaca_api_key,
+            secret_key=settings.alpaca_secret_key,
+            paper=True,
+        )
+        if safety_config.maximum_concurrent_positions is not None:
+            position_exposure_port = AlpacaPaperPositionExposureAdapter(
+                trading_client=trading_client,
+                paper=True,
+                clock=clock,
+            )
+        if safety_config.maximum_daily_loss is not None:
+            daily_pnl_port = AlpacaPaperDailyPnlAdapter(
+                trading_client=trading_client,
+                paper=True,
+                clock=clock,
+            )
 
     return ProtectedExecutionSafetyService(
         protected_execution_port=protected_execution_port,
@@ -168,6 +187,8 @@ def _build_protected_execution_safety_service(
         maximum_position_exposure_age_seconds=(
             safety_config.maximum_position_exposure_age_seconds
         ),
+        daily_pnl_port=daily_pnl_port,
+        maximum_daily_loss=safety_config.maximum_daily_loss,
         clock=clock,
     )
 

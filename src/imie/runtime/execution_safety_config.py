@@ -20,6 +20,7 @@ class ExecutionSafetyConfig:
     enabled: bool = False
     maximum_order_notional: float | None = None
     maximum_risk_amount: float | None = None
+    maximum_daily_loss: float | None = None
     maximum_concurrent_positions: int | None = None
     maximum_position_exposure_age_seconds: float | None = None
     kill_switch_active: bool = False
@@ -42,6 +43,10 @@ class ExecutionSafetyConfig:
             self.maximum_risk_amount,
             "maximum_risk_amount",
         )
+        maximum_daily_loss = self._optional_positive_float(
+            self.maximum_daily_loss,
+            "maximum_daily_loss",
+        )
         maximum_concurrent_positions = self._optional_positive_int(
             self.maximum_concurrent_positions,
             "maximum_concurrent_positions",
@@ -54,6 +59,10 @@ class ExecutionSafetyConfig:
             raise ValueError(
                 "maximum_concurrent_positions requires execution safety "
                 "to be enabled."
+            )
+        if maximum_daily_loss is not None and not self.enabled:
+            raise ValueError(
+                "maximum_daily_loss requires execution safety to be enabled."
             )
         if (
             maximum_position_exposure_age_seconds is not None
@@ -85,6 +94,7 @@ class ExecutionSafetyConfig:
             maximum_position_exposure_age_seconds,
         )
         object.__setattr__(self, "maximum_risk_amount", maximum_risk_amount)
+        object.__setattr__(self, "maximum_daily_loss", maximum_daily_loss)
         object.__setattr__(
             self,
             "maximum_concurrent_positions",

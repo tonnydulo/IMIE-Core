@@ -161,6 +161,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--maximum-daily-loss",
+        type=float,
+        default=None,
+        help=(
+            "Optional Alpaca paper daily-loss ceiling. Requires "
+            "--execution-safety."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-kill-switch",
         action="store_true",
         help=(
@@ -486,6 +496,7 @@ def build_execution_safety_config(
             arguments, "maximum_order_notional", None
         ),
         maximum_risk_amount=getattr(arguments, "maximum_risk_amount", None),
+        maximum_daily_loss=getattr(arguments, "maximum_daily_loss", None),
         kill_switch_active=getattr(
             arguments, "execution_kill_switch", False
         ),
