@@ -203,6 +203,9 @@ def _build_protected_execution_safety_service(
         daily_pnl_port=daily_pnl_port,
         maximum_daily_loss=safety_config.maximum_daily_loss,
         market_session_port=market_session_port,
+        maximum_market_session_age_seconds=(
+            safety_config.maximum_market_session_age_seconds
+        ),
         clock=clock,
     )
 

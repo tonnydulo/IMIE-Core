@@ -24,6 +24,7 @@ class ExecutionSafetyConfig:
     maximum_concurrent_positions: int | None = None
     maximum_position_exposure_age_seconds: float | None = None
     require_open_market_session: bool = False
+    maximum_market_session_age_seconds: float | None = None
     kill_switch_active: bool = False
     reservation_store_path: Path = DEFAULT_EXECUTION_RESERVATION_STORE
 
@@ -63,6 +64,10 @@ class ExecutionSafetyConfig:
             self.maximum_position_exposure_age_seconds,
             "maximum_position_exposure_age_seconds",
         )
+        maximum_market_session_age_seconds = self._optional_positive_float(
+            self.maximum_market_session_age_seconds,
+            "maximum_market_session_age_seconds",
+        )
         if maximum_concurrent_positions is not None and not self.enabled:
             raise ValueError(
                 "maximum_concurrent_positions requires execution safety "
@@ -79,6 +84,14 @@ class ExecutionSafetyConfig:
             raise ValueError(
                 "maximum_position_exposure_age_seconds requires "
                 "maximum_concurrent_positions."
+            )
+        if (
+            maximum_market_session_age_seconds is not None
+            and not self.require_open_market_session
+        ):
+            raise ValueError(
+                "maximum_market_session_age_seconds requires "
+                "require_open_market_session."
             )
         if not isinstance(self.reservation_store_path, Path):
             raise TypeError("reservation_store_path must be a Path.")
@@ -100,6 +113,11 @@ class ExecutionSafetyConfig:
             self,
             "maximum_position_exposure_age_seconds",
             maximum_position_exposure_age_seconds,
+        )
+        object.__setattr__(
+            self,
+            "maximum_market_session_age_seconds",
+            maximum_market_session_age_seconds,
         )
         object.__setattr__(self, "maximum_risk_amount", maximum_risk_amount)
         object.__setattr__(self, "maximum_daily_loss", maximum_daily_loss)

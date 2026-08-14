@@ -303,6 +303,7 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
             maximum_risk_amount=125,
             maximum_daily_loss=500,
             require_open_market_session=True,
+            maximum_market_session_age_seconds=5,
             maximum_concurrent_positions=2,
             maximum_position_exposure_age_seconds=5,
             reservation_store_path=tmp_path / "reservations.json",
@@ -332,6 +333,7 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
         AlpacaPaperMarketSessionAdapter,
     )
     assert service._maximum_daily_loss == 500.0
+    assert service._maximum_market_session_age_seconds == 5.0
     assert (
         service._daily_pnl_port._trading_client
         is service._position_exposure_port._trading_client

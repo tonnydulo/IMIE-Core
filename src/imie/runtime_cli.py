@@ -180,6 +180,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--maximum-market-session-age-seconds",
+        type=float,
+        default=None,
+        help=(
+            "Maximum age of verified broker session truth. Requires "
+            "--require-open-market-session."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-kill-switch",
         action="store_true",
         help=(
@@ -508,6 +518,11 @@ def build_execution_safety_config(
         maximum_daily_loss=getattr(arguments, "maximum_daily_loss", None),
         require_open_market_session=getattr(
             arguments, "require_open_market_session", False
+        ),
+        maximum_market_session_age_seconds=getattr(
+            arguments,
+            "maximum_market_session_age_seconds",
+            None,
         ),
         kill_switch_active=getattr(
             arguments, "execution_kill_switch", False

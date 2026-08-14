@@ -19,6 +19,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.maximum_concurrent_positions is None
     assert config.maximum_position_exposure_age_seconds is None
     assert config.require_open_market_session is False
+    assert config.maximum_market_session_age_seconds is None
     assert config.kill_switch_active is False
     assert config.reservation_store_path == Path(
         "runtime/execution/submission_reservations.json"
@@ -171,6 +172,40 @@ def test_open_market_session_requirement_requires_execution_safety():
 def test_open_market_session_requirement_must_be_bool():
     with pytest.raises(TypeError, match="require_open_market_session"):
         ExecutionSafetyConfig(require_open_market_session=1)
+
+
+def test_config_accepts_market_session_maximum_age():
+    config = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        require_open_market_session=True,
+        maximum_market_session_age_seconds=5,
+    )
+
+    assert config.maximum_market_session_age_seconds == 5.0
+
+
+@pytest.mark.parametrize("value", [0, -1, True, float("inf")])
+def test_market_session_maximum_age_must_be_positive(value):
+    with pytest.raises((TypeError, ValueError)):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            require_open_market_session=True,
+            maximum_market_session_age_seconds=value,
+        )
+
+
+def test_market_session_maximum_age_requires_session_requirement():
+    with pytest.raises(ValueError, match="requires require_open_market_session"):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_market_session_age_seconds=5,
+        )
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5, "3"])
