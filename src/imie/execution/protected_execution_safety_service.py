@@ -51,6 +51,7 @@ class ProtectedExecutionSafetyService:
         daily_pnl_port: BrokerDailyPnlPort | None = None,
         maximum_daily_loss: float | None = None,
         market_session_port: BrokerMarketSessionPort | None = None,
+        maximum_market_session_age_seconds: float | None = None,
         safety_engine: ExecutionSafetyEngine | None = None,
         concurrent_engine: ConcurrentPositionSafetyEngine | None = None,
         daily_loss_engine: DailyLossSafetyEngine | None = None,
@@ -125,6 +126,23 @@ class ProtectedExecutionSafetyService:
             raise TypeError(
                 "market_session_port must satisfy BrokerMarketSessionPort."
             )
+        if (
+            maximum_market_session_age_seconds is not None
+            and market_session_port is None
+        ):
+            raise ValueError(
+                "maximum_market_session_age_seconds requires "
+                "market_session_port."
+            )
+        if maximum_market_session_age_seconds is not None and (
+            isinstance(maximum_market_session_age_seconds, bool)
+            or not isinstance(maximum_market_session_age_seconds, int | float)
+            or not math.isfinite(maximum_market_session_age_seconds)
+            or maximum_market_session_age_seconds <= 0
+        ):
+            raise ValueError(
+                "maximum_market_session_age_seconds must be finite and positive."
+            )
         self._protected_execution_port = protected_execution_port
         self._policy = policy
         self._reservation_store = reservation_store
@@ -140,6 +158,11 @@ class ProtectedExecutionSafetyService:
             float(maximum_daily_loss) if maximum_daily_loss is not None else None
         )
         self._market_session_port = market_session_port
+        self._maximum_market_session_age_seconds = (
+            float(maximum_market_session_age_seconds)
+            if maximum_market_session_age_seconds is not None
+            else None
+        )
         self._safety_engine = safety_engine or ExecutionSafetyEngine()
         self._concurrent_engine = concurrent_engine or ConcurrentPositionSafetyEngine()
         self._daily_loss_engine = daily_loss_engine or DailyLossSafetyEngine()
@@ -178,7 +201,15 @@ class ProtectedExecutionSafetyService:
                 self._market_session_port.get_market_session()
             )
             market_session_assessment = self._market_session_engine.assess(
-                market_session_snapshot
+                market_session_snapshot,
+                checked_at=(
+                    checked_at
+                    if self._maximum_market_session_age_seconds is not None
+                    else None
+                ),
+                maximum_session_age_seconds=(
+                    self._maximum_market_session_age_seconds
+                ),
             )
             if not market_session_assessment.allowed:
                 return ProtectedExecutionSafetyResult(

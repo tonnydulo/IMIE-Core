@@ -105,8 +105,9 @@ class DailyPnl:
 
 
 class MarketSession:
-    def __init__(self, *, is_open=True, error=None):
+    def __init__(self, *, is_open=True, observed_at=NOW, error=None):
         self.is_open = is_open
+        self.observed_at = observed_at
         self.error = error
         self.calls = 0
 
@@ -117,7 +118,7 @@ class MarketSession:
         return BrokerMarketSessionSnapshot(
             broker="alpaca-paper",
             is_open=self.is_open,
-            observed_at=NOW,
+            observed_at=self.observed_at,
         )
 
 
@@ -292,6 +293,53 @@ def test_market_session_port_must_satisfy_protocol():
         raise AssertionError("invalid market session port must fail")
 
 
+def test_stale_open_market_session_blocks_before_execution_mutation():
+    port = Port()
+    reservations = Reservations()
+    market_session = MarketSession(
+        observed_at=NOW - timedelta(seconds=5.001)
+    )
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        market_session_port=market_session,
+        maximum_market_session_age_seconds=5,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is False
+    assert result.market_session_assessment.session_open is True
+    assert result.market_session_assessment.session_fresh is False
+    assert result.market_session_assessment.session_age_seconds == 5.001
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_market_session_age_requires_port_and_positive_value():
+    for overrides in (
+        {"maximum_market_session_age_seconds": 5},
+        {
+            "market_session_port": MarketSession(),
+            "maximum_market_session_age_seconds": 0,
+        },
+        {
+            "market_session_port": MarketSession(),
+            "maximum_market_session_age_seconds": float("inf"),
+        },
+    ):
+        try:
+            service(Port(), Reservations(), **overrides)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid market session age must fail")
+
+
 def test_daily_loss_at_limit_blocks_before_reservation_and_submission():
     port = Port()
     reservations = Reservations()
@@ -423,6 +471,8 @@ def test_one_clock_value_authorizes_exposure_and_timestamps_reservation():
         position_exposure_port=Exposure(("AAPL",)),
         maximum_concurrent_positions=2,
         maximum_position_exposure_age_seconds=5,
+        market_session_port=MarketSession(),
+        maximum_market_session_age_seconds=5,
         clock=clock,
     )
 
@@ -434,6 +484,7 @@ def test_one_clock_value_authorizes_exposure_and_timestamps_reservation():
 
     assert result.submitted is True
     assert result.reservation.reserved_at == NOW
+    assert result.market_session_assessment.session_age_seconds == 0.0
     assert calls == [NOW]
 
 
