@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from imie.models.concurrent_position_assessment import ConcurrentPositionAssessment
 from imie.models.daily_loss_assessment import DailyLossAssessment
 from imie.models.execution_safety_assessment import ExecutionSafetyAssessment
+from imie.models.market_session_safety_assessment import (
+    MarketSessionSafetyAssessment,
+)
 from imie.models.execution_submission_reservation import (
     ExecutionSubmissionReservation,
 )
@@ -20,6 +23,7 @@ class ProtectedExecutionSafetyResult:
     reservation: ExecutionSubmissionReservation | None = None
     concurrent_position_assessment: ConcurrentPositionAssessment | None = None
     daily_loss_assessment: DailyLossAssessment | None = None
+    market_session_assessment: MarketSessionSafetyAssessment | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.assessment, ExecutionSafetyAssessment):
@@ -41,6 +45,11 @@ class ProtectedExecutionSafetyResult:
                 DailyLossAssessment,
                 "daily_loss_assessment",
             ),
+            (
+                self.market_session_assessment,
+                MarketSessionSafetyAssessment,
+                "market_session_assessment",
+            ),
         ):
             if value is not None and not isinstance(value, expected):
                 raise TypeError(f"{name} must be a {expected.__name__} or None.")
@@ -51,6 +60,10 @@ class ProtectedExecutionSafetyResult:
         allowed = allowed and (
             self.daily_loss_assessment is None
             or self.daily_loss_assessment.allowed
+        )
+        allowed = allowed and (
+            self.market_session_assessment is None
+            or self.market_session_assessment.allowed
         )
         if allowed != (self.protected_submission is not None):
             raise ValueError(

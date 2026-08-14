@@ -6,6 +6,7 @@ from imie.execution import (
 )
 from imie.models import (
     BrokerDailyPnlSnapshot,
+    BrokerMarketSessionSnapshot,
     BrokerPositionExposure,
     ExecutionCandidate,
     ExecutionOrderIntent,
@@ -103,6 +104,23 @@ class DailyPnl:
         )
 
 
+class MarketSession:
+    def __init__(self, *, is_open=True, error=None):
+        self.is_open = is_open
+        self.error = error
+        self.calls = 0
+
+    def get_market_session(self):
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return BrokerMarketSessionSnapshot(
+            broker="alpaca-paper",
+            is_open=self.is_open,
+            observed_at=NOW,
+        )
+
+
 def service(port, reservations, **overrides):
     values = {
         "protected_execution_port": port,
@@ -138,6 +156,7 @@ def test_kill_switch_blocks_before_reservation_and_submission():
     port = Port()
     reservations = Reservations()
     daily_pnl = DailyPnl(realized=-100)
+    market_session = MarketSession()
     order_intent = intent()
     guarded = service(
         port,
@@ -149,6 +168,7 @@ def test_kill_switch_blocks_before_reservation_and_submission():
         ),
         daily_pnl_port=daily_pnl,
         maximum_daily_loss=250,
+        market_session_port=market_session,
     )
 
     result = guarded.submit(
@@ -160,6 +180,7 @@ def test_kill_switch_blocks_before_reservation_and_submission():
     assert result.submitted is False
     assert result.assessment.kill_switch_active is True
     assert daily_pnl.calls == 0
+    assert market_session.calls == 0
     assert reservations.values == {}
     assert port.calls == []
 
@@ -186,6 +207,89 @@ def test_daily_loss_below_limit_allows_protected_submission():
     assert result.daily_loss_assessment.loss_amount == 125
     assert daily_pnl.calls == 1
     assert len(port.calls) == 1
+
+
+def test_open_market_session_allows_protected_submission():
+    port = Port()
+    reservations = Reservations()
+    market_session = MarketSession(is_open=True)
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        market_session_port=market_session,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is True
+    assert result.market_session_assessment.allowed is True
+    assert market_session.calls == 1
+    assert len(port.calls) == 1
+
+
+def test_closed_market_session_blocks_before_other_broker_queries():
+    port = Port()
+    reservations = Reservations()
+    market_session = MarketSession(is_open=False)
+    daily_pnl = DailyPnl(realized=-100)
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        market_session_port=market_session,
+        daily_pnl_port=daily_pnl,
+        maximum_daily_loss=250,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is False
+    assert result.market_session_assessment.allowed is False
+    assert market_session.calls == 1
+    assert daily_pnl.calls == 0
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_market_session_query_failure_stops_before_execution_mutation():
+    port = Port()
+    reservations = Reservations()
+    market_session = MarketSession(error=RuntimeError("clock unavailable"))
+    order_intent = intent()
+
+    try:
+        service(
+            port,
+            reservations,
+            market_session_port=market_session,
+        ).submit(
+            candidate=candidate(),
+            intent=order_intent,
+            plan=ProtectedExecutionPlanBuilder().build(order_intent),
+        )
+    except RuntimeError as exc:
+        assert "clock unavailable" in str(exc)
+    else:
+        raise AssertionError("market session query failure must propagate")
+
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_market_session_port_must_satisfy_protocol():
+    try:
+        service(Port(), Reservations(), market_session_port=object())
+    except TypeError as exc:
+        assert "BrokerMarketSessionPort" in str(exc)
+    else:
+        raise AssertionError("invalid market session port must fail")
 
 
 def test_daily_loss_at_limit_blocks_before_reservation_and_submission():

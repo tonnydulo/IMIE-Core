@@ -9,6 +9,8 @@ from imie.execution.broker_position_exposure_port import (
 )
 from imie.execution.broker_daily_pnl_port import BrokerDailyPnlPort
 from imie.execution.daily_loss_safety_engine import DailyLossSafetyEngine
+from imie.execution.broker_market_session_port import BrokerMarketSessionPort
+from imie.execution.market_session_safety_engine import MarketSessionSafetyEngine
 from imie.execution.concurrent_position_safety_engine import (
     ConcurrentPositionSafetyEngine,
 )
@@ -48,9 +50,11 @@ class ProtectedExecutionSafetyService:
         maximum_position_exposure_age_seconds: float | None = None,
         daily_pnl_port: BrokerDailyPnlPort | None = None,
         maximum_daily_loss: float | None = None,
+        market_session_port: BrokerMarketSessionPort | None = None,
         safety_engine: ExecutionSafetyEngine | None = None,
         concurrent_engine: ConcurrentPositionSafetyEngine | None = None,
         daily_loss_engine: DailyLossSafetyEngine | None = None,
+        market_session_engine: MarketSessionSafetyEngine | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not isinstance(protected_execution_port, ProtectedExecutionPort):
@@ -115,6 +119,12 @@ class ProtectedExecutionSafetyService:
             or maximum_daily_loss <= 0
         ):
             raise ValueError("maximum_daily_loss must be positive.")
+        if market_session_port is not None and not isinstance(
+            market_session_port, BrokerMarketSessionPort
+        ):
+            raise TypeError(
+                "market_session_port must satisfy BrokerMarketSessionPort."
+            )
         self._protected_execution_port = protected_execution_port
         self._policy = policy
         self._reservation_store = reservation_store
@@ -129,9 +139,13 @@ class ProtectedExecutionSafetyService:
         self._maximum_daily_loss = (
             float(maximum_daily_loss) if maximum_daily_loss is not None else None
         )
+        self._market_session_port = market_session_port
         self._safety_engine = safety_engine or ExecutionSafetyEngine()
         self._concurrent_engine = concurrent_engine or ConcurrentPositionSafetyEngine()
         self._daily_loss_engine = daily_loss_engine or DailyLossSafetyEngine()
+        self._market_session_engine = (
+            market_session_engine or MarketSessionSafetyEngine()
+        )
         self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     def submit(
@@ -158,6 +172,21 @@ class ProtectedExecutionSafetyService:
         if checked_at.tzinfo is None:
             raise ValueError("clock must return a timezone-aware datetime.")
 
+        market_session_assessment = None
+        if self._market_session_port is not None:
+            market_session_snapshot = (
+                self._market_session_port.get_market_session()
+            )
+            market_session_assessment = self._market_session_engine.assess(
+                market_session_snapshot
+            )
+            if not market_session_assessment.allowed:
+                return ProtectedExecutionSafetyResult(
+                    assessment=assessment,
+                    market_session_assessment=market_session_assessment,
+                    protected_submission=None,
+                )
+
         daily_loss_assessment = None
         if self._daily_pnl_port is not None:
             daily_loss_snapshot = self._daily_pnl_port.get_daily_pnl()
@@ -168,6 +197,7 @@ class ProtectedExecutionSafetyService:
             if not daily_loss_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
+                    market_session_assessment=market_session_assessment,
                     daily_loss_assessment=daily_loss_assessment,
                     protected_submission=None,
                 )
@@ -191,6 +221,7 @@ class ProtectedExecutionSafetyService:
             if not concurrent_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
+                    market_session_assessment=market_session_assessment,
                     concurrent_position_assessment=concurrent_assessment,
                     daily_loss_assessment=daily_loss_assessment,
                     protected_submission=None,
@@ -221,6 +252,7 @@ class ProtectedExecutionSafetyService:
             raise ValueError("Protected submission identity does not match plan.")
         return ProtectedExecutionSafetyResult(
             assessment=assessment,
+            market_session_assessment=market_session_assessment,
             concurrent_position_assessment=concurrent_assessment,
             daily_loss_assessment=daily_loss_assessment,
             reservation=reservation,
