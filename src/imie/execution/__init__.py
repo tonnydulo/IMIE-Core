@@ -100,6 +100,9 @@ from imie.execution.position_protection_monitoring_service import (
     PositionProtectionMonitoringService,
 )
 from imie.execution.execution_safety_engine import ExecutionSafetyEngine
+from imie.execution.execution_data_freshness_engine import (
+    ExecutionDataFreshnessEngine,
+)
 from imie.execution.concurrent_position_safety_engine import (
     ConcurrentPositionSafetyEngine,
 )
@@ -172,6 +175,7 @@ __all__ = [
     "PositionProtectionMonitoringEngine",
     "PositionProtectionMonitoringService",
     "ExecutionSafetyEngine",
+    "ExecutionDataFreshnessEngine",
     "ConcurrentPositionSafetyEngine",
     "ExecutionSafetySubmissionService",
     "ProtectedExecutionSafetyService",

@@ -5,6 +5,9 @@ from imie.models.analyst_result import AnalystResult
 from imie.models.bos_result import BosResult
 from imie.models.choch_result import ChochResult
 from imie.models.data_freshness import DataFreshness
+from imie.models.execution_data_freshness_assessment import (
+    ExecutionDataFreshnessAssessment,
+)
 from imie.models.decision_result import DecisionResult, DirectorDecision
 from imie.models.liquidity_finding import LiquidityFinding
 from imie.models.liquidity_point import LiquidityPoint
@@ -183,6 +186,7 @@ __all__ = [
     "BosResult",
     "ChochResult",
     "DataFreshness",
+    "ExecutionDataFreshnessAssessment",
     "DecisionResult",
     "DirectorDecision",
     "LiquidityBias",
