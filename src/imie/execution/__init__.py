@@ -135,6 +135,7 @@ __all__ = [
     "BrokerPositionProtectionValidator",
     "AlpacaPaperPositionQueryAdapter",
     "AlpacaPaperPositionExposureAdapter",
+    "AlpacaPaperDailyPnlAdapter",
     "AlpacaPaperPositionProtectionServiceFactory",
     "BrokerOrderIntentStore",
     "ConsoleReconciliationResultPublisher",
@@ -178,6 +179,13 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name == "AlpacaPaperDailyPnlAdapter":
+        from imie.execution.alpaca_paper_daily_pnl_adapter import (
+            AlpacaPaperDailyPnlAdapter,
+        )
+
+        return AlpacaPaperDailyPnlAdapter
+
     if name == "AlpacaPaperPositionExposureAdapter":
         from imie.execution.alpaca_paper_position_exposure_adapter import (
             AlpacaPaperPositionExposureAdapter,
