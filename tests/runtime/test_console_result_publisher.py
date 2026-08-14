@@ -286,6 +286,9 @@ def test_safety_block_and_reservation_are_visible() -> None:
                 observed_at=CHECKED_AT,
                 next_open=None,
                 next_close=CHECKED_AT,
+                session_age_seconds=2,
+                maximum_session_age_seconds=5,
+                session_fresh=True,
                 allowed=True,
             ),
         )
@@ -308,6 +311,9 @@ def test_safety_block_and_reservation_are_visible() -> None:
     assert "Session Open : True" in reserved_lines
     assert f"Observed At  : {CHECKED_AT.isoformat()}" in reserved_lines
     assert f"Next Close   : {CHECKED_AT.isoformat()}" in reserved_lines
+    assert "Session Age  : 2.000s" in reserved_lines
+    assert "Maximum Age  : 5.000s" in reserved_lines
+    assert "Session Fresh: True" in reserved_lines
     lines = reserved_lines
 
     assert "Execution Candidate :" in lines

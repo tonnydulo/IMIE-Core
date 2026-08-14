@@ -522,6 +522,17 @@ class ConsoleResultPublisher:
                     market_session.next_close.isoformat()
                     if market_session.next_close is not None else "—"
                 ),
+                "Session Age  : " + (
+                    f"{market_session.session_age_seconds:.3f}s"
+                    if market_session.session_age_seconds is not None
+                    else "—"
+                ),
+                "Maximum Age  : " + (
+                    f"{market_session.maximum_session_age_seconds:.3f}s"
+                    if market_session.maximum_session_age_seconds is not None
+                    else "—"
+                ),
+                f"Session Fresh: {market_session.session_fresh}",
                 f"Allowed      : {market_session.allowed}",
             ])
             lines.extend(

@@ -430,6 +430,11 @@ def test_dashboard_html_contains_execution_safety_fields() -> None:
         "marketSessionObservedAt": "market_session_observed_at",
         "marketSessionNextOpen": "market_session_next_open",
         "marketSessionNextClose": "market_session_next_close",
+        "marketSessionAgeSeconds": "market_session_age_seconds",
+        "marketSessionMaximumAgeSeconds": (
+            "market_session_maximum_age_seconds"
+        ),
+        "marketSessionFresh": "market_session_fresh",
         "marketSessionAllowed": "market_session_allowed",
         "marketSessionViolations": "market_session_violations",
         "dailyLossBroker": "daily_loss_broker",

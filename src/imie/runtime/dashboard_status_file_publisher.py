@@ -1609,6 +1609,9 @@ class DashboardStatusFilePublisher:
             market_session_observed_at,
             market_session_next_open,
             market_session_next_close,
+            market_session_age_seconds,
+            market_session_maximum_age_seconds,
+            market_session_fresh,
             market_session_allowed,
             market_session_violations,
         ) = _market_session_dashboard_values(market_session_assessment)
@@ -1940,6 +1943,11 @@ class DashboardStatusFilePublisher:
             market_session_observed_at=market_session_observed_at,
             market_session_next_open=market_session_next_open,
             market_session_next_close=market_session_next_close,
+            market_session_age_seconds=market_session_age_seconds,
+            market_session_maximum_age_seconds=(
+                market_session_maximum_age_seconds
+            ),
+            market_session_fresh=market_session_fresh,
             market_session_allowed=market_session_allowed,
             market_session_violations=market_session_violations,
             protected_submission_broker=protected_submission_broker,
@@ -3284,7 +3292,9 @@ def _market_session_dashboard_values(
     assessment: object | None,
 ) -> tuple[object | None, ...]:
     if assessment is None:
-        return (None, None, None, None, None, None, ())
+        return (
+            None, None, None, None, None, None, None, None, None, ()
+        )
     return (
         assessment.broker,
         assessment.session_open,
@@ -3297,6 +3307,9 @@ def _market_session_dashboard_values(
             assessment.next_close.isoformat()
             if assessment.next_close is not None else None
         ),
+        assessment.session_age_seconds,
+        assessment.maximum_session_age_seconds,
+        assessment.session_fresh,
         assessment.allowed,
         tuple(assessment.violations),
     )

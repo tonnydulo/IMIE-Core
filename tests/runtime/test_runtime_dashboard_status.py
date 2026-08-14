@@ -1112,6 +1112,9 @@ def test_execution_safety_fields_are_serialized() -> None:
         market_session_observed_at=NOW.isoformat(),
         market_session_next_open=None,
         market_session_next_close=NOW.isoformat(),
+        market_session_age_seconds=2.0,
+        market_session_maximum_age_seconds=5.0,
+        market_session_fresh=True,
         market_session_allowed=True,
         market_session_violations=(),
     )
@@ -1153,6 +1156,9 @@ def test_execution_safety_fields_are_serialized() -> None:
     assert payload["market_session_observed_at"] == NOW.isoformat()
     assert payload["market_session_next_open"] is None
     assert payload["market_session_next_close"] == NOW.isoformat()
+    assert payload["market_session_age_seconds"] == 2.0
+    assert payload["market_session_maximum_age_seconds"] == 5.0
+    assert payload["market_session_fresh"] is True
     assert payload["market_session_allowed"] is True
     assert payload["market_session_violations"] == []
 

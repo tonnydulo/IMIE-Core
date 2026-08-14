@@ -607,6 +607,9 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
                 observed_at=CHECKED_AT,
                 next_open=None,
                 next_close=CHECKED_AT,
+                session_age_seconds=2,
+                maximum_session_age_seconds=5,
+                session_fresh=True,
                 allowed=True,
             ),
         )
@@ -651,6 +654,9 @@ def test_execution_safety_and_reservation_convert_to_dict() -> None:
         "observed_at": CHECKED_AT.isoformat(),
         "next_open": None,
         "next_close": CHECKED_AT.isoformat(),
+        "session_age_seconds": 2.0,
+        "maximum_session_age_seconds": 5.0,
+        "session_fresh": True,
         "allowed": True,
         "violations": [],
     }

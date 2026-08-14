@@ -1857,6 +1857,21 @@ def build_dashboard_html(
         </article>
 
         <article class="card">
+            <div class="label">Session Observation Age</div>
+            <div id="marketSessionAgeSeconds" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Maximum Session Age</div>
+            <div id="marketSessionMaximumAgeSeconds" class="value">—</div>
+        </article>
+
+        <article class="card">
+            <div class="label">Session Truth Fresh</div>
+            <div id="marketSessionFresh" class="value">—</div>
+        </article>
+
+        <article class="card">
             <div class="label">Session Safety Allowed</div>
             <div id="marketSessionAllowed" class="value">—</div>
         </article>
@@ -5081,6 +5096,18 @@ def build_dashboard_html(
             setText(
                 "marketSessionNextClose",
                 payload.market_session_next_close ?? "—"
+            );
+            setText(
+                "marketSessionAgeSeconds",
+                payload.market_session_age_seconds ?? "—"
+            );
+            setText(
+                "marketSessionMaximumAgeSeconds",
+                payload.market_session_maximum_age_seconds ?? "—"
+            );
+            setText(
+                "marketSessionFresh",
+                formatBoolean(payload.market_session_fresh)
             );
             setText(
                 "marketSessionAllowed",

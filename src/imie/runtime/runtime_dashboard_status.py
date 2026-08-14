@@ -265,6 +265,9 @@ class RuntimeDashboardStatus:
     market_session_observed_at: str | None = None
     market_session_next_open: str | None = None
     market_session_next_close: str | None = None
+    market_session_age_seconds: float | None = None
+    market_session_maximum_age_seconds: float | None = None
+    market_session_fresh: bool | None = None
     market_session_allowed: bool | None = None
     market_session_violations: tuple[str, ...] = ()
 
@@ -527,6 +530,7 @@ class RuntimeDashboardStatus:
             "daily_loss_within_limit",
             "daily_loss_allowed",
             "market_session_open",
+            "market_session_fresh",
             "market_session_allowed",
             "protected_submission_accepted",
             "protected_submission_rollback_attempted",
@@ -3430,6 +3434,11 @@ class RuntimeDashboardStatus:
                 "market_session_observed_at": self.market_session_observed_at,
                 "market_session_next_open": self.market_session_next_open,
                 "market_session_next_close": self.market_session_next_close,
+                "market_session_age_seconds": self.market_session_age_seconds,
+                "market_session_maximum_age_seconds": (
+                    self.market_session_maximum_age_seconds
+                ),
+                "market_session_fresh": self.market_session_fresh,
                 "market_session_allowed": self.market_session_allowed,
                 "market_session_violations": list(
                     self.market_session_violations

@@ -12114,6 +12114,9 @@ def test_publish_result_populates_execution_safety_details(
             observed_at=NOW,
             next_open=None,
             next_close=NOW,
+            session_age_seconds=2,
+            maximum_session_age_seconds=5,
+            session_fresh=True,
             allowed=True,
         ),
     )
@@ -12162,6 +12165,9 @@ def test_publish_result_populates_execution_safety_details(
     assert payload["market_session_observed_at"] == NOW.isoformat()
     assert payload["market_session_next_open"] is None
     assert payload["market_session_next_close"] == NOW.isoformat()
+    assert payload["market_session_age_seconds"] == 2.0
+    assert payload["market_session_maximum_age_seconds"] == 5.0
+    assert payload["market_session_fresh"] is True
     assert payload["market_session_allowed"] is True
     assert payload["market_session_violations"] == []
 
@@ -12254,9 +12260,11 @@ def test_publish_result_identifies_market_session_block(tmp_path: Path) -> None:
         allowed=True, kill_switch_active=False,
     )
     market_session = MarketSessionSafetyAssessment(
-        broker="alpaca-paper", session_open=False, observed_at=NOW,
-        next_open=NOW, next_close=None, allowed=False,
-        violations=("Broker market session is closed.",),
+        broker="alpaca-paper", session_open=True, observed_at=NOW,
+        next_open=None, next_close=NOW, allowed=False,
+        session_age_seconds=6, maximum_session_age_seconds=5,
+        session_fresh=False,
+        violations=("Broker market session is stale: 6.000s > 5.000s.",),
     )
     result = dataclasses.replace(
         make_completed_result_with_execution_candidate(),
@@ -12272,7 +12280,10 @@ def test_publish_result_identifies_market_session_block(tmp_path: Path) -> None:
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["execution_safety_state"] == "BLOCKED"
-    assert payload["market_session_open"] is False
+    assert payload["market_session_open"] is True
+    assert payload["market_session_age_seconds"] == 6.0
+    assert payload["market_session_maximum_age_seconds"] == 5.0
+    assert payload["market_session_fresh"] is False
     assert payload["market_session_allowed"] is False
     assert payload["market_session_violations"] == list(
         market_session.violations

@@ -519,6 +519,11 @@ class JsonResultPublisher:
                     market_session.next_close.isoformat()
                     if market_session.next_close is not None else None
                 ),
+                "session_age_seconds": market_session.session_age_seconds,
+                "maximum_session_age_seconds": (
+                    market_session.maximum_session_age_seconds
+                ),
+                "session_fresh": market_session.session_fresh,
                 "allowed": market_session.allowed,
                 "violations": list(market_session.violations),
             }
