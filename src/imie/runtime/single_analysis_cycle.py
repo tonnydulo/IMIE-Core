@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from imie.execution import (
     BrokerExecutionPort,
     ExecutionSafetySubmissionService,
+    ProtectedExecutionSafetyService,
     ProtectedExecutionPlanBuilder,
     ProtectedExecutionPort,
 )
@@ -85,6 +86,9 @@ class SingleAnalysisCycle:
             ExecutionSafetySubmissionService | None
         ) = None,
         protected_execution_port: ProtectedExecutionPort | None = None,
+        protected_execution_safety_service: (
+            ProtectedExecutionSafetyService | None
+        ) = None,
         protected_execution_plan_builder: (
             ProtectedExecutionPlanBuilder | None
         ) = None,
@@ -176,6 +180,9 @@ class SingleAnalysisCycle:
             execution_safety_submission_service
         )
         self.protected_execution_port = protected_execution_port
+        self.protected_execution_safety_service = (
+            protected_execution_safety_service
+        )
         self.protected_execution_plan_builder = (
             protected_execution_plan_builder
             or ProtectedExecutionPlanBuilder()
@@ -287,6 +294,18 @@ class SingleAnalysisCycle:
             )
 
         if (
+            self.protected_execution_safety_service is not None
+            and not isinstance(
+                self.protected_execution_safety_service,
+                ProtectedExecutionSafetyService,
+            )
+        ):
+            raise TypeError(
+                "protected_execution_safety_service must be a "
+                "ProtectedExecutionSafetyService or None."
+            )
+
+        if (
             self.broker_execution_port is not None
             and self.protected_execution_port is not None
         ):
@@ -300,6 +319,7 @@ class SingleAnalysisCycle:
                 self.broker_execution_port,
                 self.protected_execution_port,
                 self.execution_safety_submission_service,
+                self.protected_execution_safety_service,
             )
         )
         if configured_submission_paths > 1:
@@ -434,6 +454,7 @@ class SingleAnalysisCycle:
             execution_safety_assessment = None
             execution_submission_reservation = None
             protected_submission_result = None
+            concurrent_position_assessment = None
 
             if (
                 self.position_sizing_config.enabled
@@ -528,6 +549,30 @@ class SingleAnalysisCycle:
                     )
                 )
 
+            if (
+                execution_candidate is not None
+                and execution_order_intent is not None
+                and self.protected_execution_safety_service is not None
+            ):
+                protected_plan = self.protected_execution_plan_builder.build(
+                    execution_order_intent
+                )
+                protected_safety = (
+                    self.protected_execution_safety_service.submit(
+                        candidate=execution_candidate,
+                        intent=execution_order_intent,
+                        plan=protected_plan,
+                    )
+                )
+                execution_safety_assessment = protected_safety.assessment
+                concurrent_position_assessment = (
+                    protected_safety.concurrent_position_assessment
+                )
+                execution_submission_reservation = protected_safety.reservation
+                protected_submission_result = (
+                    protected_safety.protected_submission
+                )
+
             return AnalysisCycleResult(
                 status=AnalysisCycleStatus.COMPLETED,
                 symbol=self.config.symbol,
@@ -552,6 +597,9 @@ class SingleAnalysisCycle:
                 execution_safety_assessment=execution_safety_assessment,
                 execution_submission_reservation=(
                     execution_submission_reservation
+                ),
+                concurrent_position_assessment=(
+                    concurrent_position_assessment
                 ),
                 protected_submission_result=protected_submission_result,
             )

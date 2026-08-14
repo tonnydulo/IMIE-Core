@@ -11,6 +11,7 @@ from imie.models import (
     ExecutionOrderIntent,
     ExecutionSafetyAssessment,
     ExecutionSubmissionReservation,
+    ConcurrentPositionAssessment,
     MarketSnapshot,
     PositionSizeResult,
     ProtectedPlanSubmissionResult,
@@ -61,6 +62,7 @@ class AnalysisCycleResult:
     broker_submission_result: BrokerSubmissionResult | None = None
     execution_safety_assessment: ExecutionSafetyAssessment | None = None
     execution_submission_reservation: ExecutionSubmissionReservation | None = None
+    concurrent_position_assessment: ConcurrentPositionAssessment | None = None
     protected_submission_result: ProtectedPlanSubmissionResult | None = None
 
     error_type: str | None = None
@@ -249,11 +251,31 @@ class AnalysisCycleResult:
             )
 
         if (
+            self.concurrent_position_assessment is not None
+            and not isinstance(
+                self.concurrent_position_assessment,
+                ConcurrentPositionAssessment,
+            )
+        ):
+            raise TypeError(
+                "concurrent_position_assessment must be a "
+                "ConcurrentPositionAssessment or None."
+            )
+
+        if (
             self.execution_submission_reservation is not None
             and self.execution_safety_assessment is None
         ):
             raise ValueError(
                 "execution submission reservation requires safety assessment."
+            )
+
+        if (
+            self.concurrent_position_assessment is not None
+            and self.execution_safety_assessment is None
+        ):
+            raise ValueError(
+                "concurrent position assessment requires safety assessment."
             )
 
         if (

@@ -12,6 +12,7 @@ from imie.models import (
     TradePlan,
     ProtectedPlanSubmissionResult,
     ProtectedOrderSubmission,
+    ExecutionSafetyPolicy,
 )
 from imie.runtime import (
     AnalysisCycleStatus,
@@ -28,6 +29,7 @@ from imie.runtime import (
 )
 from imie.execution import (
     MockBrokerExecutionAdapter,
+    ProtectedExecutionSafetyService,
 )
 
 
@@ -210,6 +212,19 @@ class RecordingProtectedExecutionPort:
             message="Accepted.",
             submissions=submissions,
         )
+
+
+class InMemoryReservationStore:
+    def __init__(self) -> None:
+        self.values = {}
+
+    def reserve(self, value) -> None:
+        if value.fingerprint in self.values:
+            raise ValueError("already reserved")
+        self.values[value.fingerprint] = value
+
+    def get(self, fingerprint):
+        return self.values.get(fingerprint)
 
 
 def test_cycle_can_be_created() -> None:
@@ -397,6 +412,68 @@ def test_cycle_rejects_single_and_protected_ports_together() -> None:
             market_data=FakeMarketData(),
             broker_execution_port=MockBrokerExecutionAdapter(),
             protected_execution_port=RecordingProtectedExecutionPort(),
+        )
+
+
+def test_ready_cycle_uses_only_guarded_protected_submission_path() -> None:
+    checked_at = BASE_TIME + timedelta(minutes=2, seconds=3)
+    protected_port = RecordingProtectedExecutionPort()
+    reservations = InMemoryReservationStore()
+    safety_service = ProtectedExecutionSafetyService(
+        protected_execution_port=protected_port,
+        policy=ExecutionSafetyPolicy(
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+        ),
+        reservation_store=reservations,
+        clock=lambda: checked_at,
+    )
+    cycle = SingleAnalysisCycle(
+        config=RuntimeConfig(),
+        market_data=StaticMarketData(
+            quote=make_quote(timestamp=checked_at),
+            bars=[make_bar(timestamp=BASE_TIME)],
+        ),
+        freshness_guard=FixedFreshnessGuard(
+            make_freshness(actionable=True, checked_at=checked_at)
+        ),
+        analysis_pipeline=RecordingAnalysisPipeline(make_ready_decision()),
+        session_policy=make_permissive_session_policy(),
+        position_sizing_config=PositionSizingConfig(
+            enabled=True,
+            account_equity=25_000,
+            risk_percent=0.50,
+        ),
+        protected_execution_safety_service=safety_service,
+    )
+
+    result = cycle.run(checked_at=checked_at)
+
+    assert result.execution_safety_assessment.allowed is True
+    assert result.execution_submission_reservation is not None
+    assert result.protected_submission_result.accepted is True
+    assert result.broker_submission_result is None
+    assert len(protected_port.plans) == 1
+    assert len(reservations.values) == 1
+
+
+def test_cycle_rejects_direct_and_guarded_protected_paths_together() -> None:
+    port = RecordingProtectedExecutionPort()
+    service = ProtectedExecutionSafetyService(
+        protected_execution_port=port,
+        policy=ExecutionSafetyPolicy(
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+        ),
+        reservation_store=InMemoryReservationStore(),
+    )
+
+    with pytest.raises(ValueError, match="Only one broker execution path"):
+        SingleAnalysisCycle(
+            config=RuntimeConfig(),
+            market_data=FakeMarketData(),
+            protected_execution_port=port,
+            protected_execution_safety_service=service,
         )
 
 def test_ready_cycle_does_not_calculate_position_size_when_disabled() -> None:
