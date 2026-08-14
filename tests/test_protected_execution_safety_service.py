@@ -5,6 +5,7 @@ from imie.execution import (
     ProtectedExecutionSafetyService,
 )
 from imie.models import (
+    BrokerDailyPnlSnapshot,
     BrokerPositionExposure,
     ExecutionCandidate,
     ExecutionOrderIntent,
@@ -83,6 +84,25 @@ class Exposure:
         )
 
 
+class DailyPnl:
+    def __init__(self, *, realized=0, unrealized=0, error=None):
+        self.realized = realized
+        self.unrealized = unrealized
+        self.error = error
+        self.calls = 0
+
+    def get_daily_pnl(self):
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return BrokerDailyPnlSnapshot(
+            broker="alpaca-paper",
+            realized_pnl=self.realized,
+            unrealized_pnl=self.unrealized,
+            observed_at=NOW,
+        )
+
+
 def service(port, reservations, **overrides):
     values = {
         "protected_execution_port": port,
@@ -117,6 +137,7 @@ def test_safe_plan_is_reserved_and_submitted_exactly_once():
 def test_kill_switch_blocks_before_reservation_and_submission():
     port = Port()
     reservations = Reservations()
+    daily_pnl = DailyPnl(realized=-100)
     order_intent = intent()
     guarded = service(
         port,
@@ -126,6 +147,8 @@ def test_kill_switch_blocks_before_reservation_and_submission():
             maximum_risk_amount=25,
             kill_switch_active=True,
         ),
+        daily_pnl_port=daily_pnl,
+        maximum_daily_loss=250,
     )
 
     result = guarded.submit(
@@ -136,8 +159,99 @@ def test_kill_switch_blocks_before_reservation_and_submission():
 
     assert result.submitted is False
     assert result.assessment.kill_switch_active is True
+    assert daily_pnl.calls == 0
     assert reservations.values == {}
     assert port.calls == []
+
+
+def test_daily_loss_below_limit_allows_protected_submission():
+    port = Port()
+    reservations = Reservations()
+    daily_pnl = DailyPnl(realized=-100, unrealized=-25)
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        daily_pnl_port=daily_pnl,
+        maximum_daily_loss=250,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is True
+    assert result.daily_loss_assessment.allowed is True
+    assert result.daily_loss_assessment.loss_amount == 125
+    assert daily_pnl.calls == 1
+    assert len(port.calls) == 1
+
+
+def test_daily_loss_at_limit_blocks_before_reservation_and_submission():
+    port = Port()
+    reservations = Reservations()
+    daily_pnl = DailyPnl(realized=-200, unrealized=-50)
+    order_intent = intent()
+
+    result = service(
+        port,
+        reservations,
+        daily_pnl_port=daily_pnl,
+        maximum_daily_loss=250,
+    ).submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is False
+    assert result.daily_loss_assessment.allowed is False
+    assert result.daily_loss_assessment.loss_amount == 250
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_daily_pnl_query_failure_stops_before_execution_mutation():
+    port = Port()
+    reservations = Reservations()
+    daily_pnl = DailyPnl(error=RuntimeError("broker unavailable"))
+    order_intent = intent()
+
+    try:
+        service(
+            port,
+            reservations,
+            daily_pnl_port=daily_pnl,
+            maximum_daily_loss=250,
+        ).submit(
+            candidate=candidate(),
+            intent=order_intent,
+            plan=ProtectedExecutionPlanBuilder().build(order_intent),
+        )
+    except RuntimeError as exc:
+        assert "broker unavailable" in str(exc)
+    else:
+        raise AssertionError("daily pnl query failure must propagate")
+
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_daily_loss_configuration_must_be_complete():
+    port = Port()
+    reservations = Reservations()
+
+    for overrides in (
+        {"daily_pnl_port": DailyPnl()},
+        {"maximum_daily_loss": 250},
+    ):
+        try:
+            service(port, reservations, **overrides)
+        except ValueError as exc:
+            assert "configured together" in str(exc)
+        else:
+            raise AssertionError("partial daily loss configuration must fail")
 
 
 def test_concurrent_limit_blocks_single_protected_submission():

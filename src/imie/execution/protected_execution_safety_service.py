@@ -7,6 +7,8 @@ from typing import Callable
 from imie.execution.broker_position_exposure_port import (
     BrokerPositionExposurePort,
 )
+from imie.execution.broker_daily_pnl_port import BrokerDailyPnlPort
+from imie.execution.daily_loss_safety_engine import DailyLossSafetyEngine
 from imie.execution.concurrent_position_safety_engine import (
     ConcurrentPositionSafetyEngine,
 )
@@ -44,8 +46,11 @@ class ProtectedExecutionSafetyService:
         position_exposure_port: BrokerPositionExposurePort | None = None,
         maximum_concurrent_positions: int | None = None,
         maximum_position_exposure_age_seconds: float | None = None,
+        daily_pnl_port: BrokerDailyPnlPort | None = None,
+        maximum_daily_loss: float | None = None,
         safety_engine: ExecutionSafetyEngine | None = None,
         concurrent_engine: ConcurrentPositionSafetyEngine | None = None,
+        daily_loss_engine: DailyLossSafetyEngine | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not isinstance(protected_execution_port, ProtectedExecutionPort):
@@ -96,6 +101,20 @@ class ProtectedExecutionSafetyService:
             raise ValueError(
                 "maximum_position_exposure_age_seconds must be positive."
             )
+        if (daily_pnl_port is None) != (maximum_daily_loss is None):
+            raise ValueError(
+                "daily_pnl_port and maximum_daily_loss must be configured together."
+            )
+        if daily_pnl_port is not None and not isinstance(
+            daily_pnl_port, BrokerDailyPnlPort
+        ):
+            raise TypeError("daily_pnl_port must satisfy BrokerDailyPnlPort.")
+        if maximum_daily_loss is not None and (
+            isinstance(maximum_daily_loss, bool)
+            or not isinstance(maximum_daily_loss, int | float)
+            or maximum_daily_loss <= 0
+        ):
+            raise ValueError("maximum_daily_loss must be positive.")
         self._protected_execution_port = protected_execution_port
         self._policy = policy
         self._reservation_store = reservation_store
@@ -106,8 +125,13 @@ class ProtectedExecutionSafetyService:
             if maximum_position_exposure_age_seconds is not None
             else None
         )
+        self._daily_pnl_port = daily_pnl_port
+        self._maximum_daily_loss = (
+            float(maximum_daily_loss) if maximum_daily_loss is not None else None
+        )
         self._safety_engine = safety_engine or ExecutionSafetyEngine()
         self._concurrent_engine = concurrent_engine or ConcurrentPositionSafetyEngine()
+        self._daily_loss_engine = daily_loss_engine or DailyLossSafetyEngine()
         self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     def submit(
@@ -134,6 +158,20 @@ class ProtectedExecutionSafetyService:
         if checked_at.tzinfo is None:
             raise ValueError("clock must return a timezone-aware datetime.")
 
+        daily_loss_assessment = None
+        if self._daily_pnl_port is not None:
+            daily_loss_snapshot = self._daily_pnl_port.get_daily_pnl()
+            daily_loss_assessment = self._daily_loss_engine.assess(
+                snapshot=daily_loss_snapshot,
+                maximum_daily_loss=self._maximum_daily_loss,
+            )
+            if not daily_loss_assessment.allowed:
+                return ProtectedExecutionSafetyResult(
+                    assessment=assessment,
+                    daily_loss_assessment=daily_loss_assessment,
+                    protected_submission=None,
+                )
+
         concurrent_assessment = None
         if self._position_exposure_port is not None:
             exposure = self._position_exposure_port.get_open_position_exposure()
@@ -154,6 +192,7 @@ class ProtectedExecutionSafetyService:
                 return ProtectedExecutionSafetyResult(
                     assessment=assessment,
                     concurrent_position_assessment=concurrent_assessment,
+                    daily_loss_assessment=daily_loss_assessment,
                     protected_submission=None,
                 )
 
@@ -183,6 +222,7 @@ class ProtectedExecutionSafetyService:
         return ProtectedExecutionSafetyResult(
             assessment=assessment,
             concurrent_position_assessment=concurrent_assessment,
+            daily_loss_assessment=daily_loss_assessment,
             reservation=reservation,
             protected_submission=submission,
         )
