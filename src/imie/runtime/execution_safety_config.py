@@ -21,6 +21,7 @@ class ExecutionSafetyConfig:
     maximum_order_notional: float | None = None
     maximum_risk_amount: float | None = None
     maximum_concurrent_positions: int | None = None
+    maximum_position_exposure_age_seconds: float | None = None
     kill_switch_active: bool = False
     reservation_store_path: Path = DEFAULT_EXECUTION_RESERVATION_STORE
 
@@ -45,10 +46,22 @@ class ExecutionSafetyConfig:
             self.maximum_concurrent_positions,
             "maximum_concurrent_positions",
         )
+        maximum_position_exposure_age_seconds = self._optional_positive_float(
+            self.maximum_position_exposure_age_seconds,
+            "maximum_position_exposure_age_seconds",
+        )
         if maximum_concurrent_positions is not None and not self.enabled:
             raise ValueError(
                 "maximum_concurrent_positions requires execution safety "
                 "to be enabled."
+            )
+        if (
+            maximum_position_exposure_age_seconds is not None
+            and maximum_concurrent_positions is None
+        ):
+            raise ValueError(
+                "maximum_position_exposure_age_seconds requires "
+                "maximum_concurrent_positions."
             )
         if not isinstance(self.reservation_store_path, Path):
             raise TypeError("reservation_store_path must be a Path.")
@@ -65,6 +78,11 @@ class ExecutionSafetyConfig:
             )
         object.__setattr__(
             self, "maximum_order_notional", maximum_order_notional
+        )
+        object.__setattr__(
+            self,
+            "maximum_position_exposure_age_seconds",
+            maximum_position_exposure_age_seconds,
         )
         object.__setattr__(self, "maximum_risk_amount", maximum_risk_amount)
         object.__setattr__(

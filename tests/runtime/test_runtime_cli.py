@@ -255,6 +255,7 @@ def test_parser_execution_safety_defaults_are_off() -> None:
     assert arguments.maximum_risk_amount is None
     assert arguments.execution_kill_switch is False
     assert arguments.maximum_concurrent_positions is None
+    assert arguments.maximum_position_exposure_age_seconds is None
     assert arguments.execution_reservation_store == Path(
         "runtime/execution/submission_reservations.json"
     )
@@ -268,6 +269,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         "--maximum-risk-amount", "125",
         "--execution-kill-switch",
         "--maximum-concurrent-positions", "3",
+        "--maximum-position-exposure-age-seconds", "5",
         "--execution-reservation-store", "custom/reservations.json",
     ])
 
@@ -278,6 +280,7 @@ def test_parser_accepts_explicit_execution_safety_options() -> None:
         maximum_risk_amount=125.0,
         kill_switch_active=True,
         maximum_concurrent_positions=3,
+        maximum_position_exposure_age_seconds=5.0,
         reservation_store_path=Path("custom/reservations.json"),
     )
 
@@ -308,6 +311,18 @@ def test_concurrent_position_cli_requires_execution_safety() -> None:
     ])
 
     with pytest.raises(ValueError, match="requires execution safety"):
+        build_execution_safety_config(parsed)
+
+
+def test_exposure_age_cli_requires_concurrent_limit() -> None:
+    parsed = build_parser().parse_args([
+        "--execution-safety",
+        "--maximum-order-notional", "25000",
+        "--maximum-risk-amount", "125",
+        "--maximum-position-exposure-age-seconds", "5",
+    ])
+
+    with pytest.raises(ValueError, match="requires maximum_concurrent"):
         build_execution_safety_config(parsed)
 
 

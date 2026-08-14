@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from imie.execution import (
     ProtectedExecutionPlanBuilder,
@@ -71,14 +71,15 @@ class Reservations:
 
 
 class Exposure:
-    def __init__(self, symbols):
+    def __init__(self, symbols, observed_at=NOW):
         self.symbols = symbols
+        self.observed_at = observed_at
 
     def get_open_position_exposure(self):
         return BrokerPositionExposure(
             broker="alpaca-paper",
             open_symbols=tuple(self.symbols),
-            observed_at=NOW,
+            observed_at=self.observed_at,
         )
 
 
@@ -160,6 +161,62 @@ def test_concurrent_limit_blocks_single_protected_submission():
     assert result.concurrent_position_assessment.allowed is False
     assert reservations.values == {}
     assert port.calls == []
+
+
+def test_stale_position_exposure_blocks_protected_submission():
+    port = Port()
+    reservations = Reservations()
+    order_intent = intent()
+    guarded = service(
+        port,
+        reservations,
+        position_exposure_port=Exposure(
+            ("AAPL",), observed_at=NOW - timedelta(seconds=5.001)
+        ),
+        maximum_concurrent_positions=2,
+        maximum_position_exposure_age_seconds=5,
+    )
+
+    result = guarded.submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is False
+    assert result.concurrent_position_assessment.exposure_fresh is False
+    assert reservations.values == {}
+    assert port.calls == []
+
+
+def test_one_clock_value_authorizes_exposure_and_timestamps_reservation():
+    calls = []
+
+    def clock():
+        calls.append(NOW)
+        return NOW
+
+    port = Port()
+    reservations = Reservations()
+    order_intent = intent()
+    guarded = service(
+        port,
+        reservations,
+        position_exposure_port=Exposure(("AAPL",)),
+        maximum_concurrent_positions=2,
+        maximum_position_exposure_age_seconds=5,
+        clock=clock,
+    )
+
+    result = guarded.submit(
+        candidate=candidate(),
+        intent=order_intent,
+        plan=ProtectedExecutionPlanBuilder().build(order_intent),
+    )
+
+    assert result.submitted is True
+    assert result.reservation.reserved_at == NOW
+    assert calls == [NOW]
 
 
 def test_duplicate_reservation_stops_before_protected_port():

@@ -300,6 +300,7 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
             maximum_order_notional=25_000,
             maximum_risk_amount=125,
             maximum_concurrent_positions=2,
+            maximum_position_exposure_age_seconds=5,
             reservation_store_path=tmp_path / "reservations.json",
         ),
         history_file=tmp_path / "cycles.jsonl",
@@ -320,6 +321,8 @@ def test_factory_wires_guarded_alpaca_concurrent_limit(
         AlpacaPaperPositionExposureAdapter,
     )
     assert service._maximum_concurrent_positions == 2
+    assert service._maximum_position_exposure_age_seconds == 5.0
+    assert service._position_exposure_port._clock is service._clock
 
 
 def test_factory_rejects_safety_without_compatible_broker_port(

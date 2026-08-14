@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime, timezone
 
 from dataclasses import replace
 
@@ -139,6 +140,7 @@ def _build_protected_execution_safety_service(
         )
 
     position_exposure_port = None
+    clock = lambda: datetime.now(timezone.utc)
     if safety_config.maximum_concurrent_positions is not None:
         from alpaca.trading.client import TradingClient
         from imie.execution import AlpacaPaperPositionExposureAdapter
@@ -150,6 +152,7 @@ def _build_protected_execution_safety_service(
                 paper=True,
             ),
             paper=True,
+            clock=clock,
         )
 
     return ProtectedExecutionSafetyService(
@@ -162,6 +165,10 @@ def _build_protected_execution_safety_service(
         maximum_concurrent_positions=(
             safety_config.maximum_concurrent_positions
         ),
+        maximum_position_exposure_age_seconds=(
+            safety_config.maximum_position_exposure_age_seconds
+        ),
+        clock=clock,
     )
 
 

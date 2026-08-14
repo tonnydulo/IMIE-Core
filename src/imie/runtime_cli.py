@@ -180,6 +180,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--maximum-position-exposure-age-seconds",
+        type=float,
+        default=None,
+        help=(
+            "Maximum age of verified broker position exposure. Requires "
+            "--maximum-concurrent-positions."
+        ),
+    )
+
+    parser.add_argument(
         "--execution-reservation-store",
         type=Path,
         default=Path("runtime/execution/submission_reservations.json"),
@@ -481,6 +491,11 @@ def build_execution_safety_config(
         ),
         maximum_concurrent_positions=getattr(
             arguments, "maximum_concurrent_positions", None
+        ),
+        maximum_position_exposure_age_seconds=getattr(
+            arguments,
+            "maximum_position_exposure_age_seconds",
+            None,
         ),
         reservation_store_path=getattr(
             arguments,

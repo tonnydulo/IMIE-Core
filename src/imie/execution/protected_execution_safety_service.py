@@ -43,6 +43,7 @@ class ProtectedExecutionSafetyService:
         reservation_store: ExecutionSubmissionReservationStore,
         position_exposure_port: BrokerPositionExposurePort | None = None,
         maximum_concurrent_positions: int | None = None,
+        maximum_position_exposure_age_seconds: float | None = None,
         safety_engine: ExecutionSafetyEngine | None = None,
         concurrent_engine: ConcurrentPositionSafetyEngine | None = None,
         clock: Callable[[], datetime] | None = None,
@@ -77,11 +78,34 @@ class ProtectedExecutionSafetyService:
             or maximum_concurrent_positions <= 0
         ):
             raise ValueError("maximum_concurrent_positions must be positive.")
+        if (
+            maximum_position_exposure_age_seconds is not None
+            and maximum_concurrent_positions is None
+        ):
+            raise ValueError(
+                "maximum_position_exposure_age_seconds requires "
+                "maximum_concurrent_positions."
+            )
+        if maximum_position_exposure_age_seconds is not None and (
+            isinstance(maximum_position_exposure_age_seconds, bool)
+            or not isinstance(
+                maximum_position_exposure_age_seconds, int | float
+            )
+            or maximum_position_exposure_age_seconds <= 0
+        ):
+            raise ValueError(
+                "maximum_position_exposure_age_seconds must be positive."
+            )
         self._protected_execution_port = protected_execution_port
         self._policy = policy
         self._reservation_store = reservation_store
         self._position_exposure_port = position_exposure_port
         self._maximum_concurrent_positions = maximum_concurrent_positions
+        self._maximum_position_exposure_age_seconds = (
+            float(maximum_position_exposure_age_seconds)
+            if maximum_position_exposure_age_seconds is not None
+            else None
+        )
         self._safety_engine = safety_engine or ExecutionSafetyEngine()
         self._concurrent_engine = concurrent_engine or ConcurrentPositionSafetyEngine()
         self._clock = clock or (lambda: datetime.now(timezone.utc))
@@ -104,6 +128,12 @@ class ProtectedExecutionSafetyService:
                 protected_submission=None,
             )
 
+        checked_at = self._clock()
+        if not isinstance(checked_at, datetime):
+            raise TypeError("clock must return a datetime.")
+        if checked_at.tzinfo is None:
+            raise ValueError("clock must return a timezone-aware datetime.")
+
         concurrent_assessment = None
         if self._position_exposure_port is not None:
             exposure = self._position_exposure_port.get_open_position_exposure()
@@ -111,6 +141,14 @@ class ProtectedExecutionSafetyService:
                 symbol=plan.symbol,
                 exposure=exposure,
                 maximum_concurrent_positions=self._maximum_concurrent_positions,
+                checked_at=(
+                    checked_at
+                    if self._maximum_position_exposure_age_seconds is not None
+                    else None
+                ),
+                maximum_exposure_age_seconds=(
+                    self._maximum_position_exposure_age_seconds
+                ),
             )
             if not concurrent_assessment.allowed:
                 return ProtectedExecutionSafetyResult(
@@ -119,11 +157,6 @@ class ProtectedExecutionSafetyService:
                     protected_submission=None,
                 )
 
-        reserved_at = self._clock()
-        if not isinstance(reserved_at, datetime):
-            raise TypeError("clock must return a datetime.")
-        if reserved_at.tzinfo is None:
-            raise ValueError("clock must return a timezone-aware datetime.")
         reservation = ExecutionSubmissionReservation(
             fingerprint=ExecutionSubmissionFingerprint.create(
                 candidate=candidate,
@@ -132,7 +165,7 @@ class ProtectedExecutionSafetyService:
             symbol=intent.symbol,
             side=intent.side,
             quantity=intent.quantity,
-            reserved_at=reserved_at,
+            reserved_at=checked_at,
         )
         self._reservation_store.reserve(reservation)
         submission = self._protected_execution_port.submit_protected_plan(plan)

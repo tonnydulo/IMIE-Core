@@ -16,6 +16,7 @@ def test_defaults_are_disabled_and_do_not_grant_execution_limits():
     assert config.maximum_order_notional is None
     assert config.maximum_risk_amount is None
     assert config.maximum_concurrent_positions is None
+    assert config.maximum_position_exposure_age_seconds is None
     assert config.kill_switch_active is False
     assert config.reservation_store_path == Path(
         "runtime/execution/submission_reservations.json"
@@ -136,3 +137,37 @@ def test_maximum_concurrent_positions_requires_positive_int(value):
 def test_maximum_concurrent_positions_requires_execution_safety():
     with pytest.raises(ValueError, match="requires execution safety"):
         ExecutionSafetyConfig(maximum_concurrent_positions=3)
+
+
+def test_config_accepts_position_exposure_maximum_age():
+    config = ExecutionSafetyConfig(
+        enabled=True,
+        maximum_order_notional=25_000,
+        maximum_risk_amount=125,
+        maximum_concurrent_positions=3,
+        maximum_position_exposure_age_seconds=5,
+    )
+
+    assert config.maximum_position_exposure_age_seconds == 5.0
+
+
+@pytest.mark.parametrize("value", [0, -1, True, float("inf")])
+def test_position_exposure_maximum_age_must_be_positive(value):
+    with pytest.raises((TypeError, ValueError)):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_concurrent_positions=3,
+            maximum_position_exposure_age_seconds=value,
+        )
+
+
+def test_position_exposure_age_requires_concurrent_limit():
+    with pytest.raises(ValueError, match="requires maximum_concurrent"):
+        ExecutionSafetyConfig(
+            enabled=True,
+            maximum_order_notional=25_000,
+            maximum_risk_amount=125,
+            maximum_position_exposure_age_seconds=5,
+        )
